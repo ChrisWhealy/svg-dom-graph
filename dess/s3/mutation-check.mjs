@@ -153,6 +153,28 @@ const MUTATIONS = [
     'native'
   ],
   [CONTROLLER, 'a commit does not publish the selection that it drew', '        st.view = target.view;\n', '', 'native'],
+  [
+    HOST,
+    'the page is not listened to for visibilitychange',
+    '        add(&document, "visibilitychange", &changed)?;\n',
+    '',
+    'browser'
+  ],
+  [HOST, 'the page is not listened to for pagehide', '        add(&window, "pagehide", &left)?;\n', '', 'browser'],
+  [
+    HOST,
+    'a lifecycle listener is not removed when it is dropped',
+    '        remove(&self.window, "pagehide", &self.left);\n',
+    '',
+    'browser'
+  ],
+  [
+    CONTROLLER,
+    'a page that is being left is not stopped',
+    '    pub fn suspend(&self) {\n        self.inner.stop_and_invalidate();',
+    '    pub fn suspend(&self) {',
+    'native'
+  ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [

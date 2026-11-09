@@ -5,9 +5,9 @@
       "kind": "native",
       "caught": true,
       "failed": [
+        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_seek_never_commits_it",
         "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_draw_is_never_committed_and_is_repaired_on_return",
-        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either",
-        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_seek_never_commits_it"
+        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either"
       ],
       "built": true
     },
@@ -16,10 +16,10 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
         "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
-        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it",
-        "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw"
+        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw",
+        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it"
       ],
       "built": true
     },
@@ -39,7 +39,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::one_callback_queued_before_a_hide_is_inert_with_or_without_the_hint"
+        "controller::unit_tests::one_callback_queued_before_a_hide_is_inert_with_or_without_the_hint",
+        "controller::unit_tests::suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible"
       ],
       "built": true
     },
@@ -66,6 +67,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
+        "controller::unit_tests::a_hide_and_a_show_between_two_ticks_stop_playback_and_it_is_not_resumed",
+        "controller::unit_tests::suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible",
         "controller::unit_tests::showing_again_repairs_a_dirty_page_and_never_resumes_playback"
       ],
       "built": true
@@ -93,8 +96,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
-        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown"
+        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one"
       ],
       "built": true
     },
@@ -212,6 +215,42 @@
         "controller::unit_tests::a_scenario_switch_whose_draw_failed_leaves_the_old_scenario_committed_and_repaired",
         "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it",
         "controller::unit_tests::selecting_a_job_redraws_the_same_slice_with_the_highlight_and_a_later_slice_keeps_it"
+      ],
+      "built": true
+    },
+    {
+      "name": "the page is not listened to for visibilitychange",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "a_hide_and_a_show_between_two_ticks_stop_playback_for_good"
+      ],
+      "built": true
+    },
+    {
+      "name": "the page is not listened to for pagehide",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "pagehide_stops_playback_even_though_the_page_still_reads_as_visible"
+      ],
+      "built": true
+    },
+    {
+      "name": "a lifecycle listener is not removed when it is dropped",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "the_lifecycle_listeners_are_removed_when_they_are_dropped"
+      ],
+      "built": true
+    },
+    {
+      "name": "a page that is being left is not stopped",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible"
       ],
       "built": true
     },

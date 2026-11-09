@@ -72,6 +72,7 @@ It is promised that one that does is inert.
 
 | Signal | What happens |
 |---|---|
+| The page is hidden or left | `visibilitychange` and `pagehide` stop playback and seeks by the same path. `pagehide` stops without asking, since a page that is being left may still read as visible. A hide and a show in one task are told one after the other, so playback is stopped at the hide and not resumed at the show. `pageshow` repairs a dirty page and never resumes |
 | The panel is hidden | The hint stops playback, takes back the timer and the frame, and moves the epoch and the token. A callback that was already queued runs once and finds the host not live |
 | The panel is shown | A dirty page is drawn again in full. Playback stays stopped until a person asks |
 | The host leaves the document | The same as hidden, and nothing is drawn on a detached host |
@@ -104,6 +105,7 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
 | Selection and switch transactions | A selection or a scenario switch whose draw fails, is refused because the host is hidden, or has the host leave in the middle of its draw, is not published. The committed projection, the selection, the generation and the old scenario's next slice are as they were, and the page is repaired to them |
 | An engine error | The engine is made to refuse the sixth slice by a limit. A seek, a step and playback each leave the cursor, the committed projection, the page and the unknown last slice as they were, and report once. A natural end still records the last slice |
+| Page lifecycle | A hide and a show before the next tick stop playback for good, on a real page with the real listeners. `pagehide` stops a page that still reads as visible, `pageshow` does not resume it, and a dropped listener is not called |
 | Navigation ownership | Seek then seek back to the committed slice, restart and previous at the first slice, play then next, play then seek, seek then play, and seek then next, each with the callbacks of what was cancelled kept, leave the last request in force. A pause leaves a seek alone |
 | No cycle | A timer and a frame that are waiting hold no strong reference to the controller |
 | Closures | Over 60 cycles on the page's own timers, every closure is dropped, whether the task ran or was cancelled |
@@ -111,8 +113,8 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in twenty-five ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all twenty-five are caught.
+`dess/s3/mutation-check.mjs` breaks the code in twenty-nine ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all twenty-nine are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |

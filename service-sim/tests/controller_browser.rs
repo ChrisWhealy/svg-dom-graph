@@ -3,7 +3,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use service_sim::controller::{Controller, Outcome, Presence};
-use service_sim::host::{BrowserScheduler, GalleryHint, PageHost};
+use service_sim::host::{BrowserScheduler, GalleryHint, PageHost, PageLifecycle};
 use service_sim::projection::View;
 use service_sim::surface::{FaultPoint, Surface};
 use service_sim_engine::trace::Scenario;
@@ -380,5 +380,119 @@ async fn a_disposed_controller_holds_nothing_and_late_callbacks_do_nothing() -> 
         "nothing is held",
     )?;
     check(c.next() == Outcome::Unavailable, "a disposed controller does nothing")?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dispatches `name` on `target`, as the browser does.
+fn fire(target: &web_sys::EventTarget, name: &str) {
+    target
+        .dispatch_event(&web_sys::Event::new(name).expect("an event"))
+        .expect("a dispatch");
+}
+
+fn lifecycle_for(c: &Page) -> Result<PageLifecycle, String> {
+    let (changed, left) = (c.clone(), c.clone());
+    PageLifecycle::install(move || changed.presence_changed(), move || left.suspend())
+}
+
+/// The page is hidden and shown again in one task, so that no tick ever sees it hidden, and each change is told to the
+/// controller as it happens. Playback stops at the hide, and does not start again at the show.
+#[wasm_bindgen_test]
+async fn a_hide_and_a_show_between_two_ticks_stop_playback_for_good() -> Result<(), String> {
+    let (c, _, _) = page_in(None, "ct-lifecycle-visibility")?;
+    let _lifecycle = lifecycle_for(&c)?;
+    c.set_speed(60);
+    c.play();
+    until("a first slice", || c.committed_slice() >= 1).await?;
+    let epoch = c.epoch();
+    // The document reads hidden for the length of one task, in which the event is told, and then reads visible again.
+    let document = document();
+    let hidden = |on: bool| {
+        js_sys::Function::new_no_args(&format!(
+            "Object.defineProperty(document, 'hidden', {{ get() {{ return {on} }}, configurable: true }})"
+        ))
+        .call0(&wasm_bindgen::JsValue::NULL)
+        .expect("a property");
+    };
+    hidden(true);
+    fire(&document, "visibilitychange");
+    hidden(false);
+    fire(&document, "visibilitychange");
+    js_sys::Function::new_no_args("delete document.hidden")
+        .call0(&wasm_bindgen::JsValue::NULL)
+        .expect("a delete");
+    check(
+        !c.is_playing(),
+        "playback stopped at the hide, though the page was visible again before the next tick",
+    )?;
+    check(c.epoch() > epoch, "the epoch moved")?;
+    let slice = c.committed_slice();
+    sleep(300).await;
+    check(
+        c.committed_slice() == slice,
+        "no tick followed, and playback did not start again at the show",
+    )?;
+    check(c.scheduler().waiting() == 0, "nothing is waiting")?;
+    Ok(())
+}
+
+#[wasm_bindgen_test]
+async fn pagehide_stops_playback_even_though_the_page_still_reads_as_visible() -> Result<(), String> {
+    let (c, _, _) = page_in(None, "ct-lifecycle-pagehide")?;
+    let _lifecycle = lifecycle_for(&c)?;
+    c.set_speed(60);
+    c.play();
+    until("a first slice", || c.committed_slice() >= 1).await?;
+    check(
+        c.with_host(|h| h.presence_for_test()) == Presence::Live,
+        "the page reads as visible",
+    )?;
+    let window: web_sys::EventTarget = web_sys::window().ok_or("no window")?.into();
+    fire(&window, "pagehide");
+    check(!c.is_playing(), "pagehide stopped playback")?;
+    let slice = c.committed_slice();
+    sleep(300).await;
+    check(
+        c.committed_slice() == slice && c.scheduler().waiting() == 0,
+        "nothing followed it",
+    )?;
+    // A pageshow brings it back, and it stays paused.
+    fire(&window, "pageshow");
+    sleep(100).await;
+    check(
+        !c.is_playing() && c.committed_slice() == slice,
+        "pageshow does not resume playback",
+    )?;
+    Ok(())
+}
+
+#[wasm_bindgen_test]
+async fn the_lifecycle_listeners_are_removed_when_they_are_dropped() -> Result<(), String> {
+    let (c, _, _) = page_in(None, "ct-lifecycle-drop")?;
+    let lifecycle = lifecycle_for(&c)?;
+    drop(lifecycle);
+    // A listener that stayed would call a closure that was dropped, which the browser reports as an uncaught error.
+    let errors = js_sys::Function::new_no_args(
+        "window.__lifecycleErrors = 0; window.addEventListener('error', () => { window.__lifecycleErrors += 1 }, { once: false });",
+    );
+    errors.call0(&wasm_bindgen::JsValue::NULL).map_err(|e| format!("{e:?}"))?;
+    c.set_speed(60);
+    c.play();
+    until("a first slice", || c.committed_slice() >= 1).await?;
+    let window: web_sys::EventTarget = web_sys::window().ok_or("no window")?.into();
+    fire(&window, "pagehide");
+    fire(&document(), "visibilitychange");
+    sleep(50).await;
+    check(c.is_playing(), "a listener that was dropped does nothing")?;
+    let count = js_sys::Reflect::get(&web_sys::window().ok_or("no window")?.into(), &"__lifecycleErrors".into())
+        .ok()
+        .and_then(|v| v.as_f64())
+        .unwrap_or(-1.0);
+    check(
+        count == 0.0,
+        &format!("a listener that was dropped is not called ({count} uncaught errors)"),
+    )?;
+    c.pause();
     Ok(())
 }

@@ -21,7 +21,7 @@ js-sys = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3"
-features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement", "MutationObserver", "MutationObserverInit", "console"]
+features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement", "MutationObserver", "MutationObserverInit", "console", "EventTarget", "Event"]
 
 # The tests detach the host in the middle of a draw, which needs a hook that no other build has.
 [features]

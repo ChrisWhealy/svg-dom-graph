@@ -329,3 +329,62 @@ impl Drop for GalleryHint {
         self.observer.disconnect();
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The page's own lifecycle: it is hidden or shown, and it is left or returned to.
+///
+/// `presence()` asks `document.hidden` at every callback, but a page that is hidden and then shown again before the
+/// next callback is never seen to be hidden by that test, so playback would go on as if nothing had happened. The page
+/// says when it is hidden, and the controller stops then, by the same path as for a hidden gallery panel.
+///
+/// - `visibilitychange` calls `changed`, which stops playback if the page is hidden and repairs a dirty page if it is
+///   shown.
+/// - `pagehide` calls `left`, which stops unconditionally, since a page that is being left may still read as visible.
+/// - `pageshow` calls `changed`, for a page that comes back from the browser's cache. It never resumes playback.
+pub struct PageLifecycle {
+    document: web_sys::Document,
+    window: web_sys::Window,
+    changed: Closure<dyn FnMut()>,
+    left: Closure<dyn FnMut()>,
+}
+
+impl PageLifecycle {
+    /// Listens for the page's lifecycle events until it is dropped.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if there is no window or a listener could not be added.
+    pub fn install(changed: impl Fn() + 'static, left: impl Fn() + 'static) -> Result<Self, String> {
+        let window = web_sys::window().ok_or("there is no window")?;
+        let document = window.document().ok_or("there is no document")?;
+        let changed = Closure::<dyn FnMut()>::new(changed);
+        let left = Closure::<dyn FnMut()>::new(left);
+        let add = |target: &web_sys::EventTarget, event: &str, f: &Closure<dyn FnMut()>| {
+            target
+                .add_event_listener_with_callback(event, f.as_ref().unchecked_ref())
+                .map_err(|e| format!("could not listen for {event}: {e:?}"))
+        };
+        add(&document, "visibilitychange", &changed)?;
+        add(&window, "pageshow", &changed)?;
+        add(&window, "pagehide", &left)?;
+        Ok(Self {
+            document,
+            window,
+            changed,
+            left,
+        })
+    }
+}
+
+impl Drop for PageLifecycle {
+    fn drop(&mut self) {
+        let remove = |target: &web_sys::EventTarget, event: &str, f: &Closure<dyn FnMut()>| {
+            target
+                .remove_event_listener_with_callback(event, f.as_ref().unchecked_ref())
+                .ok();
+        };
+        remove(&self.document, "visibilitychange", &self.changed);
+        remove(&self.window, "pageshow", &self.changed);
+        remove(&self.window, "pagehide", &self.left);
+    }
+}

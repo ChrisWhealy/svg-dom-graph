@@ -1033,3 +1033,55 @@ fn a_scenario_switch_that_leaves_in_the_middle_of_its_draw_is_not_published() {
         "the old scenario is drawn again on return"
     );
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_hide_and_a_show_between_two_ticks_stop_playback_and_it_is_not_resumed() {
+    let (c, log) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.play();
+    c.scheduler().advance_by(100);
+    assert_eq!(c.committed_slice(), 1);
+    // The page is hidden and shown again before the next tick, and each is told as it happens.
+    log.borrow_mut().presence = Presence::Hidden;
+    c.presence_changed();
+    log.borrow_mut().presence = Presence::Live;
+    c.presence_changed();
+    assert!(!c.is_playing(), "the hide was seen, so playback is stopped");
+    c.scheduler().advance_by(10_000);
+    assert_eq!(
+        c.committed_slice(),
+        1,
+        "the tick that was already on its way found the epoch moved, and did nothing"
+    );
+    assert_eq!(log.borrow().playing, vec![true, false]);
+}
+
+#[test]
+fn suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible() {
+    let (c, log) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.play();
+    let epoch = c.epoch();
+    c.suspend();
+    assert!(!c.is_playing());
+    assert!(c.epoch() > epoch);
+    assert!(!c.is_dirty(), "a page that is being left is not marked dirty");
+    c.scheduler().advance_by(10_000);
+    assert_eq!(c.committed_slice(), 0);
+    assert_eq!(
+        log.borrow().presence,
+        Presence::Live,
+        "the host still reads as live, as it does during pagehide"
+    );
+    c.seek(5);
+    c.suspend();
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 0, "a seek that was pending is cancelled too");
+    // A page that is shown again stays paused, and playback starts only when asked for.
+    c.presence_changed();
+    assert!(!c.is_playing());
+    assert_eq!(c.play(), Outcome::Done);
+}

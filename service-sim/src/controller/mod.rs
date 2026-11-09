@@ -376,6 +376,12 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.presence_changed();
     }
 
+    /// Stops playback and invalidates what was scheduled, as for a page that is being left. The page may still read as
+    /// visible, so this does not ask. It never starts anything, and the page is not marked dirty.
+    pub fn suspend(&self) {
+        self.inner.stop_and_invalidate();
+    }
+
     /// Ends the controller for good. What was scheduled is taken back, and a late callback does nothing.
     pub fn dispose(&self) {
         {
