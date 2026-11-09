@@ -1,6 +1,7 @@
 //! The trace of a scenario: every pop, every slice with its checkpoint hash, and the final state, as JSON.
 //!
-//! This is what the differential run compares with the oracle's, so its shape is fixed by `dess/s1/docs/contract.md` section 6.
+//! This is what the differential run compares with the oracle's, so its shape is fixed by `dess/s1/docs/contract.md`
+//! section 6.
 
 use crate::engine::{Counters, Engine, ScriptEvent};
 use crate::generator::input_stream_hash;
@@ -34,8 +35,8 @@ impl Scenario {
         })
     }
 
-    /// The scenario of a seed in the disturbed panel: the same parameters, and a script of scripted arrivals, duplicate outages and
-    /// cancels of keys that may never arrive.
+    /// The scenario of a seed in the disturbed panel: the same parameters, and a script of scripted arrivals, duplicate
+    /// outages and cancels of keys that may never arrive.
     ///
     /// # Errors
     ///

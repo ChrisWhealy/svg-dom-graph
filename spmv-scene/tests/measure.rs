@@ -1,9 +1,11 @@
-//! The measurements of the resource risks that `docs/security.md` documents. They are heavy, so every one is ignored by default.
+//! The measurements of the resource risks that `docs/security.md` documents. They are heavy, so every one is ignored by
+//! default.
 //!
-//!   wasm-pack test --headless --chrome spmv-scene --test measure -- --nocapture --include-ignored
+//! wasm-pack test --headless --chrome spmv-scene --test measure -- --nocapture --include-ignored
 //!
-//! Each prints one JSON record on a line that begins `SPMV-REPORT `. A record reports; it asserts nothing about speed, since a timing
-//! is never a gate. They use an unlimited budget on purpose: the point is to find where behaviour degrades, which a budget would hide.
+//! Each prints one JSON record on a line that begins `SPMV-REPORT `. A record reports; it asserts nothing about speed,
+//! since a timing is never a gate. They use an unlimited budget on purpose: the point is to find where behaviour
+//! degrades, which a budget would hide.
 #![cfg(target_arch = "wasm32")]
 
 use serde_json::{Value, json};
@@ -62,7 +64,8 @@ fn full_run(tag: &str, s: &Spec, steps: usize, moves: usize) -> Result<Value, St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Risk: the total number of nodes and edges. 100, 1,000 and 5,000 graph entities, with a flat and a hub-heavy adjacency.
+/// Risk: the total number of nodes and edges. 100, 1,000 and 5,000 graph entities, with a flat and a hub-heavy
+/// adjacency.
 #[wasm_bindgen_test]
 #[ignore = "heavy: a measurement, not a test"]
 fn sizes() -> Result<(), String> {
@@ -80,9 +83,9 @@ fn sizes() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Risk: node degree. One column is joined to every row, so its degree is the number of rows. Each edge appends a relationship clause
-/// to both ends and rewrites the whole description, so the build is expected to grow faster than the degree, and a drag redraws every
-/// edge on the node.
+/// Risk: node degree. One column is joined to every row, so its degree is the number of rows. Each edge appends a
+/// relationship clause to both ends and rewrites the whole description, so the build is expected to grow faster than
+/// the degree, and a drag redraws every edge on the node.
 #[wasm_bindgen_test]
 #[ignore = "heavy: a measurement, not a test"]
 fn degree() -> Result<(), String> {
@@ -110,8 +113,8 @@ fn degree() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Risk: string lengths. The same names are copied into the relationship strings of both ends of every edge, and each label is
-/// measured by the browser. A hub of 200 edges, with labels of 4 to 1,024 characters.
+/// Risk: string lengths. The same names are copied into the relationship strings of both ends of every edge, and each
+/// label is measured by the browser. A hub of 200 edges, with labels of 4 to 1,024 characters.
 #[wasm_bindgen_test]
 #[ignore = "heavy: a measurement, not a test"]
 fn label_lengths() -> Result<(), String> {
@@ -137,7 +140,8 @@ fn label_lengths() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Risk: the cells of a data node, and the cost of rewriting them. 10, 100 and 1,000 cells, with half of them changed each step.
+/// Risk: the cells of a data node, and the cost of rewriting them. 10, 100 and 1,000 cells, with half of them changed
+/// each step.
 #[wasm_bindgen_test]
 #[ignore = "heavy: a measurement, not a test"]
 fn cells() -> Result<(), String> {
@@ -166,12 +170,13 @@ fn rebuilds() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where behaviour degrades. The sweeps above sit comfortably inside what the browser can do, so these go on: more nodes, and a hub of
-/// high degree with long labels, where the description a node accumulates is rewritten whole for each edge.
+/// Where behaviour degrades. The sweeps above sit comfortably inside what the browser can do, so these go on: more
+/// nodes, and a hub of high degree with long labels, where the description a node accumulates is rewritten whole for
+/// each edge.
 ///
-/// The test runner's WebDriver gives a synchronous test about 20 seconds, so each sweep is its own test and stops itself when it has
-/// used more than `BUDGET_MS`. A sweep that stops early says so in its output, and that is a result: it is where the sweep became too
-/// slow to go on.
+/// The test runner's WebDriver gives a synchronous test about 20 seconds, so each sweep is its own test and stops
+/// itself when it has used more than `BUDGET_MS`. A sweep that stops early says so in its output, and that is a result:
+/// it is where the sweep became too slow to go on.
 const BUDGET_MS: f64 = 13_000.0;
 
 #[wasm_bindgen_test]
@@ -181,8 +186,8 @@ fn limits_nodes() -> Result<(), String> {
     let mut last: Option<(u64, f64)> = None;
     for entities in [10_000u64, 14_000, 20_000, 28_000, 40_000] {
         let elapsed = spmv_scene::scene::now() - start;
-        // The cost of making nodes is found to grow with the square of their number, so the next build is predicted from the last and
-        // not started if it would not fit in the time the runner allows.
+        // The cost of making nodes is found to grow with the square of their number, so the next build is predicted
+        // from the last and not started if it would not fit in the time the runner allows.
         if let Some((n, ms)) = last {
             let predicted = ms * (entities as f64 / n as f64).powi(2);
             if elapsed + predicted > BUDGET_MS {

@@ -1,8 +1,8 @@
 //! The pseudo-random number generator that every draw of a scenario comes from.
 //!
-//! It is SplitMix64 with the harness's derivation of a named stream from a seed, and it is written out here, as it is in
-//! `perf-harness`, so that no dependency can change what a seed means. It uses only 64-bit integer arithmetic, so it gives
-//! the same numbers on a 32-bit platform.
+//! It is SplitMix64 with the harness's derivation of a named stream from a seed, and it is written out here, as it is
+//! in `perf-harness`, so that no dependency can change what a seed means. It uses only 64-bit integer arithmetic, so it
+//! gives the same numbers on a 32-bit platform.
 
 /// A SplitMix64 generator.
 #[derive(Debug, Clone)]
@@ -52,7 +52,8 @@ impl SplitMix64 {
     }
 }
 
-/// The stream `n` of `seed`: the stream number is mixed into the seed, and the first output of that seeds the generator.
+/// The stream `n` of `seed`: the stream number is mixed into the seed, and the first output of that seeds the
+/// generator.
 #[must_use]
 pub fn stream(seed: u64, n: u64) -> SplitMix64 {
     let mut base = SplitMix64::new(seed ^ n.wrapping_mul(0xD6E8_FEB8_6659_FD93));
@@ -63,7 +64,8 @@ pub fn stream(seed: u64, n: u64) -> SplitMix64 {
 mod tests {
     use super::*;
 
-    /// The first outputs for the seed 1234567, as published for the reference algorithm, and as `perf-harness` fixes them.
+    /// The first outputs for the seed 1234567, as published for the reference algorithm, and as `perf-harness` fixes
+    /// them.
     #[test]
     fn the_generator_gives_the_reference_sequence() {
         let mut prng = SplitMix64::new(1_234_567);

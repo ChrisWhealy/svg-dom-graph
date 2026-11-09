@@ -1,4 +1,5 @@
-//! The sparse matrix, in compressed form by rows and by columns, and its generation from a seed (contract sections 3 and 6).
+//! The sparse matrix, in compressed form by rows and by columns, and its generation from a seed (contract sections 3
+//! and 6).
 
 use crate::hash::Writer;
 use crate::prng::stream;
@@ -14,8 +15,8 @@ pub struct Stats {
     pub empty_cols: u64,
 }
 
-/// A sparse matrix of integers. The rows are kept in compressed form, in ascending column order, and so are the columns, so that a
-/// change of one entry of the vector reaches the rows it affects without a search.
+/// A sparse matrix of integers. The rows are kept in compressed form, in ascending column order, and so are the
+/// columns, so that a change of one entry of the vector reaches the rows it affects without a search.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Matrix {
     pub rows: usize,
@@ -71,8 +72,8 @@ impl Matrix {
         }
     }
 
-    /// Generates the matrix of a specification. The specification has to be valid and within a budget: nothing here limits the
-    /// size, and a hostile one is for [`crate::budget::check_spec`] to refuse first.
+    /// Generates the matrix of a specification. The specification has to be valid and within a budget: nothing here
+    /// limits the size, and a hostile one is for [`crate::budget::check_spec`] to refuse first.
     #[must_use]
     pub fn generate(spec: &Spec) -> Self {
         let (rows, cols) = (spec.rows as usize, spec.cols as usize);
@@ -134,8 +135,8 @@ impl Matrix {
         (self.col_ptr[j]..self.col_ptr[j + 1]).map(|k| (self.csc_rows[k] as usize, self.csc_vals[k]))
     }
 
-    /// The position of the nonzero at row `i` and column `j` among all the nonzeros in row order, which is the order a scene makes its
-    /// edges in. `None` if that entry is zero.
+    /// The position of the nonzero at row `i` and column `j` among all the nonzeros in row order, which is the order a
+    /// scene makes its edges in. `None` if that entry is zero.
     #[must_use]
     pub fn edge_index(&self, i: usize, j: usize) -> Option<usize> {
         let range = self.row_ptr[i]..self.row_ptr[i + 1];
@@ -165,7 +166,8 @@ impl Matrix {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The label of a node (contract section 7): `x` and the column, or `y` and the row, padded on the right with `-` to `len`.
+/// The label of a node (contract section 7): `x` and the column, or `y` and the row, padded on the right with `-` to
+/// `len`.
 #[must_use]
 pub fn label(kind: char, index: usize, len: usize) -> String {
     let mut text = format!("{kind}{index}");

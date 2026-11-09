@@ -7,18 +7,19 @@ use perf_harness::manifest::{Manifest, Mode};
 use std::collections::BTreeMap;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Runs `manifest` as an endurance run with the allocator tracking every block, and says what is still live after the teardown
-/// of each of the first `cycles` cycles, by the phase of the harness that allocated it.
+/// Runs `manifest` as an endurance run with the allocator tracking every block, and says what is still live after the
+/// teardown of each of the first `cycles` cycles, by the phase of the harness that allocated it.
 ///
-/// The blocks counted are those allocated after the baseline was read, so they add up to the bytes that the run reports as
-/// left over the baseline. Nothing here is a measurement of time, and the run is not valid as one.
+/// The blocks counted are those allocated after the baseline was read, so they add up to the bytes that the run reports
+/// as left over the baseline. Nothing here is a measurement of time, and the run is not valid as one.
 pub fn attribute(manifest: &Manifest, cycles: u64) -> String {
     let mut run = match Run::new(manifest, Mode::Endurance) {
         Ok(run) => run,
         Err(message) => return serde_json::json!({"error": message}).to_string(),
     };
     run.track_cycles = cycles;
-    // What was allocated between the baseline and the moment tracking begins is not followed, so it is measured, to be accounted for.
+    // What was allocated between the baseline and the moment tracking begins is not followed, so it is measured, to be
+    // accounted for.
     let before_tracking = alloc::stats().live_bytes as i64 - run.baseline.live_bytes.unwrap_or(0.0) as i64;
     alloc::start_tracking();
     let result = run.execute();

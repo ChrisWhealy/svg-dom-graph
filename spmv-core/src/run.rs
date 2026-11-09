@@ -1,13 +1,15 @@
-//! A run: the vector, the product kept up to date as entries of the vector change, and the steps (contract sections 4 and 5).
+//! A run: the vector, the product kept up to date as entries of the vector change, and the steps (contract sections 4
+//! and 5).
 
 use crate::hash::vector_hash;
 use crate::matrix::Matrix;
 use crate::prng::{SplitMix64, stream};
 use crate::spec::{Error, Spec};
 
-/// Which entries of x a step changes. The contract's order is [`Random`](Self::Random), drawn from a seeded stream, and it is the only
-/// one that the oracle and the hashes know. [`InOrder`](Self::InOrder) is for a person watching: a step changes `x0`, the next `x1`,
-/// and so on round the window, so that what comes next can be told. It is never used by a recorded run.
+/// Which entries of x a step changes. The contract's order is [`Random`](Self::Random), drawn from a seeded stream, and
+/// it is the only one that the oracle and the hashes know. [`InOrder`](Self::InOrder) is for a person watching: a step
+/// changes `x0`, the next `x1`, and so on round the window, so that what comes next can be told. It is never used by a
+/// recorded run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UpdateOrder {
     #[default]
@@ -23,8 +25,8 @@ pub struct Run {
     pub y: Vec<i64>,
     /// The number of steps done. Step 0 is the initial state.
     pub step: u64,
-    /// The entries of x that the last step set, in order, as `(index, new value)`. A later one of the same index replaces an
-    /// earlier one in x, and both are listed.
+    /// The entries of x that the last step set, in order, as `(index, new value)`. A later one of the same index
+    /// replaces an earlier one in x, and both are listed.
     pub last_updates: Vec<(usize, i64)>,
     cells: u64,
     updates: u64,
@@ -59,8 +61,8 @@ impl Run {
         self.order = order;
     }
 
-    /// Applies one step's updates, keeping y incrementally. With `verify`, y is also recomputed in full and compared, which costs a
-    /// pass over every nonzero.
+    /// Applies one step's updates, keeping y incrementally. With `verify`, y is also recomputed in full and compared,
+    /// which costs a pass over every nonzero.
     ///
     /// # Errors
     ///
@@ -127,7 +129,8 @@ mod tests {
         }
     }
 
-    /// The same product by the plainest means there is: a dense matrix and two loops. The compressed form must agree with it.
+    /// The same product by the plainest means there is: a dense matrix and two loops. The compressed form must agree
+    /// with it.
     #[test]
     fn the_product_equals_a_dense_product_made_in_the_plainest_way() {
         for seed in 0..100 {

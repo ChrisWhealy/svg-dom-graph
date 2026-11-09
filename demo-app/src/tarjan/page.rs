@@ -35,8 +35,8 @@ pub(super) struct Page {
 }
 
 impl Page {
-    /// Draws the controls and the scene, and finds the elements that the window declares. The page is ready to be
-    /// drawn on.
+    /// Draws the controls and the scene, and finds the elements that the window declares. The page is ready to be drawn
+    /// on.
     ///
     /// # Errors
     ///

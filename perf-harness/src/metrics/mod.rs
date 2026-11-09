@@ -1,7 +1,7 @@
 //! Builds the metric entries of a result document, in the shape `perf/schemas/result.schema.json` asks for.
 //!
-//! A measured metric carries what its kind needs and nothing else, and one that could not be measured carries a reason and
-//! no figures. The result schema holds every runner to that, so the builders are the one place it is written down.
+//! A measured metric carries what its kind needs and nothing else, and one that could not be measured carries a reason
+//! and no figures. The result schema holds every runner to that, so the builders are the one place it is written down.
 
 use crate::stats::{Description, MIN_STEPS_PER_OBSERVATION, describe};
 use serde_json::{Value, json};
@@ -78,9 +78,9 @@ pub fn timing(name: &str, layer: Layer, unit: &str, samples: &[f64], batch: Opti
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flags a timing whose typical value is under 50 timer steps and that was not batched.
 ///
-/// Such a figure is quantised: with a 5 us timer, an operation of 3 us reads as 0 or as 5. It is kept, since a larger sample of
-/// them still says something, but it must not be compared finely, and the flag says so. Only an unbatched latency in
-/// microseconds can carry it, since a batch is already made long enough.
+/// Such a figure is quantised: with a 5 us timer, an operation of 3 us reads as 0 or as 5. It is kept, since a larger
+/// sample of them still says something, but it must not be compared finely, and the flag says so. Only an unbatched
+/// latency in microseconds can carry it, since a batch is already made long enough.
 pub fn mark_resolution_limited(metric: &mut Value, resolution_us: f64) {
     let (Some(p50), Some("latency"), Some("us")) = (
         metric["summary"]["p50"].as_f64(),

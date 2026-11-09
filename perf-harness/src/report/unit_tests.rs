@@ -59,8 +59,8 @@ fn building_a_report_twice_gives_the_same_bytes() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A performance run skips checkpoints, so its proof of having run the intended workload is the mutations digest, and that
-/// must not depend on where the checkpoints are.
+/// A performance run skips checkpoints, so its proof of having run the intended workload is the mutations digest, and
+/// that must not depend on where the checkpoints are.
 #[test]
 fn the_mutations_digest_ignores_checkpoint_placement_and_the_full_digest_does_not() -> Result<(), String> {
     for workload in ["scene_construction", "connector_rerouting", "scene_lifecycle"] {
@@ -206,10 +206,10 @@ const W3: ManifestFile = ManifestFile {
     text: include_str!("../../../perf/manifests/w3-scene-lifecycle-small.toml"),
 };
 
-/// Manifest file, operations, full digest, mutations digest, and the digests of the first and of the last checkpoint, for
-/// the small reference manifests: 12 nodes, 20 edges, 2 + 6 iterations, a checkpoint every 3 and the seed 2026. For W1
-/// and W3 the last checkpoint is the empty scene after the final removal, so the first, which follows the first build, is
-/// what pins their model.
+/// Manifest file, operations, full digest, mutations digest, and the digests of the first and of the last checkpoint,
+/// for the small reference manifests: 12 nodes, 20 edges, 2 + 6 iterations, a checkpoint every 3 and the seed 2026. For
+/// W1 and W3 the last checkpoint is the empty scene after the final removal, so the first, which follows the first
+/// build, is what pins their model.
 const GOLDEN: &[(&ManifestFile, u64, &str, &str, &str, &str)] = &[
     (
         &W1,
@@ -240,8 +240,8 @@ const GOLDEN: &[(&ManifestFile, u64, &str, &str, &str, &str)] = &[
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The report that this crate writes has to be a document that its own schema accepts, since runners read it.
 ///
-/// The schema refers to the manifest schema by an identifier, so the test puts the manifest schema in where that reference
-/// is. That keeps the check to the one validator without a registry of schemas.
+/// The schema refers to the manifest schema by an identifier, so the test puts the manifest schema in where that
+/// reference is. That keeps the check to the one validator without a registry of schemas.
 #[cfg(feature = "schema")]
 #[test]
 fn a_report_satisfies_the_report_schema() -> Result<(), String> {

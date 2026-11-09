@@ -35,8 +35,8 @@ fn theta_agrees_with_the_theta_scenes_own_calculation() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Acceptance tests, at four levels. Each higher level is checked against something the lower ones are not made from,
-//   so the diagram's own data flow and the real SHA3 calculation cannot drift apart unnoticed:
+// Acceptance tests, at four levels. Each higher level is checked against something the lower ones are not made from, so
+// the diagram's own data flow and the real SHA3 calculation cannot drift apart unnoticed:
 //
 // 1. every step function, against a second implementation written straight from FIPS 202's own formulas;
 // 2. one complete round, against the same;

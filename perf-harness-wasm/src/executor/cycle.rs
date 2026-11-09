@@ -76,8 +76,8 @@ impl Run<'_> {
                 let recording = self.measuring;
                 let timed = self.timing_on && (recording || kind == Kind::Moves);
                 let waiting = (kind, recording, timed);
-                // An operation of another kind runs what waits first, since it may need what that made, such as the nodes that
-                // an edge joins. This comes before it is prepared, for that reason.
+                // An operation of another kind runs what waits first, since it may need what that made, such as the
+                // nodes that an edge joins. This comes before it is prepared, for that reason.
                 if self.pending_meta != Some(waiting) {
                     self.flush()?;
                 }

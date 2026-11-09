@@ -48,7 +48,7 @@ fn decode(lengths: &[(u8, u8)], bytes: &[u8], bit_len: usize) -> Result<Vec<u8>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Pass one
+// Pass one
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn frequencies_are_counted_in_byte_order() -> Result<(), String> {
@@ -182,12 +182,12 @@ fn the_codes_are_prefix_free_and_fill_the_code_space() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Pass two
+// Pass two
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn abracadabra_packs_to_the_hand_worked_bytes() -> Result<(), String> {
-    // a=0 b=100 r=111 c=101 d=110, so a b r a c a d a b r a is
-    // 0 100 111 0 101 0 110 0 100 111 0 = 0100 1110 1010 1100 1001 110(0 padding)
+    // a=0 b=100 r=111 c=101 d=110, so a b r a c a d a b r a is 0 100 111 0 101 0 110 0 100 111 0 = 0100 1110 1010 1100
+    // 1001 110(0 padding)
     let t = trace_of(b"abracadabra")?;
     check_eq(t.packed.bytes.clone(), vec![0b0100_1110, 0b1010_1100, 0b1001_1100])?;
     check_eq(t.packed.bit_len, 23)?;
@@ -291,7 +291,7 @@ fn the_final_flush_can_be_derived_from_the_last_step() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Edge cases
+// Edge cases
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn one_distinct_byte_gets_a_one_bit_code() -> Result<(), String> {
@@ -400,7 +400,7 @@ fn non_ascii_text_is_encoded_as_its_utf8_bytes() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Round trip
+// Round trip
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn decoding_from_the_lengths_alone_recovers_the_input() -> Result<(), String> {

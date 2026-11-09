@@ -221,8 +221,8 @@ impl Core {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Puts every circle back where it started, and every spring back to the length it started at, so the layout is
-    /// as it was when the panel opened and stays there. The weights are kept.
+    /// Puts every circle back where it started, and every spring back to the length it started at, so the layout is as
+    /// it was when the panel opened and stays there. The weights are kept.
     ///
     /// It is refused, changing nothing, while a pointer holds a circle or a released one is still catching up, and the
     /// feedback says so. Returns the outcome and the circles to move.
@@ -278,8 +278,8 @@ impl Core {
         self.settles_within(weights, tension, TRIAL_STEPS)
     }
 
-    /// A random tension for these `weights`, drawn from `unit` (numbers from 0 to 1) and known to settle.
-    /// If none of several tries does, every spring is left as long as it is, which always does.
+    /// A random tension for these `weights`, drawn from `unit` (numbers from 0 to 1) and known to settle. If none of
+    /// several tries does, every spring is left as long as it is, which always does.
     pub(super) fn choose_tension(&self, weights: &[f64], unit: impl FnMut() -> f64) -> Vec<f64> {
         self.choose_tension_in(weights, unit, TRIAL_ATTEMPTS, TRIAL_STEPS)
     }

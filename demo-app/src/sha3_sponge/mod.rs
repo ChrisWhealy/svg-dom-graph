@@ -602,8 +602,8 @@ fn rebuild(stage: usize) -> Result<(), String> {
             step,
             demo_common::util::step_toolbar_options(),
             move |_scene, _node, transition| {
-                // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
-                // a restart, lands on it again.
+                // This walk is never "not started": the message is in focus from the first draw, so a step back from
+                // it, or a restart, lands on it again.
                 report_step(rebuild(transition.to.unwrap_or(0)));
             },
         )

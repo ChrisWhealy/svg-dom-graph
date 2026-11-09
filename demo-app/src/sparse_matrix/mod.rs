@@ -1,19 +1,21 @@
 //! The sparse-matrix demo, in a window of its own:
 //!
-//! - `panel-sparse-matrix` / `#spmv-open` — [`build_sparse_matrix_demo`]: the gallery's panel, which keeps the description and a button
-//!   that opens the demo in a window as large as the screen allows, `sparse-matrix-window.html`.
-//! - [`build_sparse_matrix_window`], which that page runs: a sparse matrix times a vector, drawn as a bipartite dependency graph with
-//!   two data nodes. The controls and the readout are `<foreignObject>`s in the window's one `<svg>`, and the graph, which pans and
-//!   zooms, is between them.
+//! - `panel-sparse-matrix` / `#spmv-open` — [`build_sparse_matrix_demo`]: the gallery's panel, which keeps the
+//!   description and a button that opens the demo in a window as large as the screen allows,
+//!   `sparse-matrix-window.html`.
+//! - [`build_sparse_matrix_window`], which that page runs: a sparse matrix times a vector, drawn as a bipartite
+//!   dependency graph with two data nodes. The controls and the readout are `<foreignObject>`s in the window's one
+//!   `<svg>`, and the graph, which pans and zooms, is between them.
 //!
-//! A small graph is two single columns whose edges are coloured by the sign of their value and sized by its size, and a click on a
-//! node lights its edges and writes out the arithmetic it stands for. The controls also reach past the library's documented resource
-//! limits on purpose: a size over the budget is refused with a reason before any `Scene` call is made, and what each build, step, drag
-//! and rebuild costs is shown.
+//! A small graph is two single columns whose edges are coloured by the sign of their value and sized by its size, and a
+//! click on a node lights its edges and writes out the arithmetic it stands for. The controls also reach past the
+//! library's documented resource limits on purpose: a size over the budget is refused with a reason before any `Scene`
+//! call is made, and what each build, step, drag and rebuild costs is shown.
 //!
-//! The pieces are in two crates of their own. `spmv-core` generates the matrix, computes the exact integer product, holds the budget and
-//! writes out the arithmetic; `spmv-scene` builds the scene and measures it. This module is the controls and the readout, and `shell`
-//! is the `<svg>` that holds them. Their markup is in `controls.html` and `readout.html`, beside it.
+//! The pieces are in two crates of their own. `spmv-core` generates the matrix, computes the exact integer product,
+//! holds the budget and writes out the arithmetic; `spmv-scene` builds the scene and measures it. This module is the
+//! controls and the readout, and `shell` is the `<svg>` that holds them. Their markup is in `controls.html` and
+//! `readout.html`, beside it.
 
 mod shell;
 
@@ -36,7 +38,8 @@ use wasm_bindgen::{JsCast, closure::Closure};
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
-/// The files behind this demo: the window's `<svg>`, the matrix and the product, the budget, then the scene that draws them.
+/// The files behind this demo: the window's `<svg>`, the matrix and the product, the budget, then the scene that draws
+/// them.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     source_file!("sparse_matrix/shell.rs", "shell.rs"),
     source_file!("spmv-core/src/matrix.rs", "../../../spmv-core/src/matrix.rs"),
@@ -56,7 +59,8 @@ const ERROR: &str = "spmv-error";
 const SEED: u64 = 20_261_109;
 /// A step is checked against a full recomputation of the product when the matrix has no more nonzeros than this.
 const VERIFY_UP_TO: usize = 20_000;
-/// A scene is made readable (its edges signed and its nodes tagged, so that a node can be selected) up to this many nonzeros.
+/// A scene is made readable (its edges signed and its nodes tagged, so that a node can be selected) up to this many
+/// nonzeros.
 const READABLE_UP_TO: usize = 30_000;
 /// A scene says the value on each edge up to this many nonzeros, and shows only a selected node's edges above it.
 const LABELS_UP_TO: usize = 60;
@@ -67,7 +71,8 @@ const WINDOW: usize = 120;
 
 thread_local! {
     static PANEL: RefCell<Panel> = RefCell::new(Panel::default());
-    /// How many frame callbacks are alive, which a test reads from the window's `data-live-frame-callbacks` to see that none is left behind.
+    /// How many frame callbacks are alive, which a test reads from the window's `data-live-frame-callbacks` to see that
+    /// none is left behind.
     static LIVE_CALLBACKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
@@ -101,7 +106,7 @@ impl Drop for FrameCallback {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A scene that is built and in the window.
 struct Live {
     scene_svg: web_sys::Element,
@@ -119,7 +124,7 @@ struct Live {
     click: Option<Closure<dyn FnMut(web_sys::Event)>>,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[derive(Default)]
 struct Panel {
     shell: Option<Shell>,
@@ -127,12 +132,12 @@ struct Panel {
     /// Counted up by every build and teardown. A frame that was asked for under an older number does nothing.
     generation: u32,
     running: bool,
-    /// The frame that is asked for, and the callback that it will call. The panel owns the callback, so that a frame that is cancelled
-    /// and never called does not leave it behind: cancelling drops it.
+    /// The frame that is asked for, and the callback that it will call. The panel owns the callback, so that a frame
+    /// that is cancelled and never called does not leave it behind: cancelling drops it.
     frame: Option<i32>,
     callback: Option<FrameCallback>,
-    /// The callback that is running, or has run. A callback cannot be dropped while it runs, so it is dropped when the next one starts or
-    /// when the run is stopped from outside a frame.
+    /// The callback that is running, or has run. A callback cannot be dropped while it runs, so it is dropped when the
+    /// next one starts or when the run is stopped from outside a frame.
     finished: Option<FrameCallback>,
     in_frame: bool,
     /// Counted up for each `<svg>` made, so that no two have the same id.
@@ -141,14 +146,14 @@ struct Panel {
     next_step_at: f64,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn text(id: &str, value: &str) {
     if let Some(e) = document().ok().and_then(|d| d.get_element_by_id(id)) {
         e.set_text_content(Some(value));
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A count with thousands separators.
 fn n(v: u64) -> String {
     let digits = v.to_string();
@@ -162,7 +167,7 @@ fn n(v: u64) -> String {
     out
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn ms(v: f64) -> String {
     if v >= 100.0 {
         format!("{v:.0} ms")
@@ -173,13 +178,13 @@ fn ms(v: f64) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A time as the page's clock can tell it: one that is less than a step of the clock is not told as zero.
 fn timed(v: f64, step: f64) -> String {
     if v < step { format!("under {}", ms(step)) } else { ms(v) }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn megabytes(v: Option<f64>) -> String {
     v.map_or_else(
         || "not reported by this browser".to_owned(),
@@ -187,7 +192,7 @@ fn megabytes(v: Option<f64>) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn latency(samples: &[f64], step: f64) -> String {
     Latency::from_samples(samples).map_or_else(
         || "—".to_owned(),
@@ -204,7 +209,7 @@ fn latency(samples: &[f64], step: f64) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn selected(id: &str) -> Result<String, String> {
     let element = required_element(&document()?, id)?;
     element
@@ -213,12 +218,12 @@ fn selected(id: &str) -> Result<String, String> {
         .ok_or_else(|| format!("#{id} is not a <select>"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn number(id: &str) -> Result<u64, String> {
     selected(id)?.parse().map_err(|e| format!("#{id}: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scenario that the controls describe.
 fn spec_from_controls() -> Result<Spec, String> {
     let entities = number("spmv-size")?;
@@ -241,12 +246,12 @@ fn spec_from_controls() -> Result<Spec, String> {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn body_elements() -> Result<u32, String> {
     element_count(&document()?.body().ok_or("no body")?.into())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn set_class(id: &str, class: &str) {
     if let Some(e) = document().ok().and_then(|d| d.get_element_by_id(id)) {
         e.set_class_name(class);
@@ -262,8 +267,8 @@ fn stop_run() {
         if let (Some(id), Some(window)) = (p.frame.take(), web_sys::window()) {
             window.cancel_animation_frame(id).ok();
         }
-        // A frame that was cancelled is never called, so its callback is dropped here and not by the browser. One that is running cannot
-        // be dropped from inside itself, and goes when the next starts.
+        // A frame that was cancelled is never called, so its callback is dropped here and not by the browser. One that
+        // is running cannot be dropped from inside itself, and goes when the next starts.
         p.callback = None;
         if !p.in_frame {
             p.finished = None;
@@ -289,7 +294,7 @@ fn teardown() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the scene is built with, for a scenario of `nonzeros` nonzeros that is to begin at `origin`.
 fn options_for(prepared: &Prepared, origin: (f64, f64)) -> BuildOptions {
     let nonzeros = prepared.matrix().nnz();
@@ -353,9 +358,9 @@ fn make_scene(document: &web_sys::Document, prepared: &Prepared, run: &Run) -> R
     });
     let svg = add_scene_svg(document, &shell, &id, extent, layout.single || is_worked(prepared))?;
     let made = Built::build_with(&id, prepared, run, options_for(prepared, svg.origin)).and_then(|built| {
-        // The library's own toolbar is placed from the rendered size of a nested `<svg>`, which is the size of everything it draws, and
-        // not of its room. So there is none, and the window's own buttons zoom. Dragging the background pans, and a wheel turned with
-        // Ctrl or Cmd held zooms about the pointer.
+        // The library's own toolbar is placed from the rendered size of a nested `<svg>`, which is the size of
+        // everything it draws, and not of its room. So there is none, and the window's own buttons zoom. Dragging the
+        // background pans, and a wheel turned with Ctrl or Cmd held zooms about the pointer.
         let scene = built.scene();
         scene
             .set_pan_mode(InputMode::On)
@@ -374,10 +379,10 @@ fn make_scene(document: &web_sys::Document, prepared: &Prepared, run: &Run) -> R
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the scenario the controls describe, or says why it was refused.
-/// What a request to build came to. A request that is refused is not a failure, and it leaves the graph that was there, so a caller that
-/// goes on to tear that graph down has to know that nothing new was built.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the scenario the controls describe, or says why it was refused. What a request to build came to. A request
+/// that is refused is not a failure, and it leaves the graph that was there, so a caller that goes on to tear that
+/// graph down has to know that nothing new was built.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum BuildOutcome {
     Built,
@@ -388,8 +393,8 @@ fn build() -> Result<BuildOutcome, String> {
     clear_error(ERROR);
     let spec = spec_from_controls()?;
     let budget = Budget::default();
-    // The budget is checked, and the matrix generated, before the scene that is there is touched and before a single scene call, so a
-    // scenario that is refused leaves the graph that a person has exactly as it was.
+    // The budget is checked, and the matrix generated, before the scene that is there is touched and before a single
+    // scene call, so a scenario that is refused leaves the graph that a person has exactly as it was.
     let prepared = match Prepared::new(&spec, &budget) {
         Ok(p) => p,
         Err(Error::Refused(r)) => {
@@ -420,7 +425,8 @@ fn build() -> Result<BuildOutcome, String> {
         text(id, "—");
     }
     let mut run = prepared.run();
-    // A matrix that is worked is for watching, so its steps go in order, and a measured one keeps the contract's random order.
+    // A matrix that is worked is for watching, so its steps go in order, and a measured one keeps the contract's random
+    // order.
     let order = if is_worked(&prepared) { "inorder" } else { "random" };
     set_list("spmv-order", order);
     set_list("spmv-speed", if is_worked(&prepared) { "1500" } else { "0" });
@@ -554,7 +560,7 @@ fn build() -> Result<BuildOutcome, String> {
     Ok(BuildOutcome::Built)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Turns a click on a node of the scene into a selection, and gives the listener, which the scene keeps.
 fn scene_svg_click(scene_svg: &web_sys::Element) -> Result<Closure<dyn FnMut(web_sys::Event)>, String> {
     let listener = Closure::<dyn FnMut(web_sys::Event)>::new(move |event: web_sys::Event| {
@@ -623,8 +629,8 @@ fn choose(selection: Option<Selection>) -> Result<(), String> {
     })
 }
 
-/// Selects the node that a person typed, which can be any of them, and not only the first 100 that the list holds, so that a node
-/// beyond those is reached from the keyboard too.
+/// Selects the node that a person typed, which can be any of them, and not only the first 100 that the list holds, so
+/// that a node beyond those is reached from the keyboard too.
 fn goto_changed() -> Result<(), String> {
     let input = document()?
         .get_element_by_id("spmv-goto")
@@ -686,7 +692,7 @@ fn edges_changed() -> Result<(), String> {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One step: the updates, the product kept up to date, and the two data nodes written.
 fn step() -> Result<(), String> {
     PANEL.with(|p| {
@@ -834,9 +840,10 @@ fn frame(generation: u32) {
     }
 }
 
-/// Lets go of the callback that has just run, after the browser's call of it has returned. A run that stops inside its own frame, for a
-/// failed step or a failed request for the next frame or a hidden page, has no later frame to release it, and it cannot be dropped while
-/// it is running. A microtask runs when the call has returned, and before anything else does.
+/// Lets go of the callback that has just run, after the browser's call of it has returned. A run that stops inside its
+/// own frame, for a failed step or a failed request for the next frame or a hidden page, has no later frame to release
+/// it, and it cannot be dropped while it is running. A microtask runs when the call has returned, and before anything
+/// else does.
 fn release_when_unwound() {
     let release = Closure::once_into_js(|| {
         PANEL.with(|p| {
@@ -851,8 +858,8 @@ fn release_when_unwound() {
     }
 }
 
-/// Whether a test has asked for a failure at `name`, which it does by setting that property of the window. It is read once and cleared, so
-/// that a failure is injected once. Nothing sets one but a test.
+/// Whether a test has asked for a failure at `name`, which it does by setting that property of the window. It is read
+/// once and cleared, so that a failure is injected once. Nothing sets one but a test.
 fn injected(name: &str) -> bool {
     let Some(window) = web_sys::window() else {
         return false;
@@ -942,7 +949,7 @@ fn toggle_run() -> Result<(), String> {
     schedule(generation)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moves the node with the most edges back and forth, which redraws every connector on it each time.
 fn drag() -> Result<(), String> {
     PANEL.with(|p| {
@@ -980,7 +987,8 @@ fn drag() -> Result<(), String> {
 
 /// Builds the scenario and tears it down ten times, and says whether the page ended where it began.
 fn rebuild() -> Result<(), String> {
-    // A request that is refused builds nothing and leaves the graph that is there, and there is nothing here to tear down and build again.
+    // A request that is refused builds nothing and leaves the graph that is there, and there is nothing here to tear
+    // down and build again.
     if build()? == BuildOutcome::Refused {
         return Ok(());
     }
@@ -1018,7 +1026,7 @@ fn rebuild() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zooms by `factor` about the centre of the scene's room, so that what is in the middle stays there.
 fn zoom(factor: f64) -> Result<(), String> {
     PANEL.with(|p| {
@@ -1059,7 +1067,7 @@ fn reset_view() -> Result<(), String> {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn on(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result<(), String> {
     let target = required_element(&document()?, id)?;
     let callback = Closure::<dyn FnMut()>::new(move || match action() {
@@ -1073,8 +1081,8 @@ fn on(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result<(), S
     Ok(())
 }
 
-/// As [`on`], for a box that a person types in. What they typed may not be a node that is there, which is the person's to correct and
-/// not a fault of the page, so it is told in the banner and is not logged as an error.
+/// As [`on`], for a box that a person types in. What they typed may not be a node that is there, which is the person's
+/// to correct and not a fault of the page, so it is told in the banner and is not logged as an error.
 fn on_typed(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result<(), String> {
     let target = required_element(&document()?, id)?;
     let callback = Closure::<dyn FnMut()>::new(move || match action() {
@@ -1093,8 +1101,8 @@ fn on_typed(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result
     Ok(())
 }
 
-/// The gallery's panel: the description is in the page, and this wires the button that opens the demo in a window of its own, as
-/// large as the screen allows.
+/// The gallery's panel: the description is in the page, and this wires the button that opens the demo in a window of
+/// its own, as large as the screen allows.
 ///
 /// # Errors
 ///
@@ -1121,8 +1129,8 @@ pub(crate) fn build_sparse_matrix_demo() -> Result<(), String> {
     Ok(())
 }
 
-/// Builds the demo in its window: the `<svg>` with the controls and the readout, the wiring of every control, and the first, small
-/// scenario.
+/// Builds the demo in its window: the `<svg>` with the controls and the readout, the wiring of every control, and the
+/// first, small scenario.
 ///
 /// # Errors
 ///
@@ -1160,8 +1168,9 @@ pub(crate) fn build_sparse_matrix_window() -> Result<(), String> {
         .add_event_listener_with_callback("pagehide", leaving.as_ref().unchecked_ref())
         .map_err(|e| format!("could not attach the pagehide listener: {e:?}"))?;
     leaving.forget();
-    // A browser stops the animation frames of a hidden page, so a frame cannot be the one to notice that the page is hidden: the run
-    // would be left running, and would go on when the page came back. The page says when it is hidden, and the run stops then.
+    // A browser stops the animation frames of a hidden page, so a frame cannot be the one to notice that the page is
+    // hidden: the run would be left running, and would go on when the page came back. The page says when it is hidden,
+    // and the run stops then.
     let hiding = Closure::<dyn FnMut(web_sys::Event)>::new(move |_: web_sys::Event| {
         if document().is_ok_and(|d| d.hidden()) {
             stop_run();

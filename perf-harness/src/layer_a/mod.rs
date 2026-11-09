@@ -1,14 +1,14 @@
 //! The Layer A runner: time the library's own DOM-free geometry, natively.
 //!
-//! Layer A measures work that has no DOM in it, with native machine code. Its figures are never subtracted from a Layer B
-//! figure, since the same algorithm costs differently as WebAssembly, and the difference of the two is not the cost of the
-//! DOM. They are reported on their own.
+//! Layer A measures work that has no DOM in it, with native machine code. Its figures are never subtracted from a Layer
+//! B figure, since the same algorithm costs differently as WebAssembly, and the difference of the two is not the cost
+//! of the DOM. They are reported on their own.
 //!
-//! What it times is the end points of a straight connector, `svg_dom_graph::geometry::boundary_point`, for every connector
-//! at the node that has just been moved. That is the library's routing work for one move of workload W2, without writing it
-//! to anything. Each time the stream reaches a checkpoint it also computes every connector's end points with the library
-//! and compares them with the reference model's, which works them out independently from the same rule. So it checks the
-//! library's geometry as well as timing it.
+//! What it times is the end points of a straight connector, `svg_dom_graph::geometry::boundary_point`, for every
+//! connector at the node that has just been moved. That is the library's routing work for one move of workload W2,
+//! without writing it to anything. Each time the stream reaches a checkpoint it also computes every connector's end
+//! points with the library and compares them with the reference model's, which works them out independently from the
+//! same rule. So it checks the library's geometry as well as timing it.
 
 use crate::corruption::{self, DISPLACEMENT, Target};
 use crate::manifest::{Manifest, Mode, ViewPolicy, Workload};
@@ -26,7 +26,8 @@ use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::geometry::boundary_point;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How far the library's end points may be from the model's. Both are basic floating-point arithmetic on the same numbers.
+/// How far the library's end points may be from the model's. Both are basic floating-point arithmetic on the same
+/// numbers.
 const TOLERANCE: f64 = 1e-9;
 /// How many times the first measured move is repeated to find out how long one repeat takes.
 const CALIBRATION_REPEATS: u32 = 400;
@@ -82,9 +83,9 @@ pub fn measure_resolution() -> f64 {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs `manifest` in the correctness or performance mode.
 ///
-/// Correctness runs every operation and cross-checks every checkpoint, and keeps no timing. Performance times the moves of
-/// workload W2 and cross-checks only the last two checkpoints, outside the timing. The other workloads have no DOM-free
-/// work to time, so they report that and are only cross-checked.
+/// Correctness runs every operation and cross-checks every checkpoint, and keeps no timing. Performance times the moves
+/// of workload W2 and cross-checks only the last two checkpoints, outside the timing. The other workloads have no
+/// DOM-free work to time, so they report that and are only cross-checked.
 ///
 /// # Errors
 ///
@@ -94,11 +95,12 @@ pub fn run(manifest: &Manifest, mode: Mode) -> Result<RunOutcome, WorkloadError>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same, with the last mutation before one of the two executed checkpoints applied wrongly to this runner's own state.
+/// The same, with the last mutation before one of the two executed checkpoints applied wrongly to this runner's own
+/// state.
 ///
-/// The model is given the operation as the stream has it, so the checkpoint that follows must find the two apart and the run
-/// must come out `invalid_incorrect`. See [`corruption`]. A corruption that finds nothing to corrupt is an error, so that a
-/// test of it cannot pass by corrupting nothing.
+/// The model is given the operation as the stream has it, so the checkpoint that follows must find the two apart and
+/// the run must come out `invalid_incorrect`. See [`corruption`]. A corruption that finds nothing to corrupt is an
+/// error, so that a test of it cannot pass by corrupting nothing.
 ///
 /// # Errors
 ///
@@ -177,8 +179,9 @@ pub fn run_corrupted(manifest: &Manifest, mode: Mode, corrupt: Option<Target>) -
                     cross_check(&state, &model, view, *index, &mut outcome)?;
                 }
             },
-            // The host is gone with everything in it. Dropping the handle alone leaves the DOM, which this runner has none of.
-            // A corrupted removal leaves this runner's scene where it was, as a removal that did not happen would.
+            // The host is gone with everything in it. Dropping the handle alone leaves the DOM, which this runner has
+            // none of. A corrupted removal leaves this runner's scene where it was, as a removal that did not happen
+            // would.
             Op::RemoveHost if !corrupt_now => state = State::default(),
             Op::RemoveHost => {},
             Op::DropScene => {},
@@ -243,9 +246,10 @@ fn time_endpoints(state: &State, node: usize, size: u32) -> f64 {
     let mut checksum = 0.0;
     let started = Instant::now();
     for _ in 0..size {
-        // Every repeat computes the same thing from the same state, so a compiler could compute it once and reuse the answer
-        // for the rest. Passing the state and the edge through `black_box` on every repeat gives it no such right, and the
-        // time then scales with the number of connectors, which `the_time_scales_with_the_connectors` checks.
+        // Every repeat computes the same thing from the same state, so a compiler could compute it once and reuse the
+        // answer for the rest. Passing the state and the edge through `black_box` on every repeat gives it no such
+        // right, and the time then scales with the number of connectors, which `the_time_scales_with_the_connectors`
+        // checks.
         let state = black_box(state);
         for &edge in incident {
             let points = black_box(state.endpoints(black_box(edge)));

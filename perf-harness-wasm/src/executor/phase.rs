@@ -1,7 +1,7 @@
 //! What the harness is doing, set on the allocator so that a block carries it.
 //!
-//! It is how the bytes that stay allocated after a teardown are traced back to the phase that made them. Setting one costs a
-//! store, and it is never set inside a timed interval.
+//! It is how the bytes that stay allocated after a teardown are traced back to the phase that made them. Setting one
+//! costs a store, and it is never set inside a timed interval.
 
 pub const COLLECT: usize = 1;
 /// Working out what an operation needs.

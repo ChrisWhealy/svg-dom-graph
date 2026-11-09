@@ -139,7 +139,7 @@ fn zooming_to_a_vertex_puts_it_in_the_middle_at_the_scale_that_is_easy_to_read()
     assert!(close(x, VIEWPORT.0 / 2.0) && close(y, VIEWPORT.1 / 2.0));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn memory() -> Memory {
     Memory::new(Camera { scale: 1.0, tx: 5.0, ty: 5.0 })
 }

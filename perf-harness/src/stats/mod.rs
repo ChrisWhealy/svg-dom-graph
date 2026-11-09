@@ -1,8 +1,8 @@
 //! Statistics over the observations of one run.
 //!
-//! Everything here describes a single run. Between-run variation and confidence intervals need several runs, so they belong
-//! to the comparison, not to this module. Percentiles are nearest-rank, with no interpolation, so every one of them is a
-//! value that was observed.
+//! Everything here describes a single run. Between-run variation and confidence intervals need several runs, so they
+//! belong to the comparison, not to this module. Percentiles are nearest-rank, with no interpolation, so every one of
+//! them is a value that was observed.
 
 /// A percentile is only reported when there are enough observations for it to mean something.
 pub const MIN_SAMPLES_P95: usize = 200;
@@ -100,9 +100,9 @@ pub fn describe(samples: &[f64]) -> Option<Description> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The slope of the least-squares line through `points`, each an `(x, y)` pair.
 ///
-/// It uses the real `x` of every point, so points that are not evenly spaced, such as cycles with gaps where some were left
-/// out, are weighted by where they are and not by how many come before them. It is `None` for fewer than two points, when
-/// every `x` is the same, or when a value is not a number.
+/// It uses the real `x` of every point, so points that are not evenly spaced, such as cycles with gaps where some were
+/// left out, are weighted by where they are and not by how many come before them. It is `None` for fewer than two
+/// points, when every `x` is the same, or when a value is not a number.
 pub fn slope(points: &[(f64, f64)]) -> Option<f64> {
     if points.len() < 2 || points.iter().any(|(x, y)| x.is_nan() || y.is_nan()) {
         return None;
@@ -122,8 +122,8 @@ pub fn slope(points: &[(f64, f64)]) -> Option<f64> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many operations to time together so that one observation spans enough timer steps.
 ///
-/// An operation that is already long enough is timed alone, which is a batch of one. `single_us` is a typical time for one
-/// operation, and `resolution_us` is the smallest step the timer makes.
+/// An operation that is already long enough is timed alone, which is a batch of one. `single_us` is a typical time for
+/// one operation, and `resolution_us` is the smallest step the timer makes.
 pub fn batch_size(resolution_us: f64, single_us: f64) -> u32 {
     if resolution_us.is_nan() || single_us.is_nan() || resolution_us <= 0.0 || single_us <= 0.0 {
         return 1;

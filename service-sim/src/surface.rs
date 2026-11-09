@@ -1,12 +1,13 @@
 //! The surface: one `svg-dom-graph` `Scene` and the overlay on it, built once and written in place.
 //!
-//! The scene has the queue and the servers as nodes with connectors between them, and a data node of eight counters. The overlay is
-//! a group of application-owned elements appended to the scene's content group, so that it pans and zooms with the nodes. Nothing
-//! is added or removed after construction: a draw writes the text, class, accessible name and hidden state of slots that exist.
+//! The scene has the queue and the servers as nodes with connectors between them, and a data node of eight counters.
+//! The overlay is a group of application-owned elements appended to the scene's content group, so that it pans and
+//! zooms with the nodes. Nothing is added or removed after construction: a draw writes the text, class, accessible name
+//! and hidden state of slots that exist.
 //!
-//! A draw that fails part way leaves the page partly written. The surface then forgets what it believes is drawn, so the next draw
-//! is a full one and cannot be a delta from something untrue. Whether a draw may be committed at all is the controller's decision
-//! (stage S3), and the surface does not touch the view or the focus.
+//! A draw that fails part way leaves the page partly written. The surface then forgets what it believes is drawn, so
+//! the next draw is a full one and cannot be a delta from something untrue. Whether a draw may be committed at all is
+//! the controller's decision (stage S3), and the surface does not touch the view or the focus.
 
 use crate::layout::{
     CLOCK_AT, COUNTER_PITCH, COUNTERS_AT, DATA_AT, QUEUE_NODE, QUEUE_SLOT, SELECTED_AT, SERVER_SIZE, SERVER_X, VIEW,
@@ -22,18 +23,19 @@ use wasm_bindgen::JsCast;
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const QUEUE_ORIGIN_X: f64 = 24.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The elements of one slot: the group that carries the class and the accessible name, and the text inside it.
 struct SlotEl {
     group: web_sys::Element,
     text: web_sys::Element,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a draw did not succeed. After any of them the surface no longer trusts what the page holds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DrawError {
-    /// The host `<svg>` is not in the document. A detached element still accepts writes, so this is checked and not discovered.
+    /// The host `<svg>` is not in the document. A detached element still accepts writes, so this is checked and not
+    /// discovered.
     Detached,
     /// The projection does not have the shape of the surface.
     Shape,
@@ -57,9 +59,9 @@ impl From<DrawError> for String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A point of a draw at which a test can act, such as detaching the host. It exists only with the `fault-hook` feature, which no
-/// clean build has.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A point of a draw at which a test can act, such as detaching the host. It exists only with the `fault-hook` feature,
+/// which no clean build has.
 #[cfg(feature = "fault-hook")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FaultPoint {
@@ -69,7 +71,7 @@ pub enum FaultPoint {
     Setter,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What one draw wrote.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Drawn {
@@ -79,7 +81,7 @@ pub struct Drawn {
     pub data_set: bool,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub struct Surface {
     scene: Scene,
     data_node: NodeId,
@@ -120,7 +122,7 @@ fn n(x: f64) -> String {
     format!("{x:.1}")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Surface {
     /// The size of the view box that the host's `<svg>` needs.
     #[must_use]
@@ -128,9 +130,9 @@ impl Surface {
         VIEW
     }
 
-    /// Builds the scene and the overlay in the `<svg>` called `svg_id`, which has to exist, be empty and have a view box of
-    /// [`view_box`](Self::view_box). Nothing is drawn: every slot is as empty as a projection leaves it, and the first
-    /// [`draw`](Self::draw) fills them.
+    /// Builds the scene and the overlay in the `<svg>` called `svg_id`, which has to exist, be empty and have a view
+    /// box of [`view_box`](Self::view_box). Nothing is drawn: every slot is as empty as a projection leaves it, and the
+    /// first [`draw`](Self::draw) fills them.
     ///
     /// # Errors
     ///
@@ -301,13 +303,13 @@ impl Surface {
         self.drawn.is_some()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes what differs from the last draw, or everything if that is not known, and then the data node's values.
     ///
     /// # Errors
     ///
-    /// Returns `Err` if the projection has another shape than the surface, or a write failed. The page may then be partly written,
-    /// and the next draw is a full one.
+    /// Returns `Err` if the projection has another shape than the surface, or a write failed. The page may then be
+    /// partly written, and the next draw is a full one.
     pub fn draw(&mut self, projection: &Projection) -> Result<Drawn, DrawError> {
         let old = self.drawn.take();
         self.write(projection, old.as_ref())
@@ -323,8 +325,8 @@ impl Surface {
         self.write(projection, None)
     }
 
-    /// Fails with [`DrawError::Detached`] if the host is not in the document. A detached element accepts writes without complaint, so
-    /// the absence of an error from a write is no evidence that the page was written.
+    /// Fails with [`DrawError::Detached`] if the host is not in the document. A detached element accepts writes without
+    /// complaint, so the absence of an error from a write is no evidence that the page was written.
     fn require_connected(&self) -> Result<(), DrawError> {
         if self.host.is_connected() { Ok(()) } else { Err(DrawError::Detached) }
     }
@@ -336,14 +338,16 @@ impl Surface {
         }
     }
 
-    /// Sets the function that is called at each [`FaultPoint`] of a draw, for a test that detaches the host in the middle of one.
+    /// Sets the function that is called at each [`FaultPoint`] of a draw, for a test that detaches the host in the
+    /// middle of one.
     #[cfg(feature = "fault-hook")]
     pub fn set_fault_hook(&mut self, hook: Option<Box<dyn FnMut(FaultPoint)>>) {
         self.hook = hook;
     }
 
-    // The host is checked before every write, before the setter and after it (a draw with no writes is still checked before the setter), so that no write or scene operation is begun on a
-    // detached root, and a host that leaves during the draw is seen before the draw can count as done. `drawn` is set only at the end.
+    // The host is checked before every write, before the setter and after it (a draw with no writes is still checked
+    // before the setter), so that no write or scene operation is begun on a detached root, and a host that leaves
+    // during the draw is seen before the draw can count as done. `drawn` is set only at the end.
     fn write(&mut self, projection: &Projection, old: Option<&Projection>) -> Result<Drawn, DrawError> {
         if projection.slots.len() != self.keys.len()
             || projection.slots.iter().zip(&self.keys).any(|(s, k)| &s.key != k)
@@ -388,9 +392,9 @@ impl Surface {
         })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// What the page holds, read back from the elements in the form of [`Projection::canonical`]. No model reads this: it is what
-    /// a projection is compared with.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// What the page holds, read back from the elements in the form of [`Projection::canonical`]. No model reads this:
+    /// it is what a projection is compared with.
     ///
     /// # Errors
     ///
@@ -429,7 +433,7 @@ impl Surface {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The last `<g>` child of `content`, which is the node that was added last.
 fn last_group_of(content: &web_sys::Element) -> Result<web_sys::Element, String> {
     let groups = content.query_selector_all(":scope > g").map_err(fail("groups"))?;
@@ -439,7 +443,7 @@ fn last_group_of(content: &web_sys::Element) -> Result<web_sys::Element, String>
         .ok_or_else(|| "the last node is not an element".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the baseline of a slot's text starts.
 fn slot_position(key: &str) -> (f64, f64) {
     let counter = COUNTER_NAMES.iter().position(|(k, _)| *k == key);

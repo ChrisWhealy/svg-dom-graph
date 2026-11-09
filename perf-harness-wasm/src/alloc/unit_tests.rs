@@ -5,7 +5,8 @@ fn layout(bytes: usize) -> Layout {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// These tests call a private instance directly, so they count only their own blocks, whatever else the test run allocates.
+/// These tests call a private instance directly, so they count only their own blocks, whatever else the test run
+/// allocates.
 #[test]
 fn an_allocation_is_counted_and_a_release_gives_it_back_exactly() -> Result<(), String> {
     let counter = CountingAllocator::new();
@@ -165,8 +166,8 @@ fn a_reallocated_block_stays_listed_under_its_new_size_and_its_first_tag() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// More blocks than the table has slots: the extra are counted as untracked, nothing is lost silently, and the counts of the
-/// allocator itself are not affected.
+/// More blocks than the table has slots: the extra are counted as untracked, nothing is lost silently, and the counts
+/// of the allocator itself are not affected.
 #[test]
 fn a_full_table_says_how_many_blocks_it_could_not_follow() -> Result<(), String> {
     let counter = CountingAllocator::new();
@@ -206,8 +207,8 @@ fn freed_slots_are_reused() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A block from before tracking that grows during it is otherwise an allocation that no list shows, so it is followed from the
-/// reallocation on, under a tag that says what it is.
+/// A block from before tracking that grows during it is otherwise an allocation that no list shows, so it is followed
+/// from the reallocation on, under a tag that says what it is.
 #[test]
 fn a_block_from_before_tracking_that_grows_is_followed_under_its_own_tag() -> Result<(), String> {
     let counter = CountingAllocator::new();

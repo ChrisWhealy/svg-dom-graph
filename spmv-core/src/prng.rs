@@ -1,5 +1,5 @@
-//! SplitMix64 and the derivation of a named stream from a seed, as in `perf-harness` and `service-sim-engine`. It is written out
-//! here so that no dependency can change what a seed means, and it uses only 64-bit integer arithmetic.
+//! SplitMix64 and the derivation of a named stream from a seed, as in `perf-harness` and `service-sim-engine`. It is
+//! written out here so that no dependency can change what a seed means, and it uses only 64-bit integer arithmetic.
 
 /// A SplitMix64 generator.
 #[derive(Debug, Clone)]

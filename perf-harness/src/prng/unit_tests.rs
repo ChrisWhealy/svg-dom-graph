@@ -1,8 +1,8 @@
 use super::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The first outputs of SplitMix64 for the seed 1234567, as published for the reference algorithm. A second implementation
-/// (Python) gave the same five numbers, so the constants are not just this code agreeing with itself.
+/// The first outputs of SplitMix64 for the seed 1234567, as published for the reference algorithm. A second
+/// implementation (Python) gave the same five numbers, so the constants are not just this code agreeing with itself.
 #[test]
 fn the_generator_gives_the_reference_sequence() -> Result<(), String> {
     let mut prng = SplitMix64::new(1234567);

@@ -1,5 +1,6 @@
-//! The surface in a real browser: E0 on the page, deltas against full redraws, the data node on every slice, a view and a focus that
-//! a draw leaves alone, and the content group that the overlay lives in. Run with `wasm-pack test --headless --chrome service-sim`.
+//! The surface in a real browser: E0 on the page, deltas against full redraws, the data node on every slice, a view and
+//! a focus that a draw leaves alone, and the content group that the overlay lives in. Run with `wasm-pack test
+//! --headless --chrome service-sim`.
 #![cfg(target_arch = "wasm32")]
 
 use service_sim::projection::{DATA_CELLS, Projection, View, extract, project, writes};
@@ -48,7 +49,8 @@ fn surface(id: &str, servers: usize) -> Result<Surface, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The projection after the snapshots of a fixture, each extracted for the view that `view_at` gives for that snapshot's index.
+/// The projection after the snapshots of a fixture, each extracted for the view that `view_at` gives for that
+/// snapshot's index.
 fn projections_with(name: &str, view_at: impl Fn(usize) -> View) -> (usize, Vec<Projection>) {
     let fixtures: serde_json::Value = serde_json::from_str(FIXTURES).expect("fixtures");
     let s = Scenario::fixture(name, &fixtures[name]).expect("a fixture");
@@ -70,8 +72,8 @@ fn e0_projections(view: &View) -> (usize, Vec<Projection>) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// After each of E0's 12 slices, and before the first, the page holds exactly what the projection says, and the data node holds the
-/// slice ordinal. The comparison is of what the elements say, read back, with the model nowhere in it.
+/// After each of E0's 12 slices, and before the first, the page holds exactly what the projection says, and the data
+/// node holds the slice ordinal. The comparison is of what the elements say, read back, with the model nowhere in it.
 #[wasm_bindgen_test]
 fn e0_is_on_the_page_exactly_after_every_slice() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -96,7 +98,8 @@ fn e0_is_on_the_page_exactly_after_every_slice() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A page reached by deltas is the page that a fresh surface draws in full, at every slice. A seek is a delta across any distance.
+/// A page reached by deltas is the page that a fresh surface draws in full, at every slice. A seek is a delta across
+/// any distance.
 #[wasm_bindgen_test]
 fn a_page_reached_by_deltas_equals_a_page_drawn_in_full() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -124,7 +127,8 @@ fn a_page_reached_by_deltas_equals_a_page_drawn_in_full() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A delta writes exactly the fields that differ, so a stale-only slice writes four, and the first draw writes everything.
+/// A delta writes exactly the fields that differ, so a stale-only slice writes four, and the first draw writes
+/// everything.
 #[wasm_bindgen_test]
 fn a_delta_writes_only_what_differs() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -151,11 +155,12 @@ fn a_delta_writes_only_what_differs() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An endurance test of the setter and the overlay: 1,000 commits go through the one data node and the one overlay, and each changes
-/// the node's content, leaves the page equal to what was drawn, and adds no element.
+/// An endurance test of the setter and the overlay: 1,000 commits go through the one data node and the one overlay, and
+/// each changes the node's content, leaves the page equal to what was drawn, and adds no element.
 ///
-/// It is not a sequence of simulation states. It cycles through E0's 13 projections and overwrites the ordinal cell with the commit
-/// number, so the cell no longer matches the clock slot. The test that follows it draws 1,200 genuine slices.
+/// It is not a sequence of simulation states. It cycles through E0's 13 projections and overwrites the ordinal cell
+/// with the commit number, so the cell no longer matches the clock slot. The test that follows it draws 1,200 genuine
+/// slices.
 #[wasm_bindgen_test]
 fn the_setter_endures_a_thousand_commits_with_no_new_element() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -164,7 +169,8 @@ fn the_setter_endures_a_thousand_commits_with_no_new_element() -> Result<(), Str
     let elements = s.element_count()?;
     let mut previous_ordinal = None;
     for commit in 0..1000_usize {
-        // Walk forwards through the run, and give each commit its own ordinal so that every write changes the node's content.
+        // Walk forwards through the run, and give each commit its own ordinal so that every write changes the node's
+        // content.
         let mut p = projections[commit % projections.len()].clone();
         p.data[0] = (commit + 1) as u64;
         let drawn = s.draw(&p)?;
@@ -192,9 +198,10 @@ fn the_setter_endures_a_thousand_commits_with_no_new_element() -> Result<(), Str
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// 1,200 consecutive slices of a generated run, each projected from the engine and drawn as it comes, with nothing in a projection
-/// changed by hand. After every slice the page is what the projection says, and the data node and the clock are what the engine's own
-/// slice record says, which the projection did not produce. The run is the frozen `mixed_outage/7` at the manifest seed.
+/// 1,200 consecutive slices of a generated run, each projected from the engine and drawn as it comes, with nothing in a
+/// projection changed by hand. After every slice the page is what the projection says, and the data node and the clock
+/// are what the engine's own slice record says, which the projection did not produce. The run is the frozen
+/// `mixed_outage/7` at the manifest seed.
 #[wasm_bindgen_test]
 fn twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly() -> Result<(), String> {
     const SLICES: u64 = 1_200;
@@ -209,7 +216,8 @@ fn twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly() -> Resul
     )
     .map_err(|e| e.to_string())?;
     let servers = scenario.config.servers;
-    // A job is selected at every slice, and it changes, so that the highlight moves through real jobs as they come and go.
+    // A job is selected at every slice, and it changes, so that the highlight moves through real jobs as they come and
+    // go.
     let view_at = |slice: u64| View { selected: Some(slice % 40) };
     let mut s = surface("ss-genuine", servers)?;
     let first = view_at(0);
@@ -347,8 +355,8 @@ fn drawing_leaves_the_view_and_the_focus_alone() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The content group is the one the overlay relies on: there is exactly one, the overlay is inside it and painted last, and the view
-/// scales the overlay as it scales a node.
+/// The content group is the one the overlay relies on: there is exactly one, the overlay is inside it and painted last,
+/// and the view scales the overlay as it scales a node.
 #[wasm_bindgen_test]
 fn the_overlay_is_in_the_one_content_group_and_follows_the_view() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -389,7 +397,8 @@ fn the_overlay_is_in_the_one_content_group_and_follows_the_view() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A projection of another shape is refused, and the surface then no longer trusts what it holds, so the next draw is a full one.
+/// A projection of another shape is refused, and the surface then no longer trusts what it holds, so the next draw is a
+/// full one.
 #[wasm_bindgen_test]
 fn a_refused_draw_makes_the_next_one_a_full_redraw() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -457,8 +466,9 @@ fn overlap((a, b, c, d): (f64, f64, f64, f64), (e, f, g, h): (f64, f64, f64, f64
     a.max(e) + 0.5 < c.min(g) && b.max(f) + 0.5 < d.min(h)
 }
 
-/// Everything that is drawn is inside the view box, and no two things that are not meant to share ground do. A server's status text
-/// is meant to sit inside its node, and nothing else is. This is the only check of the layout, since no test reads a screenshot.
+/// Everything that is drawn is inside the view box, and no two things that are not meant to share ground do. A server's
+/// status text is meant to sit inside its node, and nothing else is. This is the only check of the layout, since no
+/// test reads a screenshot.
 fn layout_is_sound(id: &str, servers: usize, projection: &Projection) -> Result<(), String> {
     let mut s = surface(id, servers)?;
     s.draw(projection)?;
@@ -512,7 +522,8 @@ fn layout_is_sound(id: &str, servers: usize, projection: &Projection) -> Result<
     Ok(())
 }
 
-/// The widest cases of the layout: E0 with a job selected, and four servers with a full window of twelve and "+N more" under it.
+/// The widest cases of the layout: E0 with a job selected, and four servers with a full window of twelve and "+N more"
+/// under it.
 #[wasm_bindgen_test]
 fn nothing_is_drawn_outside_the_view_or_over_anything_else() -> Result<(), String> {
     let (servers, selected) = projections_with("E0", |_| View { selected: Some(2) });
@@ -557,9 +568,10 @@ fn detach(id: &str) -> Result<impl Fn() -> Result<(), String> + Clone, String> {
     Ok(move || parent.append_child(&host).map(|_| ()).map_err(|e| format!("{e:?}")))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A host that is not in the document is refused before anything is written, a draw or a full redraw, and the surface then draws in
-/// full once the host is back. A detached `<svg>` accepts writes without complaint, so the surface has to ask.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A host that is not in the document is refused before anything is written, a draw or a full redraw, and the surface
+/// then draws in full once the host is back. A detached `<svg>` accepts writes without complaint, so the surface has to
+/// ask.
 #[wasm_bindgen_test]
 fn a_detached_host_is_refused_before_anything_is_written() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -592,10 +604,10 @@ fn a_detached_host_is_refused_before_anything_is_written() -> Result<(), String>
     check(s.is_trusted(), "the surface does not trust a page it has just drawn in full")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The host leaves the document after each possible write of a draw in turn, and after the data node's setter. Whichever it is, the
-/// draw fails with `Detached`, the surface does not trust the page, no write follows the detachment, the setter is not begun on a
-/// detached root, and a full redraw after reattaching restores the projection.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The host leaves the document after each possible write of a draw in turn, and after the data node's setter.
+/// Whichever it is, the draw fails with `Detached`, the surface does not trust the page, no write follows the
+/// detachment, the setter is not begun on a detached root, and a full redraw after reattaching restores the projection.
 #[wasm_bindgen_test]
 fn a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
@@ -678,8 +690,9 @@ fn a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A tick at the edge of what a `u32`, an `f64` and a `u64` can hold is on the page exactly, in the clock and in the data node, and
-/// the layout still holds, since a data cell keeps the width it was drawn with and has to fit the widest figure it will be given.
+/// A tick at the edge of what a `u32`, an `f64` and a `u64` can hold is on the page exactly, in the clock and in the
+/// data node, and the layout still holds, since a data cell keeps the width it was drawn with and has to fit the widest
+/// figure it will be given.
 #[wasm_bindgen_test]
 fn ticks_at_the_edges_of_the_integers_are_on_the_page_exactly() -> Result<(), String> {
     let ticks: [u64; 6] = [

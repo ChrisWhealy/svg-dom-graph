@@ -1,5 +1,5 @@
-//! The known answers of the sparse-matrix core: the cases of `spmv/cases.json`, whose expectations were derived by hand, and the
-//! pins that the JavaScript oracle computed separately.
+//! The known answers of the sparse-matrix core: the cases of `spmv/cases.json`, whose expectations were derived by
+//! hand, and the pins that the JavaScript oracle computed separately.
 
 use serde_json::Value;
 use spmv_core::budget::Budget;
@@ -14,7 +14,8 @@ fn cases() -> Value {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every case gives the outcome, code and message that its author derived by hand, and the statistics where it names them.
+/// Every case gives the outcome, code and message that its author derived by hand, and the statistics where it names
+/// them.
 #[test]
 fn the_cases_give_the_outcomes_that_were_derived_by_hand() {
     let all = cases();
@@ -39,7 +40,8 @@ fn the_cases_give_the_outcomes_that_were_derived_by_hand() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A matrix and a vector written out by hand give the hashes that the oracle computed for the same bytes, in another language.
+/// A matrix and a vector written out by hand give the hashes that the oracle computed for the same bytes, in another
+/// language.
 #[test]
 fn the_hashes_of_a_matrix_written_by_hand_are_those_the_oracle_computed() {
     let m = Matrix::from_rows(4, &[vec![(0, 2), (2, -1)], vec![], vec![(0, 3), (1, 4), (3, 5)]]);
@@ -52,7 +54,8 @@ fn the_hashes_of_a_matrix_written_by_hand_are_those_the_oracle_computed() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A specification that is refused is refused before any matrix is generated: a size that would take gigabytes is answered at once.
+/// A specification that is refused is refused before any matrix is generated: a size that would take gigabytes is
+/// answered at once.
 #[test]
 fn a_hostile_size_is_refused_before_anything_is_generated() {
     let spec = Spec {

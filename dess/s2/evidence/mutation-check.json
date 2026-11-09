@@ -139,8 +139,8 @@
       "caught": true,
       "failed": [
         "projection::unit_tests::a_long_queue_shows_the_head_and_says_how_many_more",
-        "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
         "projection::unit_tests::e0_projects_exactly_what_the_ledger_says",
+        "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
         "projection::unit_tests::selection_highlights_the_job_wherever_it_is"
       ]
     },
@@ -149,9 +149,9 @@
       "kind": "native",
       "caught": true,
       "failed": [
+        "projection::unit_tests::a_delta_between_any_two_snapshots_equals_a_full_redraw",
         "projection::unit_tests::a_stale_only_slice_writes_only_the_clock_and_the_stale_counter",
-        "projection::unit_tests::selection_highlights_the_job_wherever_it_is",
-        "projection::unit_tests::a_delta_between_any_two_snapshots_equals_a_full_redraw"
+        "projection::unit_tests::selection_highlights_the_job_wherever_it_is"
       ]
     },
     {

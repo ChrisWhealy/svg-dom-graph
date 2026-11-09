@@ -135,8 +135,8 @@ fn the_remaining_modes_are_refused() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// If the compiler computed the repeats once and reused the answer, the time would not depend on how many connectors there
-/// are. A node with ten times the connectors has to take clearly longer.
+/// If the compiler computed the repeats once and reused the answer, the time would not depend on how many connectors
+/// there are. A node with ten times the connectors has to take clearly longer.
 #[test]
 fn the_time_scales_with_the_connectors() -> Result<(), String> {
     let build = |edges: usize| {
@@ -166,9 +166,10 @@ fn the_time_scales_with_the_connectors() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A performance run executes only the last two checkpoints, and they have to vouch for the end of the measured work. So a
-/// mutation that is applied wrongly just before either of them, in any workload and either mode, must make the run invalid.
-/// The stream's digest is untouched by it, since the operations are as generated, so it is the checkpoint that notices.
+/// A performance run executes only the last two checkpoints, and they have to vouch for the end of the measured work.
+/// So a mutation that is applied wrongly just before either of them, in any workload and either mode, must make the run
+/// invalid. The stream's digest is untouched by it, since the operations are as generated, so it is the checkpoint that
+/// notices.
 #[test]
 fn a_wrong_final_mutation_invalidates_the_run() -> Result<(), String> {
     for workload in ["scene_construction", "connector_rerouting", "scene_lifecycle"] {

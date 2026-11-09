@@ -1,14 +1,15 @@
-//! The probes: each builds or drives a scene and reports what it cost, so that the documented resource risks are measured and not
-//! assumed. A probe reports; it does not decide what is acceptable. The numbers are for one browser on one machine.
+//! The probes: each builds or drives a scene and reports what it cost, so that the documented resource risks are
+//! measured and not assumed. A probe reports; it does not decide what is acceptable. The numbers are for one browser on
+//! one machine.
 
 use crate::scene::{BuildOptions, Built, Host, element_count, heap_used, now};
 use serde_json::{Value, json};
 use spmv_core::stats::Latency;
 use spmv_core::{Prepared, Run};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What the measurements ran on: the browser, the cores and the memory it reports. Every record carries it, since a figure means
-/// nothing without the machine.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What the measurements ran on: the browser, the cores and the memory it reports. Every record carries it, since a
+/// figure means nothing without the machine.
 #[must_use]
 pub fn environment() -> Value {
     let Some(window) = web_sys::window() else { return Value::Null };
@@ -25,9 +26,9 @@ pub fn environment() -> Value {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The smallest nonzero step of the page's clock in milliseconds, found by reading it until it moves. A page that is not
-/// cross-origin isolated gets a coarser clock than one that is, so the figure is measured and not assumed.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The smallest nonzero step of the page's clock in milliseconds, found by reading it until it moves. A page that is
+/// not cross-origin isolated gets a coarser clock than one that is, so the figure is measured and not assumed.
 pub fn timer_step() -> f64 {
     let mut least = f64::MAX;
     for _ in 0..200 {
@@ -45,18 +46,19 @@ pub fn timer_step() -> f64 {
     if least == f64::MAX { 0.0 } else { round(least) }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn latency_json(samples: &[f64]) -> Value {
     Latency::from_samples(samples).map_or(Value::Null, |l| l.to_json())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn round(v: f64) -> f64 {
     (v * 1000.0).round() / 1000.0
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds a scenario in a host of its own and reports the cost: the time of each part, the page's elements, and the heap.
+/// Builds a scenario in a host of its own and reports the cost: the time of each part, the page's elements, and the
+/// heap.
 ///
 /// The host and the scene are given back, so that the caller can drive them and then tear them down.
 ///
@@ -97,9 +99,9 @@ pub fn build_with(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Runs `steps` steps of the scenario, writing the data nodes after each, and reports the latency of the pure computation, of the
-/// two data-node writes, and of both together. Each step's updates are the scenario's own, and no step is verified, so that the
-/// figures are those of the draw and not of a check.
+/// Runs `steps` steps of the scenario, writing the data nodes after each, and reports the latency of the pure
+/// computation, of the two data-node writes, and of both together. Each step's updates are the scenario's own, and no
+/// step is verified, so that the figures are those of the draw and not of a check.
 ///
 /// # Errors
 ///
@@ -124,8 +126,8 @@ pub fn updates(built: &Built, run: &mut Run, steps: usize) -> Result<Value, Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves column node `j` back and forth `moves` times, which redraws each of its connectors each time, and reports the latency of a
-/// move. This is the per-frame cost of dragging a node of that degree.
+/// Moves column node `j` back and forth `moves` times, which redraws each of its connectors each time, and reports the
+/// latency of a move. This is the per-frame cost of dragging a node of that degree.
 ///
 /// # Errors
 ///
@@ -140,8 +142,9 @@ pub fn drag(built: &Built, j: usize, moves: usize) -> Result<Value, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds and tears down the scenario `cycles` times, and reports the page's elements and the heap after each, so that a rise in the
-/// baseline would show. The elements of the host are counted with the container removed, which is what a teardown leaves.
+/// Builds and tears down the scenario `cycles` times, and reports the page's elements and the heap after each, so that
+/// a rise in the baseline would show. The elements of the host are counted with the container removed, which is what a
+/// teardown leaves.
 ///
 /// # Errors
 ///
@@ -161,8 +164,8 @@ pub fn rebuild(id: &str, prepared: &Prepared, cycles: usize) -> Result<Value, St
         after_elements.push(count_body()?);
         heap_after.push(heap_used());
     }
-    // The heap is noisy, since it depends on when the collector last ran, so the trend is the median of the last quarter of the
-    // cycles against the median of the first quarter.
+    // The heap is noisy, since it depends on when the collector last ran, so the trend is the median of the last
+    // quarter of the cycles against the median of the first quarter.
     let heaps: Vec<f64> = heap_after.iter().flatten().copied().collect();
     let median = |v: &[f64]| -> Option<f64> {
         let mut s = v.to_vec();

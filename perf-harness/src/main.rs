@@ -6,7 +6,8 @@
 //! * `canonical` prints the manifest in its canonical JSON form, exactly as it is hashed.
 //! * `baseline-key` prints the name of the environment a result was measured in, which is where its baseline is kept.
 //! * `compare` compares a candidate collection of runs with a baseline one and writes the comparison report.
-//! * `native` runs the Layer A runner (`--mode correctness|performance`) and prints its outcome as JSON, or writes it to `--out`.
+//! * `native` runs the Layer A runner (`--mode correctness|performance`) and prints its outcome as JSON, or writes it
+//!   to `--out`.
 
 // Only the native runner reads `--mode`, so a build without it parses the option and has no use for it.
 #![cfg_attr(not(feature = "layer-a"), allow(unused_assignments, unused_variables))]
@@ -42,8 +43,8 @@ fn usage() -> ExitCode {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Reads a JSON array of numbers from standard input and writes the metric that describes them, so that a runner that is not
-/// written in Rust describes its samples with the same statistics as the ones that are.
+/// Reads a JSON array of numbers from standard input and writes the metric that describes them, so that a runner that
+/// is not written in Rust describes its samples with the same statistics as the ones that are.
 ///
 /// `metric --name NAME --layer A|B|C --unit ms|us --mechanism TEXT [--batch N]`
 fn metric(args: &[String]) -> Result<(), String> {
@@ -89,8 +90,9 @@ fn metric(args: &[String]) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Compares a candidate collection of runs with a baseline one and writes the comparison report.
 ///
-/// `compare --baseline DIR --candidate DIR [--candidate DIR ...] --promotion FILE --layer A|B|C --mode MODE --generated-at TIME
-/// [--tolerance 0.1] [--confidence 0.95] [--resamples 4000] [--seed 7] [--min-repetitions 5] [--runs-to-block 10] --out FILE`
+/// `compare --baseline DIR --candidate DIR [--candidate DIR ...] --promotion FILE --layer A|B|C --mode MODE
+/// --generated-at TIME [--tolerance 0.1] [--confidence 0.95] [--resamples 4000] [--seed 7] [--min-repetitions 5]
+/// [--runs-to-block 10] --out FILE`
 ///
 /// It reports and never judges: the exit status says whether the report was written, and a regression is in the report.
 fn compare(args: &[String]) -> Result<(), String> {

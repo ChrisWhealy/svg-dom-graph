@@ -1,12 +1,12 @@
 //! A global allocator that counts, to say how much Rust memory is live.
 //!
-//! The size of the wasm linear memory cannot say that. It grows in pages and never shrinks, so it is a high-water mark of what
-//! was ever needed, and a freed block that a retained one then reuses leaves it unchanged. The JS heap cannot say it either,
-//! since this memory is not on it. The library deliberately leaks some closures with `Closure::forget`, and the figure in
-//! which that shows is the number of bytes that are live, which this counts.
+//! The size of the wasm linear memory cannot say that. It grows in pages and never shrinks, so it is a high-water mark
+//! of what was ever needed, and a freed block that a retained one then reuses leaves it unchanged. The JS heap cannot
+//! say it either, since this memory is not on it. The library deliberately leaks some closures with `Closure::forget`,
+//! and the figure in which that shows is the number of bytes that are live, which this counts.
 //!
-//! It counts the sizes that were asked for, not what the underlying allocator reserved, so it leaves out that allocator's own
-//! overhead. It wraps the system allocator and changes nothing about what is allocated.
+//! It counts the sizes that were asked for, not what the underlying allocator reserved, so it leaves out that
+//! allocator's own overhead. It wraps the system allocator and changes nothing about what is allocated.
 //!
 //! The counters are plain atomics. A wasm module has one thread, so there is no contention, and a native test of the
 //! arithmetic can use a private instance that is not installed as the global one.
@@ -18,8 +18,8 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering::Relaxed};
 const SLOTS: usize = 2048;
 /// How many growths of blocks from before tracking are remembered, with their old and new sizes.
 const GROWTHS: usize = 32;
-/// Added to the tag when a block that was allocated before tracking began is reallocated during it, so that the tag says both
-/// that it grew and what the program was doing when it did.
+/// Added to the tag when a block that was allocated before tracking began is reallocated during it, so that the tag
+/// says both that it grew and what the program was doing when it did.
 pub const GROWN_FLAG: usize = 128;
 /// A slot whose block was freed. Searches pass over it, and a new block may take it.
 const FREED: usize = usize::MAX;
@@ -43,7 +43,8 @@ pub struct TrackedBlock {
     /// Where the block is in linear memory, which is what lets a diagnostic read what it holds.
     pub address: usize,
     pub size: usize,
-    /// What the program was doing when the block was allocated, as the tag it had set. See [`CountingAllocator::set_tag`].
+    /// What the program was doing when the block was allocated, as the tag it had set. See
+    /// [`CountingAllocator::set_tag`].
     pub tag: usize,
 }
 
@@ -53,11 +54,12 @@ pub struct CountingAllocator {
     live_allocations: AtomicUsize,
     total_allocations: AtomicUsize,
     peak_live_bytes: AtomicUsize,
-    // The tracker. When it is on, every block allocated is entered in a table with its size and the current tag, and taken out
-    // when it is freed, so that what is left in it is what was allocated since tracking began and has not been freed.
+    // The tracker. When it is on, every block allocated is entered in a table with its size and the current tag, and
+    // taken out when it is freed, so that what is left in it is what was allocated since tracking began and has not
+    // been freed.
     tracking: AtomicBool,
-    /// Whether tracking has ever been turned on. Until it has, freeing a block costs nothing extra, so that a run that never
-    /// tracks has no look-up in its timed calls.
+    /// Whether tracking has ever been turned on. Until it has, freeing a block costs nothing extra, so that a run that
+    /// never tracks has no look-up in its timed calls.
     ever_tracked: AtomicBool,
     tag: AtomicUsize,
     dropped: AtomicUsize,
@@ -117,7 +119,8 @@ impl CountingAllocator {
         self.dropped.load(Relaxed)
     }
 
-    /// The blocks that were allocated while tracking was on and have not been freed. This allocates, so stop tracking first.
+    /// The blocks that were allocated while tracking was on and have not been freed. This allocates, so stop tracking
+    /// first.
     pub fn tracked_live(&self) -> Vec<TrackedBlock> {
         (0..SLOTS)
             .filter_map(|slot| {
@@ -134,7 +137,8 @@ impl CountingAllocator {
             .collect()
     }
 
-    /// The growths of blocks from before tracking that happened during it, as `(old size, new size, tag)`, oldest first.
+    /// The growths of blocks from before tracking that happened during it, as `(old size, new size, tag)`, oldest
+    /// first.
     pub fn growths(&self) -> Vec<(usize, usize, usize)> {
         let count = self.grown_count.load(Relaxed).min(GROWTHS);
         (0..count)
@@ -217,8 +221,8 @@ impl CountingAllocator {
     }
 }
 
-// SAFETY: every call is passed on to `System` with the same arguments, so whatever `System` guarantees, this guarantees too.
-// The counters are only read and written, and never decide what is returned.
+// SAFETY: every call is passed on to `System` with the same arguments, so whatever `System` guarantees, this guarantees
+// too. The counters are only read and written, and never decide what is returned.
 unsafe impl GlobalAlloc for CountingAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.counted(unsafe { System.alloc(layout) }, layout.size())
@@ -237,14 +241,15 @@ unsafe impl GlobalAlloc for CountingAllocator {
 
     unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         let moved = unsafe { System.realloc(pointer, layout, new_size) };
-        // A failed reallocation leaves the old block where it was, so only a success changes the count. It is the same block
-        // under another size, so the number of blocks does not change.
+        // A failed reallocation leaves the old block where it was, so only a success changes the count. It is the same
+        // block under another size, so the number of blocks does not change.
         if !moved.is_null() {
             // A block that was followed stays followed under its new address and size, with the tag it began with.
             match self.untrack(pointer) {
                 Some(detail) => self.track(moved, new_size, detail & 0xff),
-                // A block from before tracking began that grew. It is followed from here under a tag of its own, since what
-                // it grew by is otherwise an allocation that no list shows. The tag says what the program was doing.
+                // A block from before tracking began that grew. It is followed from here under a tag of its own, since
+                // what it grew by is otherwise an allocation that no list shows. The tag says what the program was
+                // doing.
                 None if self.tracking.load(Relaxed) => {
                     let tag = self.tag.load(Relaxed) & 0x7f;
                     let at = self.grown_count.fetch_add(1, Relaxed);
@@ -268,7 +273,8 @@ unsafe impl GlobalAlloc for CountingAllocator {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The allocator of a wasm build. A native build has the usual allocator, so that a test run is not changed by this crate.
+/// The allocator of a wasm build. A native build has the usual allocator, so that a test run is not changed by this
+/// crate.
 #[cfg(target_arch = "wasm32")]
 #[global_allocator]
 pub static GLOBAL: CountingAllocator = CountingAllocator::new();

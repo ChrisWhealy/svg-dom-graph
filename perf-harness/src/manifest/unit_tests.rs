@@ -232,8 +232,8 @@ fn every_shared_rejected_manifest_is_refused() -> Result<(), String> {
 const RECOVERY: &str = include_str!("../../../perf/manifests/w5-recovery-small.toml");
 const CONTRACTS: &str = include_str!("../../../perf/fault-contracts.json");
 
-/// The expectations in a recovery manifest are taken from the library's documented behaviour, which `fault-contracts.json`
-/// writes down. So they must agree with it, for every fault point the manifest names.
+/// The expectations in a recovery manifest are taken from the library's documented behaviour, which
+/// `fault-contracts.json` writes down. So they must agree with it, for every fault point the manifest names.
 #[test]
 fn the_recovery_manifest_expects_what_the_contracts_say() -> Result<(), String> {
     let manifest = Manifest::from_toml(RECOVERY).map_err(|e| e.to_string())?;

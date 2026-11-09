@@ -1,11 +1,11 @@
 //! Compares the checkpoint a runner observed with the one the reference model predicted.
 //!
-//! Exact sections are compared exactly. Geometry is compared coordinate by coordinate within the tolerance the checkpoint
-//! carries, and a difference names the element, the coordinate, both values and how far apart they are. Nothing here hashes
-//! geometry, since two values well within tolerance can round to different numbers.
+//! Exact sections are compared exactly. Geometry is compared coordinate by coordinate within the tolerance the
+//! checkpoint carries, and a difference names the element, the coordinate, both values and how far apart they are.
+//! Nothing here hashes geometry, since two values well within tolerance can round to different numbers.
 //!
-//! A difference says whether the rule behind the expected value is settled or provisional. A provisional rule that proves
-//! wrong means the model needs correcting, so a runner counts both kinds as failures.
+//! A difference says whether the rule behind the expected value is settled or provisional. A provisional rule that
+//! proves wrong means the model needs correcting, so a runner counts both kinds as failures.
 
 use crate::model::{Checkpoint, GeometryElement};
 use serde::Serialize;
@@ -73,8 +73,8 @@ impl Difference {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every way that `actual` differs from `expected`, which is empty when they agree.
 ///
-/// The sections that the model does not predict, the DOM ids and the accessibility tree, are not compared. The ids are only
-/// checked for duplicates, which the model expects there to be none of.
+/// The sections that the model does not predict, the DOM ids and the accessibility tree, are not compared. The ids are
+/// only checked for duplicates, which the model expects there to be none of.
 pub fn compare(expected: &Checkpoint, actual: &Checkpoint) -> Vec<Difference> {
     let mut found = Vec::new();
     compare_topology(expected, actual, &mut found);
@@ -298,8 +298,8 @@ fn coordinate_names(kind: &str, count: usize) -> Vec<String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every kind of element is predicted by a rule that Phase 2 confirmed in Chrome, for plain nodes and straight connectors.
-/// A rule that has not been confirmed would be [`Basis::Provisional`] here.
+/// Every kind of element is predicted by a rule that Phase 2 confirmed in Chrome, for plain nodes and straight
+/// connectors. A rule that has not been confirmed would be [`Basis::Provisional`] here.
 fn basis_of(_kind: &str) -> Basis {
     Basis::Modelled
 }

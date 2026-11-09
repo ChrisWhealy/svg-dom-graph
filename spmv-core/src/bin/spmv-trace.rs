@@ -2,7 +2,8 @@
 //!
 //!   spmv-trace panel FROM TO     the panel seeds FROM up to TO, with the default budget
 //!   spmv-trace budget            the default budget, so that the oracle uses the same one for the panel
-//!   spmv-trace cases PATH        every case of a JSON file, `{"name": {"spec": {...}, "budget": {...}}}`; PATH `-` is standard input
+//!   spmv-trace cases PATH        every case of a JSON file, `{"name": {"spec": {...}, "budget": {...}}}`;
+//!                                PATH `-` is standard input
 //!
 //! It runs natively and under WASI, so that the 32-bit build can be compared with the oracle as well.
 

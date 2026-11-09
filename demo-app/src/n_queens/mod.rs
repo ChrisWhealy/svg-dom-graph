@@ -89,14 +89,14 @@ fn in_grid(target: Option<web_sys::EventTarget>) -> bool {
 ///
 /// The page shows:
 ///
-/// 1. The board of 4 to 9 queens, as a grid whose squares a person can move between with the arrow keys. A Try
-///    outlines its square and draws the three lines through it, whether or not the square is free. A Reject marks the
-///    square, and draws the line that is the reason heavier than the other two. A solution is framed.
+/// 1. The board of 4 to 9 queens, as a grid whose squares a person can move between with the arrow keys. A Try outlines
+///    its square and draws the three lines through it, whether or not the square is free. A Reject marks the square,
+///    and draws the line that is the reason heavier than the other two. A solution is framed.
 /// 2. The status: the step, the event, the square, the queens placed, the reason, the solutions found, and the
 ///    playback.
 /// 3. Above the board, in the same scene: selectors for the size of the board and the speed, buttons for Restart,
-///    Previous, Next, Play or Pause and the previous and the next solution, and a range that goes straight to any
-///    step. The buttons and the range are the library's own, and a selector is the browser's own `<select>`.
+///    Previous, Next, Play or Pause and the previous and the next solution, and a range that goes straight to any step.
+///    The buttons and the range are the library's own, and a selector is the browser's own `<select>`.
 ///
 /// Every step comes from the one trace that is worked out when the board is chosen, and the page draws only what
 /// differs from the step before. A write to the page that fails is reported, and the next button, key or move of the

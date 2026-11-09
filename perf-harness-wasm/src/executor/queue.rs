@@ -48,8 +48,9 @@ impl Kind {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operation with everything it needs already worked out, so that running it is only the library call.
 ///
-/// Finding a node's id, building a key, copying a label and making the host element are the harness's own work. They are done
-/// when the operation is prepared, before any clock is read, so that a timed interval holds nothing but calls into the library.
+/// Finding a node's id, building a key, copying a label and making the host element are the harness's own work. They
+/// are done when the operation is prepared, before any clock is read, so that a timed interval holds nothing but calls
+/// into the library.
 pub(super) enum Prepared {
     Create {
         id: String,
@@ -89,7 +90,8 @@ impl Run<'_> {
                     "perf-svg-{}",
                     SVG_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1
                 );
-                // The host element is the page's, not the library's, so it is made here and the scene is made on it later.
+                // The host element is the page's, not the library's, so it is made here and the scene is made on it
+                // later.
                 let (width, height) = field_for(self.manifest.graph.nodes);
                 let svg = self
                     .document
@@ -141,8 +143,9 @@ impl Run<'_> {
         self.pending_meta = Some(waiting);
         self.pending.push(prepared);
         let (kind, recording, timed) = waiting;
-        // A scene is made, dropped and removed one operation at a time, so those run at once. Waiting for the next operation would
-        // leave the sample after a teardown to be taken while the generator had already begun planning the next cycle.
+        // A scene is made, dropped and removed one operation at a time, so those run at once. Waiting for the next
+        // operation would leave the sample after a teardown to be taken while the generator had already begun planning
+        // the next cycle.
         let wanted = if !timed || matches!(kind, Kind::Create | Kind::Drop | Kind::Remove) {
             1
         } else if kind == Kind::Moves && recording {

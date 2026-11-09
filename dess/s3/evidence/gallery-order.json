@@ -1,0 +1,9 @@
+{
+  "checks": [],
+  "hide": {
+    "log": ["hint:visible=false", "timer:visible=false,connected=true"]
+  },
+  "show": {
+    "log": ["hint:visible=true"]
+  }
+}

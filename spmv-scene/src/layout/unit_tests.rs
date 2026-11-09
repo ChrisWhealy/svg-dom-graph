@@ -58,8 +58,9 @@ fn everything_is_inside_the_stated_extent_and_below_the_data_nodes() {
     }
 }
 
-/// A graph that is meant to be read is two single columns with a wide channel between them, with room between the nodes, and the
-/// shorter column centred against the taller. A large one is packed into blocks, and is there to be measured.
+/// A graph that is meant to be read is two single columns with a wide channel between them, with room between the
+/// nodes, and the shorter column centred against the taller. A large one is packed into blocks, and is there to be
+/// measured.
 #[test]
 fn a_small_graph_is_two_single_columns_with_a_wide_channel() {
     let l = Layout::new(&spec(12, 8, 4, 8));
@@ -117,7 +118,8 @@ fn the_data_node_grid_holds_every_cell() {
     }
 }
 
-/// Each of the three boxes has room under it for its caption, and the captions are above the graph and apart from each other.
+/// Each of the three boxes has room under it for its caption, and the captions are above the graph and apart from each
+/// other.
 #[test]
 fn every_box_has_room_for_its_caption_above_the_graph() {
     for s in [
@@ -166,8 +168,8 @@ fn a_shifted_layout_moves_the_captions_with_the_boxes() {
     }
 }
 
-/// A graph that is small enough is drawn with its matrix in full, in cells that fit the box and are in rows and columns; a larger one is
-/// shown as the square of its pattern.
+/// A graph that is small enough is drawn with its matrix in full, in cells that fit the box and are in rows and
+/// columns; a larger one is shown as the square of its pattern.
 #[test]
 fn a_small_matrix_is_drawn_in_full_and_a_large_one_as_a_pattern() {
     let l = Layout::new(&spec(8, 8, 1, 8));
@@ -220,7 +222,8 @@ fn a_shifted_layout_moves_the_matrix_with_everything_else() {
     assert_eq!(moved.aside_size, plain.aside_size);
 }
 
-/// The vector of x is under the matrix, each entry under its own column, and the vector of y beside it, each entry level with its row.
+/// The vector of x is under the matrix, each entry under its own column, and the vector of y beside it, each entry
+/// level with its row.
 #[test]
 fn the_vectors_line_up_with_the_matrix() {
     let l = Layout::new(&spec(8, 6, 1, 8));

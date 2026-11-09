@@ -1,6 +1,6 @@
-//! The graph the weighted springs demo moves: the Dijkstra demo's six circles and nine edges, taken from that demo's own
-//! definitions. Nothing here repeats a position, an edge or a rectangle. If the Dijkstra layout changes, this changes
-//! with it, and the tests below say whether the physics still copes.
+//! The graph the weighted springs demo moves: the Dijkstra demo's six circles and nine edges, taken from that demo's
+//! own definitions. Nothing here repeats a position, an edge or a rectangle. If the Dijkstra layout changes, this
+//! changes with it, and the tests below say whether the physics still copes.
 
 use crate::dijkstra::{EDGES, NAMES, VERTEX_RADIUS, graph_region, vertex_origins};
 use demo_common::force::solver::{Bounds, Params, SolverError, SpringSystem, Vec2};
@@ -10,9 +10,10 @@ use svg_dom::root::utils::{Point, Rect, Size};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The region the springs live in: the Dijkstra graph's region, reaching up to the margin at the top of the scene.
 ///
-/// The Dijkstra demo keeps its graph below a stepping toolbar fixed to the top edge, and `graph_region` starts below it.
-/// This scene has no such toolbar, so the room that was kept for it is given back, and a circle can be dragged as near
-/// the top as it can be to the left. The bottom and right edges are `graph`'s, and so the scene's size does not change.
+/// The Dijkstra demo keeps its graph below a stepping toolbar fixed to the top edge, and `graph_region` starts below
+/// it. This scene has no such toolbar, so the room that was kept for it is given back, and a circle can be dragged as
+/// near the top as it can be to the left. The bottom and right edges are `graph`'s, and so the scene's size does not
+/// change.
 pub(super) fn springs_region(graph: Rect) -> Rect {
     let bottom = graph.origin.y + graph.size.height;
     Rect {

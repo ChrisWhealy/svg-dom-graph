@@ -1,8 +1,9 @@
-//! The workload report: everything a runner needs to know about what a manifest should do, and what the scene should look
-//! like at each checkpoint, without holding the stream itself.
+//! The workload report: everything a runner needs to know about what a manifest should do, and what the scene should
+//! look like at each checkpoint, without holding the stream itself.
 //!
 //! Building it generates the whole stream once, hashes it, and drives the reference model through it. A runner then
-//! regenerates the same stream, checks its own hash against the report's, and compares its checkpoints with the model's.
+//! regenerates the same stream, checks its own hash against the report's, and compares its checkpoints with the
+//! model's.
 
 use crate::encode::ENCODING_VERSION;
 use crate::manifest::{Manifest, ViewPolicy};
@@ -47,7 +48,8 @@ pub struct CheckpointDigest {
 pub struct Sections {
     /// Predicted from the operations alone, so a difference is a real difference.
     pub modelled: Vec<&'static str>,
-    /// Predicted by a rule that has still to be confirmed against the rendered DOM. None are, for the operations there are.
+    /// Predicted by a rule that has still to be confirmed against the rendered DOM. None are, for the operations there
+    /// are.
     pub provisional: Vec<&'static str>,
     /// Left empty by the model, and not to be compared.
     pub not_modelled: Vec<&'static str>,

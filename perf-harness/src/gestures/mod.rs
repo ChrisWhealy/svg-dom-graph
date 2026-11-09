@@ -1,15 +1,15 @@
 //! Plans the real input that a browser is driven with in workload W4, and what each piece of it must do.
 //!
-//! The scene is built once, on a grid. For each scale of the view and each gesture there is a case, and a case is a list of
-//! gestures drawn from its own stream of the generator, so a case does not depend on the cases before it. Every gesture
-//! says where the pointer starts, how far it goes, and what the scene must look like when it has finished. The last is what
-//! lets a runner reject a sample whose input did not do what it was meant to, since a latency for a gesture that did nothing
-//! is not a latency.
+//! The scene is built once, on a grid. For each scale of the view and each gesture there is a case, and a case is a
+//! list of gestures drawn from its own stream of the generator, so a case does not depend on the cases before it. Every
+//! gesture says where the pointer starts, how far it goes, and what the scene must look like when it has finished. The
+//! last is what lets a runner reject a sample whose input did not do what it was meant to, since a latency for a
+//! gesture that did nothing is not a latency.
 //!
-//! Positions are pixels of the host `<svg>`, measured from its top-left corner, with the view's translation at zero when a
-//! gesture begins. The host is as many pixels wide as its view box is wide, so a pixel of the pointer is a unit of the scene
-//! when the scale is 100%. What a gesture must do is worked out from the library's rules, which are stated beside each one,
-//! and a browser run checks each against what the library did.
+//! Positions are pixels of the host `<svg>`, measured from its top-left corner, with the view's translation at zero
+//! when a gesture begins. The host is as many pixels wide as its view box is wide, so a pixel of the pointer is a unit
+//! of the scene when the scale is 100%. What a gesture must do is worked out from the library's rules, which are stated
+//! beside each one, and a browser run checks each against what the library did.
 
 use crate::manifest::{GestureKind, Manifest, Workload};
 use crate::ops::hex;
@@ -54,9 +54,9 @@ impl View {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "gesture", rename_all = "snake_case")]
 pub enum Item {
-    /// The pointer goes down on the centre of `node`, moves by `dx`, `dy` pixels in `steps` equal moves, and comes up. The node
-    /// ends up `dx / scale`, `dy / scale` units from where its corner `start` was, which is how the library divides a pointer
-    /// movement by the scale of the view.
+    /// The pointer goes down on the centre of `node`, moves by `dx`, `dy` pixels in `steps` equal moves, and comes up.
+    /// The node ends up `dx / scale`, `dy / scale` units from where its corner `start` was, which is how the library
+    /// divides a pointer movement by the scale of the view.
     Drag {
         node: String,
         from: [i64; 2],
@@ -66,7 +66,8 @@ pub enum Item {
         start: [i64; 2],
         expected: [f64; 2],
     },
-    /// The pointer goes down on the background, moves, and comes up. The view is translated by the movement and not scaled.
+    /// The pointer goes down on the background, moves, and comes up. The view is translated by the movement and not
+    /// scaled.
     Pan {
         from: [i64; 2],
         dx: i64,
@@ -74,8 +75,8 @@ pub enum Item {
         steps: u32,
         expected: View,
     },
-    /// One wheel event with the control key held, at `at`, of `delta_y`. The scale is multiplied by [`ZOOM_STEP`] to the power
-    /// of minus `delta_y` over [`NOTCH`], about the pointer.
+    /// One wheel event with the control key held, at `at`, of `delta_y`. The scale is multiplied by [`ZOOM_STEP`] to
+    /// the power of minus `delta_y` over [`NOTCH`], about the pointer.
     WheelZoom { at: [i64; 2], delta_y: i64, expected: View },
 }
 
@@ -177,7 +178,8 @@ fn pan(
     steps: u32,
 ) -> Result<Item, WorkloadError> {
     let boxes: Vec<[f64; 4]> = graph.nodes.iter().map(|node| screen_box(node.x, node.y, scale)).collect();
-    // A point on the background is one that no node covers, with a margin so that the press cannot fall on an edge of one.
+    // A point on the background is one that no node covers, with a margin so that the press cannot fall on an edge of
+    // one.
     let mut found = None;
     for _ in 0..BACKGROUND_ATTEMPTS {
         let x = between(prng, EDGE as i64 + 6, host[0] - EDGE as i64 - 6);
@@ -211,8 +213,8 @@ fn wheel(prng: &mut SplitMix64, host: [i64; 2], scale: f64) -> Item {
     let y = between(prng, EDGE as i64, host[1] - EDGE as i64);
     // Scrolling up zooms in, and a notch is one step, so the sign is the direction.
     let delta_y = if prng.below(2) == 0 { -NOTCH } else { NOTCH };
-    // One notch either way, so the factor is the step or its reciprocal, each of which is a single correctly rounded operation
-    // and so is the same on every platform. A power would not be promised that.
+    // One notch either way, so the factor is the step or its reciprocal, each of which is a single correctly rounded
+    // operation and so is the same on every platform. A power would not be promised that.
     let factor = if delta_y < 0 { ZOOM_STEP } else { 1.0 / ZOOM_STEP };
     Item::WheelZoom {
         at: [x, y],
@@ -226,8 +228,8 @@ fn wheel(prng: &mut SplitMix64, host: [i64; 2], scale: f64) -> Item {
 ///
 /// # Errors
 ///
-/// Returns [`WorkloadError::Plan`] if the manifest is not an interaction manifest, or a gesture cannot be placed at a scale,
-/// such as a drag when no node is wholly in view.
+/// Returns [`WorkloadError::Plan`] if the manifest is not an interaction manifest, or a gesture cannot be placed at a
+/// scale, such as a drag when no node is wholly in view.
 pub fn plan(manifest: &Manifest) -> Result<Plan, WorkloadError> {
     let interaction = match (&manifest.interaction, manifest.workload) {
         (Some(interaction), Workload::Interaction) => interaction,

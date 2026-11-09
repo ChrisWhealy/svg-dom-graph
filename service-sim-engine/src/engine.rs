@@ -1,9 +1,9 @@
 //! The engine: an integer-tick event heap, and the rules of design revision 6 section 3.
 //!
-//! An event is `(tick, rank, sequence, payload)` in a min-heap. A slice is every event at the smallest tick, popped in rank
-//! order, followed by one dispatch. A pop that finds its job or attempt already gone is stale, and a pop that has nothing to act
-//! on is a no-op. Both are still pops, and both are in the event-pop hash. The rules the design leaves open are fixed in
-//! `dess/s1/docs/contract.md`, and each is named there as R1 to R12.
+//! An event is `(tick, rank, sequence, payload)` in a min-heap. A slice is every event at the smallest tick, popped in
+//! rank order, followed by one dispatch. A pop that finds its job or attempt already gone is stale, and a pop that has
+//! nothing to act on is a no-op. Both are still pops, and both are in the event-pop hash. The rules the design leaves
+//! open are fixed in `dess/s1/docs/contract.md`, and each is named there as R1 to R12.
 
 use crate::generator::{Generator, OutageEvent, outages};
 use crate::hash::Writer;
@@ -326,8 +326,8 @@ pub struct Engine {
     hash_pops: bool,
     /// The tick of the last slice. Only [`Engine::model`] reads it, and no hash covers it.
     last_tick: u64,
-    /// How many jobs are in `RetryWait`, kept so that a reader does not have to count them. No hash covers it, and a test checks it
-    /// against a count of the jobs after every slice.
+    /// How many jobs are in `RetryWait`, kept so that a reader does not have to count them. No hash covers it, and a
+    /// test checks it against a count of the jobs after every slice.
     retry_wait: u64,
 }
 
@@ -420,7 +420,8 @@ impl Engine {
         Ok(engine)
     }
 
-    /// The configuration of a generated run is that of its parameters (rule R14), so that a generated outage names a server that exists.
+    /// The configuration of a generated run is that of its parameters (rule R14), so that a generated outage names a
+    /// server that exists.
     fn validate_agreement(config: &Config, params: &Params) -> Result<(), Error> {
         let given = params.config()?;
         let pairs = [
@@ -472,7 +473,8 @@ impl Engine {
         Ok(())
     }
 
-    /// The keys of the script and the generator have to name one job each (rule R13), and are checked before anything runs.
+    /// The keys of the script and the generator have to name one job each (rule R13), and are checked before anything
+    /// runs.
     fn validate_keys(script: &[ScriptEvent], params: Option<&Params>) -> Result<(), Error> {
         let mut seen = BTreeSet::new();
         for event in script {
@@ -843,8 +845,8 @@ impl Engine {
         self
     }
 
-    /// Runs one slice with nothing recorded and no checkpoint, which is all that a replay to a cursor needs. Gives `false` when the
-    /// future heap is empty and the run is over.
+    /// Runs one slice with nothing recorded and no checkpoint, which is all that a replay to a cursor needs. Gives
+    /// `false` when the future heap is empty and the run is over.
     ///
     /// # Errors
     ///
@@ -929,11 +931,11 @@ impl Engine {
         Ok(Some((tick, pops)))
     }
 
-    /// A read-only picture of the engine between two slices, for a reader who shows the first `window` places of the queue and has
-    /// `selected` chosen.
+    /// A read-only picture of the engine between two slices, for a reader who shows the first `window` places of the
+    /// queue and has `selected` chosen.
     ///
-    /// It copies the jobs in those places, the running jobs and the selected one, and no others, so its cost does not depend on how
-    /// many jobs have arrived.
+    /// It copies the jobs in those places, the running jobs and the selected one, and no others, so its cost does not
+    /// depend on how many jobs have arrived.
     #[must_use]
     pub fn model(&self, window: usize, selected: Option<u64>) -> Model {
         let waiting: Vec<u64> = self.waiting.iter().take(window).copied().collect();

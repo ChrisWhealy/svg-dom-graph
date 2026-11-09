@@ -1,7 +1,7 @@
 //! The operations of a workload.
 //!
-//! An operation is something a runner does to a scene, or a marker that tells it where it is. Coordinates are whole scene
-//! units, which keeps every encoded value an integer and makes the reference model's arithmetic exact.
+//! An operation is something a runner does to a scene, or a marker that tells it where it is. Coordinates are whole
+//! scene units, which keeps every encoded value an integer and makes the reference model's arithmetic exact.
 
 use crate::encode::{ENCODING_VERSION, Encoder};
 use serde::Serialize;

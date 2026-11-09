@@ -1,8 +1,8 @@
 //! The arithmetic of one node written out, so that a person who selects a node sees what it computes.
 //!
-//! Nothing here is hashed or compared with the oracle: it is presentation, derived from the matrix and the vector, and tested
-//! natively against them. The sums it states are checked against the product the core keeps, so the text cannot say a number that the
-//! product does not hold.
+//! Nothing here is hashed or compared with the oracle: it is presentation, derived from the matrix and the vector, and
+//! tested natively against them. The sums it states are checked against the product the core keeps, so the text cannot
+//! say a number that the product does not hold.
 
 use crate::matrix::Matrix;
 
@@ -24,8 +24,8 @@ fn bracketed(v: i64) -> String {
 /// y3 = 5·x1 − 2·x7 + 9·x12 = 5·(−4) + (−2)·31 + 9·6 = −28
 /// ```
 ///
-/// A row with no nonzeros is zero, and a long row writes `MAX_TERMS` terms and says how many it left out. The result is always the
-/// whole sum.
+/// A row with no nonzeros is zero, and a long row writes `MAX_TERMS` terms and says how many it left out. The result is
+/// always the whole sum.
 #[must_use]
 pub fn row(matrix: &Matrix, x: &[i64], i: usize) -> String {
     let terms: Vec<(usize, i64)> = matrix.row(i).collect();
@@ -73,8 +73,8 @@ fn sum_of(matrix: &Matrix, x: &[i64], i: usize) -> String {
     format!("{values}{tail} = {}", signed(total))
 }
 
-/// How the value of x`j` goes into the outputs, one line for each row that uses it: the number of the matrix that it is multiplied
-/// by, the product, and the whole sum that the product is one term of.
+/// How the value of x`j` goes into the outputs, one line for each row that uses it: the number of the matrix that it is
+/// multiplied by, the product, and the whole sum that the product is one term of.
 ///
 /// ```text
 /// x0 = 74 is multiplied by a number of A in each row where column 0 is not blank, and each product is one term of that row's sum:
@@ -193,8 +193,8 @@ mod tests {
         );
     }
 
-    /// The result that a row's text states is the number the product holds, for every row of many generated matrices, and a long row
-    /// says how many terms it left out.
+    /// The result that a row's text states is the number the product holds, for every row of many generated matrices,
+    /// and a long row says how many terms it left out.
     #[test]
     fn the_result_written_is_always_the_product_the_core_holds() {
         use crate::run::Run;

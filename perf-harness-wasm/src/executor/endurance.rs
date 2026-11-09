@@ -22,8 +22,8 @@ impl Run<'_> {
             .collect();
         let summary = summarize(&points);
         let measured_cycles = u64::from(self.manifest.execution.measurement_iterations);
-        // Cycles that ran a checkpoint are not in the series, and what is in it is said, so that a figure is never read as
-        // covering more than it does.
+        // Cycles that ran a checkpoint are not in the series, and what is in it is said, so that a figure is never read
+        // as covering more than it does.
         let coverage = match (summary.first_measured_cycle, summary.last_measured_cycle) {
             (Some(first), Some(last)) => format!(
                 "cycles {first} to {last}, {} of the {measured_cycles} measured cycles, the rest having run a checkpoint",
@@ -35,8 +35,8 @@ impl Run<'_> {
             .reference_cycle
             .map_or("none".to_string(), |cycle| format!("cycle {cycle}"));
 
-        // The gate: live memory does not keep growing, to within what the manifest allows. A run with too little to judge by is
-        // inconclusive, which is not a pass.
+        // The gate: live memory does not keep growing, to within what the manifest allows. A run with too little to
+        // judge by is inconclusive, which is not a pass.
         let allowance = self.manifest.limits.live_growth_allowance_bytes.unwrap_or(0) as f64;
         let (status, detail) = match judge(&summary, allowance) {
             Verdict::Pass(detail) => ("pass", detail),
@@ -49,8 +49,9 @@ impl Run<'_> {
             detail,
         });
 
-        // What the first cycle left behind, which is a cost of first use and is not part of the interval above. It is the live
-        // bytes after the first teardown less the baseline, and it is only known if the first cycle is in the series.
+        // What the first cycle left behind, which is a cost of first use and is not part of the interval above. It is
+        // the live bytes after the first teardown less the baseline, and it is only known if the first cycle is in the
+        // series.
         match (self.teardown_series.first(), self.baseline.live_bytes) {
             (Some(first), Some(baseline)) if first.cycle == 1 && first.resources.live_bytes.is_some() => {
                 self.outcome.metrics.push(metrics::count(
@@ -89,8 +90,8 @@ impl Run<'_> {
                 "fewer than two cycles were sampled, or a capacity reading was missing",
             )),
         }
-        // The net change and the slope are different figures. The first is how far live memory moved, and one stray reading
-        // can move it. The second is how fast it moves each cycle, through every measured point.
+        // The net change and the slope are different figures. The first is how far live memory moved, and one stray
+        // reading can move it. The second is how fast it moves each cycle, through every measured point.
         match summary.net_live_change {
             Some(change) => self.outcome.metrics.push(metrics::trend(
                 "wasm.live_bytes_net_change_after_warmup",

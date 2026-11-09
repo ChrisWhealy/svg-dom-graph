@@ -39,6 +39,6 @@ pub(crate) fn build(centres: &[(f64, f64)], arcs: &[(usize, usize)], bounds: Bou
     Ok(system)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

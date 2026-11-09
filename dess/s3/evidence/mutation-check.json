@@ -1,0 +1,175 @@
+{
+  "mutations": [
+    {
+      "name": "the guard after a draw is not asked, so a host that left in the middle of it is committed",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_draw_is_never_committed_and_is_repaired_on_return",
+        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_seek_never_commits_it"
+      ],
+      "built": true
+    },
+    {
+      "name": "a draw that failed is committed anyway",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
+        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw"
+      ],
+      "built": true
+    },
+    {
+      "name": "a draw that failed is not repaired at once",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary"
+      ],
+      "built": true
+    },
+    {
+      "name": "a stop does not advance the playback epoch",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::one_callback_queued_before_a_hide_is_inert_with_or_without_the_hint"
+      ],
+      "built": true
+    },
+    {
+      "name": "a seek that replaces another does not advance the seek token",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
+        "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert"
+      ],
+      "built": true
+    },
+    {
+      "name": "a timer of an old epoch is not stale",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_speed_change_while_playing_replaces_the_timer_and_a_slice_does_not_come_twice"
+      ],
+      "built": true
+    },
+    {
+      "name": "a frame of an old seek is not stale",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one"
+      ],
+      "built": true
+    },
+    {
+      "name": "showing a panel again resumes playback",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::showing_again_repairs_a_dirty_page_and_never_resumes_playback"
+      ],
+      "built": true
+    },
+    {
+      "name": "a request with nowhere to go does not repair a dirty page",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary"
+      ],
+      "built": true
+    },
+    {
+      "name": "a slice that was staged is stepped again after a failed draw",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw"
+      ],
+      "built": true
+    },
+    {
+      "name": "the forced one-slice budget is ignored",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one"
+      ],
+      "built": true
+    },
+    {
+      "name": "a speed change does not replace the timer",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_speed_change_while_playing_replaces_the_timer_and_a_slice_does_not_come_twice"
+      ],
+      "built": true
+    },
+    {
+      "name": "a failure is reported every time and not once",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary"
+      ],
+      "built": true
+    },
+    {
+      "name": "the host is announced as unavailable every time and not once",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_hidden_host_is_announced_once_for_the_whole_episode_and_again_after_it_was_shown"
+      ],
+      "built": true
+    },
+    {
+      "name": "a pause leaves its timer waiting",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::pause_takes_back_the_timer_and_a_kept_one_that_runs_is_inert"
+      ],
+      "built": true
+    },
+    {
+      "name": "a hidden panel is taken for a live one",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "a_hidden_panel_is_not_live_and_a_callback_queued_before_the_hide_is_inert"
+      ],
+      "built": true
+    },
+    {
+      "name": "a cancelled task keeps its closure",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "cancelling_a_task_drops_its_closure_over_many_cycles",
+        "a_disposed_controller_holds_nothing_and_late_callbacks_do_nothing"
+      ],
+      "built": true
+    },
+    {
+      "name": "a closure that has run is never released",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "the_page_is_the_committed_slice_by_next_and_by_seek",
+        "playback_on_the_pages_timers_runs_to_the_end_and_leaves_no_closure",
+        "cancelling_a_task_drops_its_closure_over_many_cycles"
+      ],
+      "built": true
+    }
+  ]
+}

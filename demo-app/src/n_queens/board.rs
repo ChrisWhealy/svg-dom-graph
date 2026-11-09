@@ -14,9 +14,9 @@ pub(super) const OFF: &str = "nq-off";
 const LINES: [Conflict; 3] = [Conflict::Column, Conflict::MainDiagonal, Conflict::AntiDiagonal];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Everything that is drawn for one size of board. The layers are separate, so that the rays can pass under the
-/// queens and the outline over the rays: the fills, the rays, the queens, the outline, the frame, the grid that holds
-/// the cells a person can focus, and last the focus ring.
+/// Everything that is drawn for one size of board. The layers are separate, so that the rays can pass under the queens
+/// and the outline over the rays: the fills, the rays, the queens, the outline, the frame, the grid that holds the
+/// cells a person can focus, and last the focus ring.
 pub(super) struct BoardParts {
     pub(super) size: usize,
     pub(super) root: web_sys::Element,
@@ -219,8 +219,8 @@ pub(super) fn arrange(board: &BoardParts, active: (usize, usize), ring_shown: bo
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Writes the squares, the rays, the outline and the frame for `view` into `board`. When `previous` is the view that
-/// is already drawn, only what differs is written. With `None`, every square is written.
+/// Writes the squares, the rays, the outline and the frame for `view` into `board`. When `previous` is the view that is
+/// already drawn, only what differs is written. With `None`, every square is written.
 ///
 /// # Errors
 ///

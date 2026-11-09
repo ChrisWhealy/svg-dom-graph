@@ -1,4 +1,5 @@
-//! The specification of a scenario, its ranges, and the two kinds of error: a malformed specification and a refused one.
+//! The specification of a scenario, its ranges, and the two kinds of error: a malformed specification and a refused
+//! one.
 
 use crate::budget::Refusal;
 use crate::prng::stream;

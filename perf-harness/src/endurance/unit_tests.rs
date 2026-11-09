@@ -9,7 +9,8 @@ fn point(cycle: u64, warmup: u64, live: f64, capacity: f64) -> SeriesPoint {
     }
 }
 
-/// Cycles 1 to 60 with a warm-up of 20, leaving out the ones that ran a checkpoint: one in the warm-up and two measured.
+/// Cycles 1 to 60 with a warm-up of 20, leaving out the ones that ran a checkpoint: one in the warm-up and two
+/// measured.
 fn gapped(live: impl Fn(u64) -> f64, capacity: impl Fn(u64) -> f64) -> Vec<SeriesPoint> {
     (1..=60)
         .filter(|c| ![10, 30, 60].contains(c))
@@ -18,8 +19,9 @@ fn gapped(live: impl Fn(u64) -> f64, capacity: impl Fn(u64) -> f64) -> Vec<Serie
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With cycle 10 left out of the warm-up, the series has 19 warm-up points. Skipping 20 entries by position, as an earlier
-/// version did, would also have dropped the first measured cycle, and the interval would have begun at cycle 22.
+/// With cycle 10 left out of the warm-up, the series has 19 warm-up points. Skipping 20 entries by position, as an
+/// earlier version did, would also have dropped the first measured cycle, and the interval would have begun at cycle
+/// 22.
 #[test]
 fn the_measured_interval_begins_at_the_first_measured_cycle_whatever_was_left_out() -> Result<(), String> {
     let summary = summarize(&gapped(|_| 1000.0, |_| 65536.0));
@@ -50,8 +52,8 @@ fn a_series_that_does_not_move_has_no_net_change_no_slope_and_no_growth() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Live bytes of 100 + 3 a cycle: the slope is 3 a cycle whatever cycles are missing, and the net change runs from the last
-/// warm-up cycle (20) to the last measured one (59).
+/// Live bytes of 100 + 3 a cycle: the slope is 3 a cycle whatever cycles are missing, and the net change runs from the
+/// last warm-up cycle (20) to the last measured one (59).
 #[test]
 fn the_slope_and_the_net_change_are_two_different_figures_and_both_use_the_real_cycles() -> Result<(), String> {
     let summary = summarize(&gapped(|c| 100.0 + 3.0 * c as f64, |_| 1.0));
@@ -63,8 +65,8 @@ fn the_slope_and_the_net_change_are_two_different_figures_and_both_use_the_real_
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One reading well above the rest moves the net change by its whole height and the slope by far less, which is why the two
-/// are reported apart.
+/// One reading well above the rest moves the net change by its whole height and the slope by far less, which is why the
+/// two are reported apart.
 #[test]
 fn one_stray_reading_moves_the_net_change_and_barely_moves_the_slope() -> Result<(), String> {
     let flat = summarize(&gapped(|_| 5000.0, |_| 1.0));
@@ -84,7 +86,8 @@ fn one_stray_reading_moves_the_net_change_and_barely_moves_the_slope() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Capacity that grows during the warm-up is expected and is not counted. Growth after it is, once, wherever it happens.
+/// Capacity that grows during the warm-up is expected and is not counted. Growth after it is, once, wherever it
+/// happens.
 #[test]
 fn capacity_growth_counts_after_the_warm_up_and_not_during_it() -> Result<(), String> {
     let during = summarize(&gapped(|_| 1.0, |c| if c < 15 { 65536.0 } else { 131072.0 }));
@@ -173,7 +176,8 @@ fn the_allowance_is_the_growth_tolerated_over_the_interval() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Steady growth with a low last reading has a small net change, and only the trend shows it. This is why there are two measures.
+/// Steady growth with a low last reading has a small net change, and only the trend shows it. This is why there are two
+/// measures.
 #[test]
 fn the_trend_catches_growth_that_a_low_last_reading_hides_from_the_net_change() -> Result<(), String> {
     let climbing_then_dropping =

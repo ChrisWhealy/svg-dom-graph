@@ -1,12 +1,12 @@
 //! A wasm-bindgen import that returns an object and throws loses one externref slot for each throw.
 //!
-//! Each import below is declared `catch`, so that a JavaScript exception becomes an `Err`. The test calls each one many times,
-//! with a failure, and asks wasm-bindgen how many externrefs it believes are live before and after. That is
+//! Each import below is declared `catch`, so that a JavaScript exception becomes an `Err`. The test calls each one many
+//! times, with a failure, and asks wasm-bindgen how many externrefs it believes are live before and after. That is
 //! `wasm_bindgen::externref_heap_live_count()`, the function that crate documents for finding this kind of leak.
 //!
-//! The result with wasm-bindgen 0.2.129 is that the count rises by exactly one for each failure of an import that returns an
-//! object, and by nothing for one that returns nothing or a number, or for any import that does not fail. The `Err` that comes back
-//! is dropped by the caller each time, so nothing in the caller holds the slot.
+//! The result with wasm-bindgen 0.2.129 is that the count rises by exactly one for each failure of an import that
+//! returns an object, and by nothing for one that returns nothing or a number, or for any import that does not fail.
+//! The `Err` that comes back is dropped by the caller each time, so nothing in the caller holds the slot.
 
 use wasm_bindgen::prelude::*;
 

@@ -1,21 +1,22 @@
-//! Where everything is. It is a function of the specification alone, so it is the same on every run and can be tested without a page.
+//! Where everything is. It is a function of the specification alone, so it is the same on every run and can be tested
+//! without a page.
 //!
-//! A graph that a person is meant to read, up to [`SINGLE_MAX`] nodes on a side, is drawn as two single columns with a wide channel
-//! between them, so that each edge is a line that can be followed from one end to the other. A larger graph is there to be measured and
-//! not read, and its nodes are packed into blocks.
+//! A graph that a person is meant to read, up to [`SINGLE_MAX`] nodes on a side, is drawn as two single columns with a
+//! wide channel between them, so that each edge is a line that can be followed from one end to the other. A larger
+//! graph is there to be measured and not read, and its nodes are packed into blocks.
 
 use spmv_core::spec::Spec;
 
 /// The most nodes on a side that are drawn as a single column.
 pub const SINGLE_MAX: u64 = 64;
-/// The most rows or columns of a matrix that are drawn in full, with their values. A larger matrix is shown as the pattern of its
-/// nonzeros, since a person cannot read a thousand rows of figures.
+/// The most rows or columns of a matrix that are drawn in full, with their values. A larger matrix is shown as the
+/// pattern of its nonzeros, since a person cannot read a thousand rows of figures.
 pub const MATRIX_MAX: u64 = 24;
 /// The size of a cell of the matrix, and the room for the labels of its rows at the left and of its columns above.
 pub const MATRIX_CELL: (f64, f64) = (30.0, 24.0);
 pub const MATRIX_LABELS: (f64, f64) = (26.0, 18.0);
-/// The gap between the matrix and the vector strip under it (x) and the one beside it (y), and the width of the y strip.
-/// The room at each side of a single-column graph for the value of every node, written beside it.
+/// The gap between the matrix and the vector strip under it (x) and the one beside it (y), and the width of the y
+/// strip. The room at each side of a single-column graph for the value of every node, written beside it.
 pub const VALUE_ROOM: f64 = 56.0;
 pub const STRIP_GAP: f64 = 8.0;
 pub const STRIP_WIDTH: f64 = 56.0;
@@ -27,12 +28,13 @@ pub const GAP_Y: f64 = 6.0;
 /// The same for a single column, which is made to be read and so has more room.
 pub const SINGLE_NODE_HEIGHT: f64 = 26.0;
 pub const SINGLE_GAP_Y: f64 = 18.0;
-/// The width of the space between the column nodes and the row nodes, where the edges run. A single column has a wide one, so that
-/// the edges slope and can be told apart.
+/// The width of the space between the column nodes and the row nodes, where the edges run. A single column has a wide
+/// one, so that the edges slope and can be told apart.
 pub const CHANNEL: f64 = 160.0;
 pub const SINGLE_CHANNEL: f64 = 460.0;
-/// The room for a data cell, the padding of a data node, and the gap under the data nodes. The pitch is a little over what Chrome
-/// draws (about 49.5 by 36 for a cell, and 14 of padding, measured from 1 to 1,000 cells), and it does not depend on the values.
+/// The room for a data cell, the padding of a data node, and the gap under the data nodes. The pitch is a little over
+/// what Chrome draws (about 49.5 by 36 for a cell, and 14 of padding, measured from 1 to 1,000 cells), and it does not
+/// depend on the values.
 pub const CELL_PITCH: (f64, f64) = (50.0, 37.0);
 pub const DATA_PAD: f64 = 20.0;
 pub const HEADER_GAP: f64 = 24.0;
@@ -44,7 +46,7 @@ pub const SPY_SIDE: f64 = 160.0;
 /// The space between the y data node, and its caption, and the square: a caption is a little wider than its box.
 pub const SPY_GAP: f64 = 44.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A position and a size.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rect {
@@ -54,8 +56,9 @@ pub struct Rect {
     pub h: f64,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where the matrix is drawn in full, with its values: its top left, which is that of its labels, and its size in rows and columns.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where the matrix is drawn in full, with its values: its top left, which is that of its labels, and its size in rows
+/// and columns.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MatrixGeom {
     pub origin: (f64, f64),
@@ -85,7 +88,8 @@ impl MatrixGeom {
         }
     }
 
-    /// The cell of entry `i` of y, in the column of values beside the matrix, which lines up with the row `i` to its left.
+    /// The cell of entry `i` of y, in the column of values beside the matrix, which lines up with the row `i` to its
+    /// left.
     #[must_use]
     pub fn y_entry(&self, i: usize) -> Rect {
         let c = self.cell(i, self.cols.saturating_sub(1));
@@ -109,7 +113,7 @@ impl MatrixGeom {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The plan of the page for one specification.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Layout {
@@ -126,8 +130,8 @@ pub struct Layout {
     pub x_node: (f64, f64),
     pub y_node: (f64, f64),
     pub data_columns: usize,
-    /// The top left of the box at the right of everything: the square that shows the pattern of the nonzeros, or, for a matrix that
-    /// is small enough, the matrix itself with its values.
+    /// The top left of the box at the right of everything: the square that shows the pattern of the nonzeros, or, for a
+    /// matrix that is small enough, the matrix itself with its values.
     pub spy_origin: (f64, f64),
     /// The width and the height of that box.
     pub aside_size: (f64, f64),
@@ -170,7 +174,8 @@ impl Layout {
         } else {
             (SPY_SIDE, SPY_SIDE)
         };
-        // The header holds the boxes and the captions under them, and is as tall as the taller of the data nodes and the box at the right.
+        // The header holds the boxes and the captions under them, and is as tall as the taller of the data nodes and
+        // the box at the right.
         let header_height = (data_bottom.max(aside_size.1) + CAPTION_ROOM + HEADER_GAP).max(0.0);
         let block = |n: u64, per: usize| {
             let lines = n.div_ceil(per as u64) as f64;
@@ -182,7 +187,8 @@ impl Layout {
         let rows_x = value_room + cols_w + channel;
         let data_w = data_columns as f64 * CELL_PITCH.0 + DATA_PAD;
         let graph_w = (rows_x + rows_w).max(rows_x.max(cols_w) + data_w) + value_room;
-        // The shorter side is centred against the taller, so that the edges between two single columns do not all slope one way.
+        // The shorter side is centred against the taller, so that the edges between two single columns do not all slope
+        // one way.
         let tallest = cols_h.max(rows_h);
         let centre = |h: f64| if single { (tallest - h) / 2.0 } else { 0.0 };
         Self {
@@ -214,8 +220,9 @@ impl Layout {
         }
     }
 
-    /// The same layout moved by `(dx, dy)`: every place in it, and not the extent. A window that centres a graph in its room, and
-    /// whose toolbar the library fixes to the origin of the scene's space, moves the graph and not the view box.
+    /// The same layout moved by `(dx, dy)`: every place in it, and not the extent. A window that centres a graph in its
+    /// room, and whose toolbar the library fixes to the origin of the scene's space, moves the graph and not the view
+    /// box.
     #[must_use]
     pub fn shifted(mut self, dx: f64, dy: f64) -> Self {
         for place in [
@@ -264,11 +271,11 @@ impl Layout {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn per_line(n: u64) -> usize {
     (n as f64).sqrt().ceil().max(1.0) as usize
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

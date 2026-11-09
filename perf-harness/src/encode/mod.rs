@@ -1,9 +1,9 @@
 //! The canonical byte encoding that an operation stream is hashed in.
 //!
-//! Every value starts with a one-byte type tag. Integers are little-endian at a fixed width. A string is a little-endian
-//! `u32` byte length and then its UTF-8. A float is its IEEE-754 bit pattern, with `-0.0` written as `+0.0`, and NaN and
-//! infinity are refused. The whole stream begins with [`ENCODING_VERSION`], so a later change of this layout cannot be
-//! mistaken for the same stream.
+//! Every value starts with a one-byte type tag. Integers are little-endian at a fixed width. A string is a
+//! little-endian `u32` byte length and then its UTF-8. A float is its IEEE-754 bit pattern, with `-0.0` written as
+//! `+0.0`, and NaN and infinity are refused. The whole stream begins with [`ENCODING_VERSION`], so a later change of
+//! this layout cannot be mistaken for the same stream.
 
 /// The version byte that opens every encoded stream.
 pub const ENCODING_VERSION: u8 = 1;

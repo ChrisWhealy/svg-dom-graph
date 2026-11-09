@@ -2,12 +2,14 @@
 //!
 //!   dess-trace panel FROM TO        the panel seeds FROM to TO - 1
 //!   dess-trace panel2 FROM TO       the disturbed panel: the same seeds with a script added
-//!   dess-trace errors PATH          every case of an error-fixtures file, as `{"name", "outcome", "kind", "message"}`; PATH `-` is standard input
+//!   dess-trace errors PATH          every case of an error-fixtures file, as `{"name", "outcome", "kind", "message"}`;
+//!                                   PATH `-` is standard input
 //!   dess-trace manifest             the frozen revision `mixed_outage/7` for the manifest seed 20261106
-//!   dess-trace fixtures PATH        every fixture of the file, as `{"name": ..., "trace": ...}`. PATH `-` reads standard input
+//!   dess-trace fixtures PATH        every fixture of the file, as `{"name": ..., "trace": ...}`.
+//!                                   PATH `-` reads standard input
 //!
-//! It runs natively and under WASI. The harness's WASI runner preopens no directory, so the differential run gives the fixtures on
-//! standard input.
+//! It runs natively and under WASI. The harness's WASI runner preopens no directory, so the differential run gives the
+//! fixtures on standard input.
 
 use service_sim_engine::trace::{Scenario, trace};
 use service_sim_engine::{Error, Limits};

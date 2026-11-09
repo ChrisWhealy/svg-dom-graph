@@ -1,8 +1,8 @@
 use super::*;
 use crate::prng::SplitMix64;
 
-/// Repetitions of observations around `centre`, each with its own small shift (the run-to-run part) and noise (the within-run
-/// part), all from one seed so that a test is the same every time.
+/// Repetitions of observations around `centre`, each with its own small shift (the run-to-run part) and noise (the
+/// within-run part), all from one seed so that a test is the same every time.
 fn collection(seed: u64, repetitions: usize, centre: f64, shift: f64, noise: f64) -> Vec<Vec<f64>> {
     let mut rng = SplitMix64::new(seed);
     let unit = |rng: &mut SplitMix64| (rng.next_u64() >> 11) as f64 / (1u64 << 53) as f64 - 0.5;
@@ -26,7 +26,8 @@ fn verdict_of(baseline: &[Vec<f64>], candidate: &[Vec<f64>]) -> Comparison {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two collections drawn from the same distribution are not a change. If this reported one, every run of CI would be a false alarm.
+/// Two collections drawn from the same distribution are not a change. If this reported one, every run of CI would be a
+/// false alarm.
 #[test]
 fn the_same_distribution_is_no_material_change() -> Result<(), String> {
     for seed in 1..=8 {
@@ -73,8 +74,8 @@ fn a_change_inside_the_tolerance_is_not_a_regression() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// When the runs disagree among themselves as much as the change is worth, the interval is too wide for a verdict, which is
-/// said as inconclusive and never as a pass.
+/// When the runs disagree among themselves as much as the change is worth, the interval is too wide for a verdict,
+/// which is said as inconclusive and never as a pass.
 #[test]
 fn runs_that_disagree_give_an_inconclusive_result() -> Result<(), String> {
     let base = collection(1, 5, 50.0, 0.30, 0.05);
@@ -86,8 +87,8 @@ fn runs_that_disagree_give_an_inconclusive_result() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With the three repetitions of perf-smoke there is no interval and no verdict, even when the change is huge. The figures are
-/// still given, with a ratio, so a reader can see what was measured.
+/// With the three repetitions of perf-smoke there is no interval and no verdict, even when the change is huge. The
+/// figures are still given, with a ratio, so a reader can see what was measured.
 #[test]
 fn too_few_repetitions_give_a_diagnostic_and_no_verdict() -> Result<(), String> {
     let c = verdict_of(&collection(1, 3, 50.0, 0.01, 0.05), &collection(2, 3, 150.0, 0.01, 0.05));
@@ -146,8 +147,8 @@ fn the_interval_is_reproducible_from_the_seed() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The interval of a ratio is the interval a hand calculation gives for data with no spread at all: a point. A candidate that is
-/// exactly 1.5 times the baseline in every observation has the interval 1.5 to 1.5.
+/// The interval of a ratio is the interval a hand calculation gives for data with no spread at all: a point. A
+/// candidate that is exactly 1.5 times the baseline in every observation has the interval 1.5 to 1.5.
 #[test]
 fn data_with_no_spread_give_a_point_interval() -> Result<(), String> {
     let a: Vec<Vec<f64>> = (0..5).map(|_| vec![10.0; 40]).collect();

@@ -1,9 +1,10 @@
-//! Times the preparation of a draw, in three parts that are kept apart: extracting the engine's model, building the projection from
-//! it, and computing the delta against the previous slice's projection. It also times one engine slice, for scale, and counts the jobs
-//! that each extraction copies. It prints one JSON object, and runs natively: the surface needs a browser, and none of this does.
+//! Times the preparation of a draw, in three parts that are kept apart: extracting the engine's model, building the
+//! projection from it, and computing the delta against the previous slice's projection. It also times one engine slice,
+//! for scale, and counts the jobs that each extraction copies. It prints one JSON object, and runs natively: the
+//! surface needs a browser, and none of this does.
 //!
-//! The workloads are those of the replay benchmark, `dess-bench`: the frozen revision `mixed_outage/7` at the manifest seed, scaled to
-//! about 1,000, 10,000 and 100,000 pops.
+//! The workloads are those of the replay benchmark, `dess-bench`: the frozen revision `mixed_outage/7` at the manifest
+//! seed, scaled to about 1,000, 10,000 and 100,000 pops.
 
 use service_sim::projection::{View, extract, project, writes};
 use service_sim_engine::{Engine, Limits, Params};
@@ -11,7 +12,8 @@ use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-/// Counts what is asked of the allocator, so that the copying that a preparation does can be measured and not guessed at.
+/// Counts what is asked of the allocator, so that the copying that a preparation does can be measured and not guessed
+/// at.
 struct Counting;
 static BYTES: AtomicU64 = AtomicU64::new(0);
 static CALLS: AtomicU64 = AtomicU64::new(0);

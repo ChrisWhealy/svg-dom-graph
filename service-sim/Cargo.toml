@@ -17,10 +17,11 @@ service-sim-engine = { path = "../service-sim-engine" }
 svg-dom-graph = { path = ".." }
 svg-dom = "^0.2.17"
 wasm-bindgen = "0.2"
+js-sys = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3"
-features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement"]
+features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement", "MutationObserver", "MutationObserverInit", "console"]
 
 # The tests detach the host in the middle of a draw, which needs a hook that no other build has.
 [features]
@@ -31,6 +32,8 @@ serde_json = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
 service-sim = { path = ".", features = ["fault-hook"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.web-sys]

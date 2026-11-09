@@ -1,13 +1,14 @@
-//! Reads the results of two collections of runs and writes the comparison report that `comparison.schema.json` describes.
+//! Reads the results of two collections of runs and writes the comparison report that `comparison.schema.json`
+//! describes.
 //!
-//! A collection is the runs of one layer and one mode of one manifest. Before any number is compared the two collections are
-//! checked to have been measured alike: the same workload (the manifest and the operation stream), and the same environment key
-//! of operating system, processor, runner class, browser version and measurement protocol. If they differ, every metric is
-//! reported as not comparable and no figure is compared, since a difference between two machines is not a difference between
-//! two versions of the code.
+//! A collection is the runs of one layer and one mode of one manifest. Before any number is compared the two
+//! collections are checked to have been measured alike: the same workload (the manifest and the operation stream), and
+//! the same environment key of operating system, processor, runner class, browser version and measurement protocol. If
+//! they differ, every metric is reported as not comparable and no figure is compared, since a difference between two
+//! machines is not a difference between two versions of the code.
 //!
-//! A run that is not valid is not a slow run. A collection that holds one is refused, so a timing is never compared when the
-//! workload behind it did not do what it was meant to.
+//! A run that is not valid is not a slow run. A collection that holds one is refused, so a timing is never compared
+//! when the workload behind it did not do what it was meant to.
 
 use super::{Comparison, Settings, Statistic, compare, not_comparable, to_json};
 use serde_json::{Value, json};
@@ -280,7 +281,8 @@ pub fn build_report(
         for statistic in Statistic::ALL {
             let enough =
                 |side: &[Vec<f64>]| !side.is_empty() && side.iter().all(|r| r.len() >= statistic.min_samples());
-            // A percentile with too few observations behind it is not shown, except for the median, which says why it is not.
+            // A percentile with too few observations behind it is not shown, except for the median, which says why it
+            // is not.
             if statistic != Statistic::P50 && !(enough(&base) && enough(&cand)) {
                 continue;
             }

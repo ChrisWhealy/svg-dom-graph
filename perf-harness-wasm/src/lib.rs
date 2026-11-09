@@ -1,8 +1,8 @@
 //! The Layer B runner of the performance harness.
 //!
-//! It drives a real `svg-dom-graph` scene in a browser, through the library's public API only, times what it does, observes
-//! what it drew, and counts what it allocated. The pieces that need a browser are built for wasm only. The counting
-//! allocator's arithmetic is plain Rust and is tested natively.
+//! It drives a real `svg-dom-graph` scene in a browser, through the library's public API only, times what it does,
+//! observes what it drew, and counts what it allocated. The pieces that need a browser are built for wasm only. The
+//! counting allocator's arithmetic is plain Rust and is tested natively.
 
 pub mod alloc;
 pub mod memory;
@@ -54,8 +54,8 @@ mod exports {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs one repetition of a workload and returns the outcome as JSON. It never throws: a failure is a status.
     ///
-    /// `manifest_json` is the canonical manifest of a workload report. `expected_json` is `{"sha256", "mutations_sha256"}`
-    /// from that report, made by another process, or empty to compare the stream with itself.
+    /// `manifest_json` is the canonical manifest of a workload report. `expected_json` is `{"sha256",
+    /// "mutations_sha256"}` from that report, made by another process, or empty to compare the stream with itself.
     #[wasm_bindgen]
     pub fn run_workload(manifest_json: &str, mode: &str, expected_json: &str) -> String {
         let mode = match mode {
@@ -83,13 +83,14 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Runs one repetition of a workload as a candidate that has been changed on purpose, and returns the outcome as JSON.
+    /// Runs one repetition of a workload as a candidate that has been changed on purpose, and returns the outcome as
+    /// JSON.
     ///
-    /// `slowdown_us` is spent inside the timed interval after every library call of a node, an edge or a move, as a library
-    /// that had got slower would. `leak` is `none`, `bytes`, `closure` or `library_watch`, made after every teardown, so that a
-    /// run with `library_watch` ends with listeners that the scene's teardown did not release. A run with neither is the same
-    /// as `run_workload`. `selftest-regression.mjs` uses it to prove that the comparison and the deterministic gates each
-    /// notice what they exist to notice.
+    /// `slowdown_us` is spent inside the timed interval after every library call of a node, an edge or a move, as a
+    /// library that had got slower would. `leak` is `none`, `bytes`, `closure` or `library_watch`, made after every
+    /// teardown, so that a run with `library_watch` ends with listeners that the scene's teardown did not release. A
+    /// run with neither is the same as `run_workload`. `selftest-regression.mjs` uses it to prove that the comparison
+    /// and the deterministic gates each notice what they exist to notice.
     #[wasm_bindgen]
     pub fn run_candidate(manifest_json: &str, mode: &str, expected_json: &str, slowdown_us: f64, leak: &str) -> String {
         let mode = match mode {
@@ -155,9 +156,9 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Runs a workload with its last mutation before one of the two executed checkpoints applied wrongly, and returns the
-    /// outcome as JSON. `target` is `final`, `penultimate` or `none`. A run that does it has to come out invalid, in the
-    /// performance mode as in the correctness mode, which `selftest-final-state.mjs` checks.
+    /// Runs a workload with its last mutation before one of the two executed checkpoints applied wrongly, and returns
+    /// the outcome as JSON. `target` is `final`, `penultimate` or `none`. A run that does it has to come out invalid,
+    /// in the performance mode as in the correctness mode, which `selftest-final-state.mjs` checks.
     #[wasm_bindgen]
     pub fn selftest_corruption(manifest_json: &str, mode: &str, target: &str) -> String {
         let mode = match mode {
@@ -218,9 +219,9 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Runs a manifest as an endurance run with a deliberate leak in every cycle, and returns the outcome as JSON. `kind` is
-    /// `none`, `bytes`, `closure` or `library_watch`, and `bytes` is how many a cycle leaks. The endurance gate has to fail
-    /// for every leak and pass for none, which `selftest-endurance.mjs` checks.
+    /// Runs a manifest as an endurance run with a deliberate leak in every cycle, and returns the outcome as JSON.
+    /// `kind` is `none`, `bytes`, `closure` or `library_watch`, and `bytes` is how many a cycle leaks. The endurance
+    /// gate has to fail for every leak and pass for none, which `selftest-endurance.mjs` checks.
     #[wasm_bindgen]
     pub fn selftest_endurance(manifest_json: &str, kind: &str, bytes: u32) -> String {
         let mode = Mode::Endurance;
@@ -247,8 +248,8 @@ mod exports {
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 
-    /// Runs a manifest as an endurance run with the allocator tracking every block, and returns what is still live after the
-    /// teardown of each of the first `cycles` cycles, by the phase of the harness that allocated it, as JSON.
+    /// Runs a manifest as an endurance run with the allocator tracking every block, and returns what is still live
+    /// after the teardown of each of the first `cycles` cycles, by the phase of the harness that allocated it, as JSON.
     #[wasm_bindgen]
     pub fn attribute_persistent_run(manifest_json: &str, cycles: u32) -> String {
         match serde_json::from_str(manifest_json)
@@ -260,14 +261,15 @@ mod exports {
         }
     }
 
-    /// Runs `cycles` of one stage of the lifecycle and returns what the allocator counted after each, as JSON. See `persistent`.
+    /// Runs `cycles` of one stage of the lifecycle and returns what the allocator counted after each, as JSON. See
+    /// `persistent`.
     #[wasm_bindgen]
     pub fn attribute_persistent(stage: &str, cycles: u32, before_baseline: &str, nodes: u32) -> String {
         crate::persistent::run(stage, cycles as usize, before_baseline, nodes as usize)
     }
 
-    /// Builds the scene of an interaction manifest at a scale of the view, checks it against the reference model, and says what
-    /// it made, as JSON. See `interactive`.
+    /// Builds the scene of an interaction manifest at a scale of the view, checks it against the reference model, and
+    /// says what it made, as JSON. See `interactive`.
     #[wasm_bindgen]
     pub fn interactive_build(manifest_json: &str, scale_percent: u32) -> String {
         crate::interactive::build(manifest_json, scale_percent)
@@ -309,7 +311,8 @@ mod exports {
         crate::interactive::host_present()
     }
 
-    /// Builds the scene of a recovery manifest on a slot, with labels on some edges if asked, and says what it made, as JSON.
+    /// Builds the scene of a recovery manifest on a slot, with labels on some edges if asked, and says what it made, as
+    /// JSON.
     #[wasm_bindgen]
     pub fn recovery_build(manifest_json: &str, slot: u32, labelled: bool) -> String {
         crate::recovery::build(manifest_json, slot, labelled)
@@ -381,7 +384,8 @@ mod exports {
         crate::alloc::start_tracking();
     }
 
-    /// Stops following new blocks, and says which of the blocks followed are still live, with the start of what each holds, as JSON.
+    /// Stops following new blocks, and says which of the blocks followed are still live, with the start of what each
+    /// holds, as JSON.
     #[wasm_bindgen]
     pub fn tracking_stop_and_dump(preview: u32) -> String {
         crate::alloc::stop_tracking();
@@ -402,9 +406,10 @@ mod exports {
         serde_json::json!({ "blocks": rows, "untracked": crate::alloc::untracked(), "growths": crate::alloc::growths() }).to_string()
     }
 
-    /// Holds `count` JavaScript objects at once and then lets them all go, so that wasm-bindgen's table of externrefs, and the list
-    /// of its free slots, are as large as they will need to be. A run does this before it reads its baseline, as it sizes its own
-    /// vectors, so that the slab doubling is not mistaken for growth that the library caused.
+    /// Holds `count` JavaScript objects at once and then lets them all go, so that wasm-bindgen's table of externrefs,
+    /// and the list of its free slots, are as large as they will need to be. A run does this before it reads its
+    /// baseline, as it sizes its own vectors, so that the slab doubling is not mistaken for growth that the library
+    /// caused.
     #[wasm_bindgen]
     pub fn reserve_handles(count: u32) {
         let held: Vec<wasm_bindgen::JsValue> = (0..count).map(|_| js_sys::Object::new().into()).collect();
@@ -418,7 +423,8 @@ mod exports {
         std::hint::black_box(leaked);
     }
 
-    /// What the counting allocator and the module's memory say now, as JSON: live bytes, live blocks and linear-memory capacity.
+    /// What the counting allocator and the module's memory say now, as JSON: live bytes, live blocks and linear-memory
+    /// capacity.
     #[wasm_bindgen]
     pub fn resource_reading() -> String {
         let stats = crate::alloc::stats();
@@ -430,8 +436,8 @@ mod exports {
         .to_string()
     }
 
-    /// The endurance verdict of a series of readings taken after each teardown, as JSON. The points are
-    /// `{cycle, measured, live_bytes, capacity}`, and the allowance is the most that live bytes may have grown by.
+    /// The endurance verdict of a series of readings taken after each teardown, as JSON. The points are `{cycle,
+    /// measured, live_bytes, capacity}`, and the allowance is the most that live bytes may have grown by.
     #[wasm_bindgen]
     pub fn endurance_verdict(points_json: &str, allowance_bytes: f64) -> String {
         use perf_harness::endurance::{SeriesPoint, Verdict, judge, summarize};
@@ -474,7 +480,8 @@ mod exports {
         .to_string()
     }
 
-    /// Describes samples as a latency metric, with the same statistics as the other layers, as JSON. `layer` is `A`, `B` or `C`.
+    /// Describes samples as a latency metric, with the same statistics as the other layers, as JSON. `layer` is `A`,
+    /// `B` or `C`.
     #[wasm_bindgen]
     pub fn describe_metric(name: &str, layer: &str, unit: &str, samples_json: &str, mechanism: &str) -> String {
         use perf_harness::metrics::{Layer, timing, unavailable};

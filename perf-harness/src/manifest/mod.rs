@@ -1,9 +1,9 @@
 //! A workload manifest: what to run, with what seed, and how many times.
 //!
-//! The manifest is read from TOML, checked against `perf/schemas/manifest.schema.json` when the `schema` feature is on, and
-//! then checked again for things a schema cannot say, such as whether the requested edges can fit under the degree limit.
-//! Its canonical form is its typed fields, written as JSON in a fixed order. Its hash therefore does not depend on how the
-//! TOML was laid out or commented.
+//! The manifest is read from TOML, checked against `perf/schemas/manifest.schema.json` when the `schema` feature is on,
+//! and then checked again for things a schema cannot say, such as whether the requested edges can fit under the degree
+//! limit. Its canonical form is its typed fields, written as JSON in a fixed order. Its hash therefore does not depend
+//! on how the TOML was laid out or commented.
 
 use crate::ops::hex;
 use serde::{Deserialize, Serialize};
@@ -78,9 +78,9 @@ pub enum GestureKind {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a browser is asked to do to the scene of workload W4, and at what scale of the view.
 ///
-/// A scale is in percent, since a manifest holds no floating-point number that would have to be compared for equality. Every
-/// gesture is made once for each of the measured and warm-up iterations at each scale, so the cases are the scales times the
-/// gestures.
+/// A scale is in percent, since a manifest holds no floating-point number that would have to be compared for equality.
+/// Every gesture is made once for each of the measured and warm-up iterations at each scale, so the cases are the
+/// scales times the gestures.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Interaction {
@@ -145,8 +145,8 @@ impl Interaction {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A place at which the library can fail part way, and the recovery runner breaks it. The contract of each is written down in
-/// `perf/fault-contracts.json`, from the library's code.
+/// A place at which the library can fail part way, and the recovery runner breaks it. The contract of each is written
+/// down in `perf/fault-contracts.json`, from the library's code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FaultPoint {
@@ -171,7 +171,8 @@ pub enum Expectation {
     NothingCommitted,
     /// A documented part of the change is kept, and a defined retry puts the rest right.
     PartlyCommitted,
-    /// Nothing documents it. The runner records what it sees, and reports it as a finding and not as a pass or a failure.
+    /// Nothing documents it. The runner records what it sees, and reports it as a finding and not as a pass or a
+    /// failure.
     Undocumented,
 }
 
@@ -184,9 +185,9 @@ pub struct FaultExpectation {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fault points of workload W5 and what each is expected to leave behind. The scene they are broken in is the one of the
-/// manifest's `[graph]`, built once. `execution.warmup_iterations` and `measurement_iterations` count the cycles of an
-/// endurance run, in each of which every fault point is broken and recovered from.
+/// The fault points of workload W5 and what each is expected to leave behind. The scene they are broken in is the one
+/// of the manifest's `[graph]`, built once. `execution.warmup_iterations` and `measurement_iterations` count the cycles
+/// of an endurance run, in each of which every fault point is broken and recovered from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Recovery {
@@ -244,9 +245,9 @@ pub struct Limits {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dom_nodes: Option<u64>,
     pub wall_ms: u64,
-    /// How many bytes live memory may grow by over the measured part of an endurance run before the run fails its gate. Absent
-    /// means none, which suits a workload whose live bytes are exact. A structure that grows legitimately would state the most
-    /// it needs here, so that the allowance is a decision in the manifest and not a setting of the tool.
+    /// How many bytes live memory may grow by over the measured part of an endurance run before the run fails its gate.
+    /// Absent means none, which suits a workload whose live bytes are exact. A structure that grows legitimately would
+    /// state the most it needs here, so that the allowance is a decision in the manifest and not a setting of the tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub live_growth_allowance_bytes: Option<u64>,
 }
@@ -300,8 +301,8 @@ impl Manifest {
     ///
     /// # Errors
     ///
-    /// Returns [`ManifestError`] if the text is not TOML, breaks the schema (with the `schema` feature), or asks for more
-    /// edges than the nodes and the degree limit can hold.
+    /// Returns [`ManifestError`] if the text is not TOML, breaks the schema (with the `schema` feature), or asks for
+    /// more edges than the nodes and the degree limit can hold.
     pub fn from_toml(text: &str) -> Result<Self, ManifestError> {
         let value: serde_json::Value = toml::from_str(text).map_err(|e| ManifestError::Parse(e.to_string()))?;
         Self::from_json(value)
@@ -368,8 +369,8 @@ impl Manifest {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The rules that the schema states as minimums and conditions, checked again here.
     ///
-    /// A build without the `schema` feature, such as one for a browser, then refuses the same manifests that a native one
-    /// does. With the feature on, the schema's own message comes first and these never fire.
+    /// A build without the `schema` feature, such as one for a browser, then refuses the same manifests that a native
+    /// one does. With the feature on, the schema's own message comes first and these never fire.
     fn check_ranges(&self) -> Result<(), ManifestError> {
         let refuse = |message: &str| Err(ManifestError::Semantic(message.to_string()));
         if self.schema_version != 1 {

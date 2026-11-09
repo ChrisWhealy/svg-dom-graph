@@ -19,7 +19,7 @@ fn abracadabra() -> Result<Trace, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Positions
+// Positions
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_walk_has_one_step_for_counting_each_merge_the_lengths_and_each_code() -> Result<(), String> {
@@ -34,7 +34,7 @@ fn a_position_past_the_end_is_the_last() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   The forest
+// The forest
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn counting_starts_with_every_byte_as_its_own_tree_lightest_first() -> Result<(), String> {
@@ -81,7 +81,7 @@ fn the_forest_stays_one_tree_after_the_last_merge() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   The table
+// The table
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_table_holds_counts_only_until_the_lengths_are_read_and_the_commonest_byte_comes_first() -> Result<(), String> {
@@ -177,7 +177,7 @@ fn the_canonical_codes_differ_from_the_tree_paths_where_the_tree_put_b_before_c(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Captions
+// Captions
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_counting_caption_says_what_was_counted_and_what_comes_next() -> Result<(), String> {
@@ -312,7 +312,7 @@ fn one_distinct_byte_has_nothing_to_merge_and_a_length_of_one() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Layout
+// Layout
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_branch_is_centred_over_its_children_and_sits_one_level_higher() -> Result<(), String> {
@@ -363,7 +363,7 @@ fn a_leaf_is_as_wide_as_its_label_needs() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Spacing between levels
+// Spacing between levels
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn each_connector_between_a_parent_and_its_child_has_room_for_an_elbow_and_an_arrowhead() -> Result<(), String> {
@@ -405,7 +405,7 @@ fn a_child_sits_a_whole_level_below_its_parent() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Markdown
+// Markdown
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_byte_that_markdown_reads_as_formatting_is_escaped() -> Result<(), String> {
@@ -436,7 +436,7 @@ fn a_caption_names_a_formatting_byte_escaped_and_never_bare() -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   A real sentence
+// A real sentence
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const AUSTEN: &[u8] =
     b"It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife.";
@@ -477,7 +477,7 @@ fn every_step_has_an_explanation_and_none_of_its_paragraphs_is_empty() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   Pass two
+// Pass two
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to 0100 1110 1010 1100 1001 110 and a
 // single bit of padding: the bytes 0x4E, 0xAC and 0x9C.

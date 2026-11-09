@@ -1,4 +1,5 @@
-//! The byte writer of the canonical encodings, and the hashes. The encodings are fixed in `spmv/docs/contract.md` section 6.
+//! The byte writer of the canonical encodings, and the hashes. The encodings are fixed in `spmv/docs/contract.md`
+//! section 6.
 
 use sha2::{Digest, Sha256};
 

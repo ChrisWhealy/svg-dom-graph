@@ -1,8 +1,9 @@
 //! The window's one `<svg>`: the controls above, the readout below, and between them the scene, which pans and zooms.
 //!
-//! The controls and the readout are the browser's own HTML, in a `<foreignObject>` each, so that every button and every list is in the
-//! scene's `<svg>` and none is on the page around it. The scene itself is a nested `<svg>`, which the library's `Scene` is built on,
-//! and which has its own toolbar and its own view, so that the controls and the readout stay where they are when it pans.
+//! The controls and the readout are the browser's own HTML, in a `<foreignObject>` each, so that every button and every
+//! list is in the scene's `<svg>` and none is on the page around it. The scene itself is a nested `<svg>`, which the
+//! library's `Scene` is built on, and which has its own toolbar and its own view, so that the controls and the readout
+//! stay where they are when it pans.
 
 use demo_common::util::required_element;
 
@@ -16,17 +17,18 @@ const READOUT_HEIGHT: f64 = 340.0;
 const EDGE_ROOM: f64 = 16.0;
 /// A small graph is not drawn larger than this, so that a handful of nodes is not made enormous.
 const MOST_ENLARGED: f64 = 2.0;
-/// A graph that is made to be read is not drawn smaller than this, however tall it is, so that its text can be read. A taller one is
-/// begun at the top, and the person pans and zooms to the rest.
+/// A graph that is made to be read is not drawn smaller than this, however tall it is, so that its text can be read. A
+/// taller one is begun at the top, and the person pans and zooms to the rest.
 const LEAST_READABLE: f64 = 0.7;
 
-/// The controls: the size of the problem, and what to do with it. Every id is one that the page's script and its test find them by.
+/// The controls: the size of the problem, and what to do with it. Every id is one that the page's script and its test
+/// find them by.
 const CONTROLS_HTML: &str = include_str!("controls.html");
 
 /// The readout: the verdict, what the selected node computes, and what the build and the steps cost.
 const READOUT_HTML: &str = include_str!("readout.html");
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `<svg>` of the window, and the room that is left for the scene.
 #[derive(Clone)]
 pub(super) struct Shell {
@@ -35,7 +37,7 @@ pub(super) struct Shell {
     pub area: (f64, f64, f64, f64),
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn make(document: &web_sys::Document, tag: &str, attributes: &[(&str, &str)]) -> Result<web_sys::Element, String> {
     let element = document
         .create_element_ns(Some(SVG_NS), tag)
@@ -48,7 +50,7 @@ fn make(document: &web_sys::Document, tag: &str, attributes: &[(&str, &str)]) ->
     Ok(element)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn add(parent: &web_sys::Element, child: &web_sys::Element) -> Result<(), String> {
     parent
         .append_child(child)
@@ -56,7 +58,7 @@ fn add(parent: &web_sys::Element, child: &web_sys::Element) -> Result<(), String
         .map_err(|e| format!("could not add an element: {e:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `<foreignObject>` of the given place, holding a `<div>` of HTML with `html` in it.
 fn foreign(
     document: &web_sys::Document,
@@ -83,8 +85,9 @@ fn foreign(
     Ok(object)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Fills `#root_id` with the window's `<svg>`: a backdrop for the scene, the controls and the readout. The size is the window's.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Fills `#root_id` with the window's `<svg>`: a backdrop for the scene, the controls and the readout. The size is the
+/// window's.
 ///
 /// # Errors
 ///
@@ -131,7 +134,7 @@ pub(super) fn build_host(document: &web_sys::Document, root_id: &str) -> Result<
     Ok(Shell { host, area })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene's own `<svg>`, and what the window needs to know of it.
 pub(super) struct SceneSvg {
     pub element: web_sys::Element,
@@ -141,9 +144,9 @@ pub(super) struct SceneSvg {
     pub view_size: (f64, f64),
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Adds the scene's own `<svg>` in the room that is left. Its view box has the shape of that room, and it gives where the graph is to
-/// begin in it: `extent` centred in the room, and a tall one at the top of it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Adds the scene's own `<svg>` in the room that is left. Its view box has the shape of that room, and it gives where
+/// the graph is to begin in it: `extent` centred in the room, and a tall one at the top of it.
 ///
 /// # Errors
 ///
@@ -161,7 +164,8 @@ pub(super) fn add_scene_svg(
     let scale = fits.clamp(least, MOST_ENLARGED);
     let left = ((w - extent.0 * scale) / 2.0).max(EDGE_ROOM);
     let top = ((h - extent.1 * scale) / 2.0).max(EDGE_ROOM);
-    // The view box begins at the origin, and the graph is moved by `origin` instead, so that a view of 1, 0, 0 is the whole picture.
+    // The view box begins at the origin, and the graph is moved by `origin` instead, so that a view of 1, 0, 0 is the
+    // whole picture.
     let view_box = format!("0 0 {} {}", w / scale, h / scale);
     let svg = make(
         document,
@@ -176,7 +180,8 @@ pub(super) fn add_scene_svg(
             ("viewBox", &view_box),
         ],
     )?;
-    // The backdrop is the scene's own, so that a press on empty space reaches the scene, which pans when the background is dragged.
+    // The backdrop is the scene's own, so that a press on empty space reaches the scene, which pans when the background
+    // is dragged.
     add(
         &svg,
         &make(

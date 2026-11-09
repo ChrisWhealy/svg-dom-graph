@@ -1,6 +1,7 @@
 use super::*;
 
-/// The result schema, with its reference to the manifest schema satisfied, as a validator that every builder is held to.
+/// The result schema, with its reference to the manifest schema satisfied, as a validator that every builder is held
+/// to.
 #[cfg(feature = "schema")]
 fn validate(metric: &Value) -> Result<(), String> {
     let load = |text: &str| serde_json::from_str::<Value>(text).map_err(|e| e.to_string());

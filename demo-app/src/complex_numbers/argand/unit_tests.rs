@@ -139,8 +139,8 @@ fn a_line_label_is_moved_to_the_side_that_was_asked_for_and_turned_to_run_along_
     let (below, _) = line_label(0.0, 10.0, -1.0);
     assert!(near(below.1, 10.0));
 
-    // Along the imaginary axis the anticlockwise side is to its left, and the text is turned a quarter turn anticlockwise,
-    // which on the page is -90.
+    // Along the imaginary axis the anticlockwise side is to its left, and the text is turned a quarter turn
+    // anticlockwise, which on the page is -90.
     let (left, turn) = line_label(FRAC_PI_2, 10.0, 1.0);
     assert!(near(left.0, -10.0) && near(left.1, 0.0) && near(turn, -90.0));
 }
@@ -149,7 +149,8 @@ fn a_line_label_is_moved_to_the_side_that_was_asked_for_and_turned_to_run_along_
 fn a_line_label_is_never_upside_down() {
     for degrees in (-179..=180).step_by(7) {
         let (_, turn) = line_label(f64::from(degrees).to_radians(), 0.0, 1.0);
-        // Whole turns do not matter, so bring the turn into -180 to 180. Upright text is within a quarter turn of level.
+        // Whole turns do not matter, so bring the turn into -180 to 180. Upright text is within a quarter turn of
+        // level.
         let turn = (turn + 180.0).rem_euclid(360.0) - 180.0;
         assert!(turn.abs() <= 90.0 + 1e-9, "{degrees} degrees turns the text {turn}");
     }

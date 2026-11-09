@@ -1,9 +1,9 @@
 //! The pure core of the sparse-matrix scale demonstrator.
 //!
-//! It generates a seeded sparse matrix and a vector, computes the exact integer product and keeps it up to date as entries of the
-//! vector change, checks a specification against a budget before anything is built, and hashes what it computes. It has no DOM and
-//! no `web-sys`, so it builds natively and for `wasm32-wasip1`. The rules are those of `spmv/docs/contract.md`, which a second
-//! implementation in JavaScript, in `spmv/reference-js/`, was written from.
+//! It generates a seeded sparse matrix and a vector, computes the exact integer product and keeps it up to date as
+//! entries of the vector change, checks a specification against a budget before anything is built, and hashes what it
+//! computes. It has no DOM and no `web-sys`, so it builds natively and for `wasm32-wasip1`. The rules are those of
+//! `spmv/docs/contract.md`, which a second implementation in JavaScript, in `spmv/reference-js/`, was written from.
 
 pub mod budget;
 pub mod explain;

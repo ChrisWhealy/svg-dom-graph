@@ -219,8 +219,8 @@ fn after_the_release_every_circle_is_still_inside_the_region_and_clear_of_the_ot
 fn the_released_graph_recovers_its_arrangement_up_to_a_shift_and_the_springs_end_nearly_slack() {
     let fixture = fixture();
     let (_, _, system) = measured_release(&fixture);
-    // A triangle chain is rigid, so with the springs slack the edge lengths are the rest lengths again, whichever way the
-    // graph has been shifted or turned.
+    // A triangle chain is rigid, so with the springs slack the edge lengths are the rest lengths again, whichever way
+    // the graph has been shifted or turned.
     for index in 0..system.springs().len() {
         let spring = system.springs()[index];
         let tension = system.spring_tension(index).expect("a spring");

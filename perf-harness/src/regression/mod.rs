@@ -1,18 +1,18 @@
 //! Compares a candidate collection of runs with a baseline one, one metric at a time, and says whether it got slower.
 //!
-//! The unit is the repetition, because the observations inside one run share a page, a heap and a JIT and so are not independent
-//! of each other. A run gives one figure for a metric, a percentile of its own observations. A collection gives the median of its
-//! runs' figures. The statistic is the ratio of the candidate's to the baseline's.
+//! The unit is the repetition, because the observations inside one run share a page, a heap and a JIT and so are not
+//! independent of each other. A run gives one figure for a metric, a percentile of its own observations. A collection
+//! gives the median of its runs' figures. The statistic is the ratio of the candidate's to the baseline's.
 //!
-//! The interval on that ratio is a hierarchical bootstrap. Each resample draws repetitions with replacement from each side, then
-//! draws the observations of each chosen repetition with replacement, and computes the ratio again. The interval is the middle
-//! `confidence` of those ratios. Resampling only the repetitions would treat each run's figure as exact, and resampling only
-//! the observations would treat the runs as one, so both levels are resampled.
+//! The interval on that ratio is a hierarchical bootstrap. Each resample draws repetitions with replacement from each
+//! side, then draws the observations of each chosen repetition with replacement, and computes the ratio again. The
+//! interval is the middle `confidence` of those ratios. Resampling only the repetitions would treat each run's figure
+//! as exact, and resampling only the observations would treat the runs as one, so both levels are resampled.
 //!
-//! The verdict follows from the interval and a ratio tolerance `t`. It is a regression if the interval lies wholly above
-//! `1 + t`, an improvement if it lies wholly below `1 / (1 + t)`, no material change if it lies wholly inside both bounds, and
-//! inconclusive otherwise. Inconclusive is never a pass. With too few repetitions no verdict is given at all, and the result is
-//! labelled diagnostic.
+//! The verdict follows from the interval and a ratio tolerance `t`. It is a regression if the interval lies wholly
+//! above `1 + t`, an improvement if it lies wholly below `1 / (1 + t)`, no material change if it lies wholly inside
+//! both bounds, and inconclusive otherwise. Inconclusive is never a pass. With too few repetitions no verdict is given
+//! at all, and the result is labelled diagnostic.
 //!
 //! Nothing here reads a file or a clock. A seed fixes every draw, so the same figures always give the same interval.
 
@@ -224,7 +224,8 @@ pub fn not_comparable(metric: &str, layer: &str, statistic: Statistic, reason: &
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Compares `statistic` of one metric. Each element of `baseline` and `candidate` is the observations of one repetition.
+/// Compares `statistic` of one metric. Each element of `baseline` and `candidate` is the observations of one
+/// repetition.
 ///
 /// Gives a diagnostic result, with no interval and no verdict, when either side has fewer repetitions than
 /// `settings.min_repetitions` or a repetition has fewer observations than the statistic needs.
@@ -286,7 +287,8 @@ pub fn compare(
         return result;
     }
 
-    // One generator for the whole comparison, so that the draws of the two sides are tied to the seed and to nothing else.
+    // One generator for the whole comparison, so that the draws of the two sides are tied to the seed and to nothing
+    // else.
     let mut rng = SplitMix64::derive(settings.seed, 0x5245_4752);
     let mut scratch = Vec::new();
     let (mut ratios, mut base_draws, mut cand_draws) = (Vec::new(), Vec::new(), Vec::new());

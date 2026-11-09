@@ -42,8 +42,8 @@ fn manifest(workload: &str, nodes: u32, edges: u32, warmup: u32, iterations: u32
     Manifest::from_toml(&text).expect("the test manifest is valid")
 }
 
-/// Every workload, with checkpoint intervals that divide the run, that do not, and that are absent, and with and without a
-/// warm-up. The last two checkpoints must vouch for the end of the measured work however the run is cut up.
+/// Every workload, with checkpoint intervals that divide the run, that do not, and that are absent, and with and
+/// without a warm-up. The last two checkpoints must vouch for the end of the measured work however the run is cut up.
 fn manifests() -> Vec<Manifest> {
     let mut all = Vec::new();
     for workload in ["scene_construction", "connector_rerouting", "scene_lifecycle"] {
@@ -106,8 +106,8 @@ fn a_performance_run_executes_a_checkpoint_after_every_mutation() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// For the cycle workloads the two executed checkpoints are a completed scene and the empty page, and for rerouting they are
-/// the built scene after the whole movement sequence and an earlier state of the same scene.
+/// For the cycle workloads the two executed checkpoints are a completed scene and the empty page, and for rerouting
+/// they are the built scene after the whole movement sequence and an earlier state of the same scene.
 #[test]
 fn the_executed_checkpoints_are_the_completed_scene_and_the_final_state() -> Result<(), String> {
     for manifest in manifests() {
@@ -129,7 +129,8 @@ fn the_executed_checkpoints_are_the_completed_scene_and_the_final_state() -> Res
                 if state_at(penultimate)? != (nodes, edges) || state_at(last)? != (nodes, edges) {
                     return Err(format!("{name}: a rerouting checkpoint does not see the whole graph"));
                 }
-                // Every move comes before the last checkpoint, which therefore sees the position that the last move gave.
+                // Every move comes before the last checkpoint, which therefore sees the position that the last move
+                // gave.
                 let moves_after_penultimate = ops[penultimate..last]
                     .iter()
                     .filter(|op| matches!(op, Op::MoveNode { .. }))

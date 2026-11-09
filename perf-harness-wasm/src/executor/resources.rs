@@ -11,8 +11,8 @@ use wasm_bindgen::JsCast;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What was counted after one teardown, and which cycle it was.
 ///
-/// The cycle and the phase are kept with the figures, so that the endurance summary draws the end of the warm-up from them and
-/// not from the position of the sample in a list that has had cycles taken out of it.
+/// The cycle and the phase are kept with the figures, so that the endurance summary draws the end of the warm-up from
+/// them and not from the position of the sample in a list that has had cycles taken out of it.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct SeriesEntry {
     pub(super) cycle: u64,
@@ -117,7 +117,8 @@ impl Run<'_> {
                     None => {},
                 }
             }
-            // The deterministic gate: once the scene is dropped and its host removed, the count is what it was before the build.
+            // The deterministic gate: once the scene is dropped and its host removed, the count is what it was before
+            // the build.
             if let (Some(before), Some(after)) = (pick(&baseline), torn.and_then(|r| pick(&r))) {
                 self.outcome.metrics.push(metrics::count(
                     &format!("resource.{name}.delta_after_teardown"),

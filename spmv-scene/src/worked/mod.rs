@@ -1,9 +1,11 @@
-//! The worked product: the multiplication `y = A·x` drawn as the operations that do it, for the matrix that a person can read.
+//! The worked product: the multiplication `y = A·x` drawn as the operations that do it, for the matrix that a person
+//! can read.
 //!
-//! The matrix A is a grid at the left, with the vector x beside it as a single column, and the vector y that they make. One row of A is
-//! selected, and the operations that make its entry of y are drawn out as nodes: each number of the row is multiplied by the entry of x
-//! under its column, and the products are added, one after another, into the entry of y. Every number in the operations is the number
-//! that the row, the vector and the product hold, and nothing in this module works out a number that `spmv-core` did not.
+//! The matrix A is a grid at the left, with the vector x beside it as a single column, and the vector y that they make.
+//! One row of A is selected, and the operations that make its entry of y are drawn out as nodes: each number of the row
+//! is multiplied by the entry of x under its column, and the products are added, one after another, into the entry of
+//! y. Every number in the operations is the number that the row, the vector and the product hold, and nothing in this
+//! module works out a number that `spmv-core` did not.
 
 use crate::scene::{add_class, elements, err, js_err, remove_class};
 use spmv_core::{Prepared, Run, matrix::Matrix};
@@ -14,12 +16,12 @@ use svg_dom_graph::scene::{
     ArithmeticOperator, DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues, Scene,
 };
 
-/// The most rows or columns of a matrix that are worked as operations. A larger one is drawn as a graph, since the grid of A would be
-/// wider than a window.
+/// The most rows or columns of a matrix that are worked as operations. A larger one is drawn as a graph, since the grid
+/// of A would be wider than a window.
 pub const MAX_SIDE: u64 = 12;
 
-/// The most terms of a row that are drawn as operations. A longer row folds the rest into one node, so that the picture stays the size
-/// of a page and the sum is still the whole row.
+/// The most terms of a row that are drawn as operations. A longer row folds the rest into one node, so that the picture
+/// stays the size of a page and the sum is still the whole row.
 pub const MAX_TERMS: usize = 6;
 
 /// The room above the nodes for the heading of the operations.
@@ -33,7 +35,8 @@ const OPERAND_GAP: f64 = 4.0;
 const ROW_GAP: f64 = 12.0;
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 
-/// The labels of a grid, which the library holds as a `'static` list. A list is made once for each kind and length, and kept.
+/// The labels of a grid, which the library holds as a `'static` list. A list is made once for each kind and length, and
+/// kept.
 fn labels(kind: char, n: usize) -> &'static [&'static str] {
     thread_local! {
         static LISTS: std::cell::RefCell<HashMap<(char, usize), &'static [&'static str]>> = std::cell::RefCell::default();
@@ -46,8 +49,8 @@ fn labels(kind: char, n: usize) -> &'static [&'static str] {
     })
 }
 
-/// The numbers of the sum for one row: what each shown term makes, what the terms past the last shown one make together, and the sums
-/// as they are added up one after another.
+/// The numbers of the sum for one row: what each shown term makes, what the terms past the last shown one make
+/// together, and the sums as they are added up one after another.
 struct Sum {
     /// The nonzeros of the row that are drawn, as the column, the number of A, and the product.
     shown: Vec<(usize, i64, i64)>,
@@ -74,7 +77,8 @@ fn sum_of(terms: &[(usize, i64)], x: &[i64]) -> Sum {
     Sum { shown, rest, running }
 }
 
-/// The texts that follow a cell, up to the next cell: the label of its row, if it begins one, and its number, which is the last.
+/// The texts that follow a cell, up to the next cell: the label of its row, if it begins one, and its number, which is
+/// the last.
 fn texts_of(cell: &web_sys::Element) -> Vec<web_sys::Element> {
     let mut found = Vec::new();
     let mut next = cell.next_element_sibling();
@@ -110,7 +114,8 @@ pub struct Worked {
     result: NodeId,
     /// The rectangle of each cell of A, x and y, which the highlight and the marks are written on.
     cols: usize,
-    /// The bars that draw y, one for each entry, the line they grow from, the note of the scale, and what they showed last.
+    /// The bars that draw y, one for each entry, the line they grow from, the note of the scale, and what they showed
+    /// last.
     bars: Vec<web_sys::Element>,
     scale_note: web_sys::Element,
     bar_zero: f64,
@@ -122,8 +127,8 @@ pub struct Worked {
     pub y_cells: Vec<web_sys::Element>,
 }
 
-/// What the room that the picture takes is expected to be, before it is drawn, for the window to give it a view box: about, and not
-/// exactly, since the browser decides the size of text.
+/// What the room that the picture takes is expected to be, before it is drawn, for the window to give it a view box:
+/// about, and not exactly, since the browser decides the size of text.
 #[must_use]
 pub fn extent(matrix: &Matrix) -> (f64, f64) {
     let degree = (0..matrix.rows).map(|i| matrix.row(i).count()).max().unwrap_or(0);
@@ -326,7 +331,8 @@ impl Worked {
         let x_cells = cells_of(groups.get(1).ok_or("no x")?, cols)?;
         let y_cells = cells_of(groups.get(2).ok_or("no y")?, rows)?;
 
-        // What is drawn around them: the signs between, the numbers of the columns under A, and what the operations are.
+        // What is drawn around them: the signs between, the numbers of the columns under A, and what the operations
+        // are.
         let notes = document.create_element_ns(Some(SVG_NS), "g").map_err(js_err("group"))?;
         notes.set_attribute("class", "spmv-worked-notes").map_err(js_err("class"))?;
         let note = |class: &str, x: f64, y: f64, text: &str| -> Result<web_sys::Element, String> {
@@ -361,7 +367,8 @@ impl Worked {
             result_rect.origin.y + result_rect.size.height / 2.0 + 4.0,
             &format!("y{row}"),
         )?;
-        // The bars that draw y, level with its entries, growing right for a positive number and left for a negative one.
+        // The bars that draw y, level with its entries, growing right for a positive number and left for a negative
+        // one.
         let shape = |tag: &str, attributes: &[(&str, String)]| -> Result<web_sys::Element, String> {
             let e = document.create_element_ns(Some(SVG_NS), tag).map_err(js_err("shape"))?;
             for (name, value) in attributes {
@@ -428,8 +435,8 @@ impl Worked {
         Ok(worked)
     }
 
-    /// Writes the classes that colour the row, the entries that it uses and the entry that it makes, and the tags that a click is
-    /// traced back to a row by.
+    /// Writes the classes that colour the row, the entries that it uses and the entry that it makes, and the tags that
+    /// a click is traced back to a row by.
     fn mark(&self, prepared: &Prepared, groups: &[web_sys::Element], cols: usize) -> Result<(), String> {
         let matrix = prepared.matrix();
         let used: Vec<usize> = matrix.row(self.row).map(|(j, _)| j).collect();
@@ -474,8 +481,8 @@ impl Worked {
         for j in used {
             add_class(&self.x_cells[j], "spmv-hot")?;
         }
-        // Each node of the operations carries the class of what it is, in the order that they were drawn: A, x and y, and then for each
-        // term the number of A, the entry of x and the product.
+        // Each node of the operations carries the class of what it is, in the order that they were drawn: A, x and y,
+        // and then for each term the number of A, the entry of x and the product.
         let mut next = 3;
         let mut classify = |class: &str, how_many: usize| -> Result<(), String> {
             for _ in 0..how_many {
@@ -499,7 +506,8 @@ impl Worked {
         Ok(())
     }
 
-    /// Writes the numbers of a step in place: the vectors, the entries of x that the operations use, and every product and sum.
+    /// Writes the numbers of a step in place: the vectors, the entries of x that the operations use, and every product
+    /// and sum.
     ///
     /// # Errors
     ///
@@ -524,7 +532,8 @@ impl Worked {
         self.mark_fed(&run.last_updates)
     }
 
-    /// Draws the bars for `y`, the longest one filling its half of the width, and marks the ones that changed since they were last drawn.
+    /// Draws the bars for `y`, the longest one filling its half of the width, and marks the ones that changed since
+    /// they were last drawn.
     fn draw_bars(&self, y: &[i64]) -> Result<(), String> {
         let largest = y.iter().map(|v| v.abs()).max().unwrap_or(0).max(1);
         let half = BAR_WIDTH / 2.0 - 4.0;
@@ -544,8 +553,8 @@ impl Worked {
         Ok(())
     }
 
-    /// Marks the nonzeros of A in the columns whose entry of x the last step changed, which are the numbers that it was multiplied by,
-    /// and puts out the marks of the step before.
+    /// Marks the nonzeros of A in the columns whose entry of x the last step changed, which are the numbers that it was
+    /// multiplied by, and puts out the marks of the step before.
     fn mark_fed(&self, updates: &[(usize, i64)]) -> Result<(), String> {
         let mut fed = self.fed.borrow_mut();
         for cell in fed.drain(..) {

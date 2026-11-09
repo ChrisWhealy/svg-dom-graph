@@ -1,15 +1,18 @@
 //! Reads a checkpoint from what was drawn.
 //!
-//! The runner applies operations through the library's API, and this reads the result back out of the document and from the
-//! scene, so that a comparison with the reference model is a comparison with what exists and not with what the runner meant.
+//! The runner applies operations through the library's API, and this reads the result back out of the document and from
+//! the scene, so that a comparison with the reference model is a comparison with what exists and not with what the
+//! runner meant.
 //!
 //! What it reads, and where:
 //!
 //! * Node boxes: the `translate(x, y)` of each node's group, and the `width` and `height` of its `rect`.
 //! * A node's key: its `<text>`. The workloads label each node with its key, so the text is the key.
-//! * Edges: the "Output to" clauses of each node's accessible name, which is how the library says which node feeds which.
-//! * Connector ends: the first and last point of each connector's `<path d>`. A connector carries no name of its own, so it
-//!   is given the key of the edge made at the same position in the order of creation, which is also its order in the document.
+//! * Edges: the "Output to" clauses of each node's accessible name, which is how the library says which node feeds
+//!   which.
+//! * Connector ends: the first and last point of each connector's `<path d>`. A connector carries no name of its own,
+//!   so it is given the key of the edge made at the same position in the order of creation, which is also its order in
+//!   the document.
 //! * Paint order: the order of the node groups in the document.
 //! * The view: the scene's own `view()`.
 
@@ -42,7 +45,8 @@ struct NodeSeen {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads the checkpoint of the scene drawn in `svg`.
 ///
-/// `edge_keys` are the keys of the edges in the order they were made, which is how the connectors in the document are named.
+/// `edge_keys` are the keys of the edges in the order they were made, which is how the connectors in the document are
+/// named.
 ///
 /// # Errors
 ///
@@ -65,8 +69,9 @@ pub fn observe(
         let child = children.item(index).ok_or("a child vanished")?;
         match child.local_name().as_str() {
             "g" => {
-                // An edge label is a group of a box and a text, as a node is, and is not one. The reference model does not model
-                // labels, so they are left out here, and a run that has them reads them from the document directly.
+                // An edge label is a group of a box and a text, as a node is, and is not one. The reference model does
+                // not model labels, so they are left out here, and a run that has them reads them from the document
+                // directly.
                 if child.has_attribute(EDGE_LABEL_ATTRIBUTE) {
                     continue;
                 }

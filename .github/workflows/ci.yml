@@ -289,6 +289,13 @@ jobs:
           cargo run -p demo-server -- --build-only
           node spmv/panel-smoke.mjs
 
+      # The simulator's controller is told that a gallery panel was hidden by a hint, and tests whether it may draw with a synchronous
+      # predicate. The real gallery has to order the hint, a timer queued before the hide, and the predicate as the design needs.
+      - name: The real gallery orders a hide, its hint and a queued timer
+        run: |
+          cargo run -p demo-server -- --build-only
+          node dess/s3/gallery-order.mjs
+
       # The proof that the harness would notice: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
       - name: The harness catches an injected regression and an injected leak
         run: node perf/runner/selftest-regression.mjs
@@ -369,7 +376,8 @@ jobs:
         run: wasm-pack test --headless --${{ matrix.browser }}
 
       # The simulator surface has been run in Chrome only, so Firefox is not asked until it has been run there.
-      - name: Run the simulator surface tests
+      # This runs the surface's tests and the controller's, which are on the real surface with the page's own timers and frames.
+      - name: Run the simulator surface and controller tests
         if: matrix.browser == 'chrome'
         run: wasm-pack test --headless --chrome service-sim
 

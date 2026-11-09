@@ -62,8 +62,8 @@ fn apply(old: &Projection, new: &Projection, writes: &[Write]) -> Projection {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One row of the E0 ledger: what a reader sees after a slice. It is written out from the table in section 4 of the design, tick by
-/// tick, and not taken from the engine's output.
+/// One row of the E0 ledger: what a reader sees after a slice. It is written out from the table in section 4 of the
+/// design, tick by tick, and not taken from the engine's output.
 struct Row {
     tick: u64,
     servers: [&'static str; 2],
@@ -91,7 +91,8 @@ const E0: [Row; 13] = [
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// E0 projects exactly: after each of its 12 slices, and before the first, every slot says what the hand-audited ledger says.
+/// E0 projects exactly: after each of its 12 slices, and before the first, every slot says what the hand-audited ledger
+/// says.
 #[test]
 fn e0_projects_exactly_what_the_ledger_says() {
     let all = models(&fixture("E0"), &View::default());
@@ -119,7 +120,8 @@ fn e0_projects_exactly_what_the_ledger_says() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An empty queue slot is blank and hidden, and a filled one is neither. A busy server says its job, attempt and due tick.
+/// An empty queue slot is blank and hidden, and a filled one is neither. A busy server says its job, attempt and due
+/// tick.
 #[test]
 fn empty_slots_are_hidden_and_a_busy_server_names_its_job() {
     let all = models(&fixture("E0"), &View::default());
@@ -142,7 +144,8 @@ fn empty_slots_are_hidden_and_a_busy_server_names_its_job() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A delta from any snapshot to any other, forwards or backwards, reaches what a full redraw of the other writes. This is a seek.
+/// A delta from any snapshot to any other, forwards or backwards, reaches what a full redraw of the other writes. This
+/// is a seek.
 #[test]
 fn a_delta_between_any_two_snapshots_equals_a_full_redraw() {
     let projections: Vec<Projection> = models(&fixture("E0"), &View::default())
@@ -181,7 +184,8 @@ fn a_delta_between_any_two_snapshots_equals_a_full_redraw() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A slice that only pops stale events still changes the clock, the stale counter and the data node's ordinal, and nothing else.
+/// A slice that only pops stale events still changes the clock, the stale counter and the data node's ordinal, and
+/// nothing else.
 #[test]
 fn a_stale_only_slice_writes_only_the_clock_and_the_stale_counter() {
     let all = models(&fixture("E0"), &View::default());
@@ -204,7 +208,8 @@ fn a_stale_only_slice_writes_only_the_clock_and_the_stale_counter() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The selected job is highlighted wherever it is, and the detail line follows it. An id that is not a job selects nothing.
+/// The selected job is highlighted wherever it is, and the detail line follows it. An id that is not a job selects
+/// nothing.
 #[test]
 fn selection_highlights_the_job_wherever_it_is() {
     let scenario = fixture("E0");
@@ -351,7 +356,8 @@ const EDGE_TICKS: [u64; 6] = [
     u64::MAX - 100,
 ];
 
-/// An engine whose only job arrives at `tick`, with a deadline after it and a duration that ends before the end of the integers.
+/// An engine whose only job arrives at `tick`, with a deadline after it and a duration that ends before the end of the
+/// integers.
 fn engine_at(tick: u64) -> Engine {
     let config = Config {
         servers: 1,
@@ -369,9 +375,9 @@ fn engine_at(tick: u64) -> Engine {
     Engine::new("edge", 0, config, &script, None, Limits::default()).expect("an engine")
 }
 
-/// The data node holds what the engine holds, whatever the tick: nothing is narrowed, rounded or clamped on the way, and the clock
-/// slot and the data node cannot disagree about a tick. A valid scripted event at tick 4,294,967,296 once showed the right tick in the
-/// clock and `u32::MAX` in the data node.
+/// The data node holds what the engine holds, whatever the tick: nothing is narrowed, rounded or clamped on the way,
+/// and the clock slot and the data node cannot disagree about a tick. A valid scripted event at tick 4,294,967,296 once
+/// showed the right tick in the clock and `u32::MAX` in the data node.
 #[test]
 fn a_tick_of_any_size_is_in_the_data_node_exactly() {
     for tick in EDGE_TICKS {
@@ -397,7 +403,8 @@ fn a_tick_of_any_size_is_in_the_data_node_exactly() {
     }
 }
 
-/// Every cell of the data node is the engine's own figure, in full: none is narrowed, so a count above `u32::MAX` would show.
+/// Every cell of the data node is the engine's own figure, in full: none is narrowed, so a count above `u32::MAX` would
+/// show.
 #[test]
 fn no_cell_of_the_data_node_is_narrower_than_the_figure_it_shows() {
     let mut engine = engine_at(7);

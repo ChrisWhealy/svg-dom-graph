@@ -1,8 +1,8 @@
 //! Finds out where the bytes that stay allocated after a teardown come from.
 //!
-//! After a scene is dropped and its host removed, a few thousand bytes and a few dozen blocks are still allocated, and they are
-//! there from the first cycle on and never grow. This runs the lifecycle in stages, each a little more of it than the one
-//! before, in a page of its own, so that the cost of each stage's first use shows apart from the others:
+//! After a scene is dropped and its host removed, a few thousand bytes and a few dozen blocks are still allocated, and
+//! they are there from the first cycle on and never grow. This runs the lifecycle in stages, each a little more of it
+//! than the one before, in a page of its own, so that the cost of each stage's first use shows apart from the others:
 //!
 //! * `nothing`: the loop and its recording, with no DOM and no library. This is the harness's own cost.
 //! * `host`: the host element is made and removed. This is the page and wasm-bindgen's cost.
@@ -10,10 +10,11 @@
 //! * `nodes`: the scene has 12 nodes.
 //! * `edges`: the scene has 12 nodes and 24 straight connectors.
 //!
-//! Each stage is a fresh instance of the module, because what it measures is a first use, and a second stage in the same
-//! instance would find the first one's work already done. The difference between one stage and the one before is what that
-//! stage's first use leaves behind. A stage that is repeated 30 times and leaves the same bytes after the 30th as after the
-//! first has one-time costs only. One that leaves more has a leak, which is what the endurance check is for.
+//! Each stage is a fresh instance of the module, because what it measures is a first use, and a second stage in the
+//! same instance would find the first one's work already done. The difference between one stage and the one before is
+//! what that stage's first use leaves behind. A stage that is repeated 30 times and leaves the same bytes after the
+//! 30th as after the first has one-time costs only. One that leaves more has a leak, which is what the endurance check
+//! is for.
 
 use crate::alloc::stats;
 use serde_json::json;
@@ -64,7 +65,8 @@ fn pairs(nodes: usize) -> Vec<(usize, usize)> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What a run does before it reads its baseline, which a stage can repeat to see whether that is where a block comes from.
+/// What a run does before it reads its baseline, which a stage can repeat to see whether that is where a block comes
+/// from.
 ///
 /// * `clock`: read `performance.now()` a great many times, as the harness does to find the smallest step it makes.
 /// * `tracker`: call the page's listener tracker once, as a count of listeners does.
@@ -113,7 +115,8 @@ pub fn run(stage: &str, cycles: usize, before_baseline: &str, nodes: usize) -> S
         return json!({"error": "there is no body"}).to_string();
     };
 
-    // Everything the loop records is made at full size first, so that its own growth cannot be mistaken for what it measures.
+    // Everything the loop records is made at full size first, so that its own growth cannot be mistaken for what it
+    // measures.
     let mut after_each: Vec<(usize, usize)> = Vec::with_capacity(cycles + 1);
     let mut ids: Vec<NodeId> = Vec::with_capacity(nodes);
     let connections = pairs(nodes);
@@ -181,7 +184,8 @@ pub fn run(stage: &str, cycles: usize, before_baseline: &str, nodes: usize) -> S
             "bytes_over_baseline": signed(first.0, baseline.live_bytes),
             "blocks_over_baseline": signed(first.1, baseline.live_allocations),
         },
-        // What every cycle after the first added. A cost of first use adds nothing here, and a leak adds something each time.
+        // What every cycle after the first added. A cost of first use adds nothing here, and a leak adds something each
+        // time.
         "growth_after_first_cycle": {
             "bytes": signed(last.0, first.0),
             "blocks": signed(last.1, first.1),

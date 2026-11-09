@@ -1,7 +1,7 @@
 //! The generator of a seed: the arrivals one at a time, and the outages all at once.
 //!
-//! Every draw is an integer, and comes from one of six streams of the seed, so that changing how one thing is drawn cannot move
-//! another. The scenario is described in `dess/s0/docs/generator-and-qualification.md`.
+//! Every draw is an integer, and comes from one of six streams of the seed, so that changing how one thing is drawn
+//! cannot move another. The scenario is described in `dess/s0/docs/generator-and-qualification.md`.
 
 use crate::engine::ScriptEvent;
 use crate::hash::sha256_hex;
@@ -118,8 +118,8 @@ pub fn outages(seed: u64, p: &Params) -> Vec<OutageEvent> {
     events
 }
 
-/// The script of a disturbed panel seed (`panel/2`): scripted arrivals, and failures, recoveries and cancels at random ticks, drawn
-/// from stream 8 in the order of the contract.
+/// The script of a disturbed panel seed (`panel/2`): scripted arrivals, and failures, recoveries and cancels at random
+/// ticks, drawn from stream 8 in the order of the contract.
 #[must_use]
 pub fn disturbances(seed: u64, p: &Params) -> Vec<ScriptEvent> {
     let mut s = stream(seed, 8);

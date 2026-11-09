@@ -12,8 +12,8 @@ pub struct Latency {
 }
 
 impl Latency {
-    /// The summary of `samples`, by the nearest-rank rule: the quantile `q` of `n` samples is the `ceil(q·n)`th smallest. `None` for
-    /// no samples. A sample that is not a number is not allowed, and sorts last.
+    /// The summary of `samples`, by the nearest-rank rule: the quantile `q` of `n` samples is the `ceil(q·n)`th
+    /// smallest. `None` for no samples. A sample that is not a number is not allowed, and sorts last.
     #[must_use]
     pub fn from_samples(samples: &[f64]) -> Option<Self> {
         if samples.is_empty() {

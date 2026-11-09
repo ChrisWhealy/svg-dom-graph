@@ -1,7 +1,9 @@
-//! Times a seek: a replay from the start to a cursor, with the engine's fast path that records nothing and hashes nothing.
+//! Times a seek: a replay from the start to a cursor, with the engine's fast path that records nothing and hashes
+//! nothing.
 //!
-//! It repeats the measurement that stage S0 made with the JavaScript prototype, now with the Rust engine. It prints one JSON object.
-//! It runs natively and under WASI, so that the same figure is had for the 32-bit wasm build that the browser will run.
+//! It repeats the measurement that stage S0 made with the JavaScript prototype, now with the Rust engine. It prints one
+//! JSON object. It runs natively and under WASI, so that the same figure is had for the 32-bit wasm build that the
+//! browser will run.
 
 use service_sim_engine::{Engine, Limits, Params};
 use std::time::Instant;

@@ -26,8 +26,8 @@ const ENDS: [(&str, Flag); 6] = [
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The page: the board that is drawn, the view that was drawn last, and the square that the keys act on. It is what
-/// the controller draws on.
+/// The page: the board that is drawn, the view that was drawn last, and the square that the keys act on. It is what the
+/// controller draws on.
 pub(super) struct Page {
     /// The group that the board is put in, and replaced in. The controls are beside it in the scene and stay.
     host: web_sys::Element,
@@ -126,9 +126,9 @@ impl Page {
         }
     }
 
-    /// Writes `aria-disabled` on the buttons that are at an end, for the ones that differ from `previous`, and puts
-    /// the range at the step of `view`. The end of the range is written last, and only if it differs, so that a write
-    /// that fails never leaves the range going further than the trace that the page has.
+    /// Writes `aria-disabled` on the buttons that are at an end, for the ones that differ from `previous`, and puts the
+    /// range at the step of `view`. The end of the range is written last, and only if it differs, so that a write that
+    /// fails never leaves the range going further than the trace that the page has.
     pub(super) fn write_controls(&self, previous: Option<&View>, view: &View) -> Result<(), String> {
         let now = view.boundaries();
         let before = previous.map(View::boundaries);

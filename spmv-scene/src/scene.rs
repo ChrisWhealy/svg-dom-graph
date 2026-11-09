@@ -1,9 +1,9 @@
-//! The scene: one node for each column and each row, one edge for each nonzero, two data nodes that show windows of x and y, and a
-//! square that shows where the nonzeros are.
+//! The scene: one node for each column and each row, one edge for each nonzero, two data nodes that show windows of x
+//! and y, and a square that shows where the nonzeros are.
 //!
-//! A scene is built only from a [`Prepared`] scenario, which exists only if the specification was valid and within the budget, so a
-//! budget is enforced before any scene call by the types. Nothing here changes the shape of the scene after it is built: a step
-//! writes the two data nodes and nothing else.
+//! A scene is built only from a [`Prepared`] scenario, which exists only if the specification was valid and within the
+//! budget, so a budget is enforced before any scene call by the types. Nothing here changes the shape of the scene
+//! after it is built: a step writes the two data nodes and nothing else.
 
 use crate::layout::{Layout, MATRIX_CELL, MATRIX_LABELS, SPY_SIDE};
 use crate::worked::Worked;
@@ -20,25 +20,25 @@ use wasm_bindgen::JsCast;
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn err<E: std::fmt::Display>(what: &str) -> impl FnOnce(E) -> String + '_ {
     move |e| format!("{what}: {e}")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn js_err<E: std::fmt::Debug>(what: &str) -> impl FnOnce(E) -> String + '_ {
     move |e| format!("{what}: {e:?}")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The page's clock in milliseconds. Its step is 100 µs on a page that is not cross-origin isolated, so a single small operation
-/// can read as zero, and the probes time a batch where that matters.
+/// The page's clock in milliseconds. Its step is 100 µs on a page that is not cross-origin isolated, so a single small
+/// operation can read as zero, and the probes time a batch where that matters.
 #[must_use]
 pub fn now() -> f64 {
     web_sys::window().and_then(|w| w.performance()).map_or(0.0, |p| p.now())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The bytes of JS heap in use, where the browser says (Chrome does, and Firefox does not).
 #[must_use]
 pub fn heap_used() -> Option<f64> {
@@ -47,7 +47,7 @@ pub fn heap_used() -> Option<f64> {
     js_sys::Reflect::get(&memory, &"usedJSHeapSize".into()).ok()?.as_f64()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many elements `root` holds below it.
 ///
 /// # Errors
@@ -62,8 +62,8 @@ pub fn element_count(root: &web_sys::Element) -> Result<u32, String> {
 pub struct Host {
     pub container_id: String,
     pub svg_id: String,
-    /// Whether the host made its container, and so removes it. A host made in a container that was already in the page removes
-    /// only its own `<svg>`.
+    /// Whether the host made its container, and so removes it. A host made in a container that was already in the page
+    /// removes only its own `<svg>`.
     owns_container: bool,
 }
 
@@ -84,8 +84,8 @@ impl Host {
         Ok(host)
     }
 
-    /// Makes the host's `<svg>` in the element called `container_id`, which is already in the page. Removing the host removes only
-    /// the `<svg>`.
+    /// Makes the host's `<svg>` in the element called `container_id`, which is already in the page. Removing the host
+    /// removes only the `<svg>`.
     ///
     /// # Errors
     ///
@@ -116,8 +116,8 @@ impl Host {
             .ok_or_else(|| format!("no element #{}", self.svg_id))
     }
 
-    /// Removes what the host made: the container and everything in it, or, for a host made in a container of the page's, only its
-    /// `<svg>`.
+    /// Removes what the host made: the container and everything in it, or, for a host made in a container of the
+    /// page's, only its `<svg>`.
     pub fn remove(&self) {
         let id = if self.owns_container { &self.container_id } else { &self.svg_id };
         if let Some(element) = web_sys::window()
@@ -137,23 +137,25 @@ pub struct BuildTimings {
     pub edges_ms: f64,
     pub data_ms: f64,
     pub spy_ms: f64,
-    /// The time to give the edges and nodes the classes that a person reads them by, which is nothing if that is not asked for.
+    /// The time to give the edges and nodes the classes that a person reads them by, which is nothing if that is not
+    /// asked for.
     pub style_ms: f64,
     pub total_ms: f64,
 }
 
-/// What a build adds to the scene so that a person can read it. The probes use neither, so that the figures they record are those of the
-/// scene alone.
+/// What a build adds to the scene so that a person can read it. The probes use neither, so that the figures they record
+/// are those of the scene alone.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct BuildOptions {
-    /// Gives every edge a class for its sign and its size and every node a tag, so that a node can be selected and its edges
-    /// highlighted.
+    /// Gives every edge a class for its sign and its size and every node a tag, so that a node can be selected and its
+    /// edges highlighted.
     pub readable: bool,
     /// Writes the value of each edge on it. Every label is more elements, so this is for a small graph.
     pub edge_labels: bool,
     /// Where the scene's own space begins, which moves the layout and not the view box (see [`Layout::shifted`]).
     pub origin: (f64, f64),
-    /// Draws the multiplication as the operations that do it, for the row that is selected, and not as a graph (see [`crate::worked`]).
+    /// Draws the multiplication as the operations that do it, for the row that is selected, and not as a graph (see
+    /// [`crate::worked`]).
     pub worked: bool,
 }
 
@@ -165,7 +167,8 @@ pub enum Selection {
 }
 
 impl Selection {
-    /// The tag a node carries, which is what an event is traced back to a node by: `x7` for column 7 and `y3` for row 3.
+    /// The tag a node carries, which is what an event is traced back to a node by: `x7` for column 7 and `y3` for row
+    /// 3.
     #[must_use]
     pub fn tag(self) -> String {
         match self {
@@ -207,7 +210,7 @@ pub(crate) fn remove_class(e: &web_sys::Element, name: &str) -> Result<(), Strin
     e.set_attribute("class", &kept.join(" ")).map_err(js_err("class"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene, built and in the page. Dropping it releases the listeners that the scene put on the page.
 pub struct Built {
     scene: Scene,
@@ -218,28 +221,31 @@ pub struct Built {
     layout: Layout,
     cells: usize,
     svg: web_sys::Element,
-    /// The connectors, in the order of the nonzeros by row, and the groups of the column nodes and then the row nodes. Both are
-    /// empty unless the build was asked to be readable.
+    /// The connectors, in the order of the nonzeros by row, and the groups of the column nodes and then the row nodes.
+    /// Both are empty unless the build was asked to be readable.
     edge_paths: Vec<web_sys::Element>,
     node_groups: Vec<web_sys::Element>,
     picked: Vec<web_sys::Element>,
     lit_paths: Vec<usize>,
     lit_nodes: Vec<usize>,
-    /// The cells of the matrix that were drawn in full, in the order of the nonzeros by row, and the band across a row and the band down
-    /// a column. They are empty unless the matrix was small enough to be drawn in full.
+    /// The cells of the matrix that were drawn in full, in the order of the nonzeros by row, and the band across a row
+    /// and the band down a column. They are empty unless the matrix was small enough to be drawn in full.
     matrix_cells: Vec<web_sys::Element>,
     bands: Option<(web_sys::Element, web_sys::Element)>,
     lit_cells: Vec<usize>,
-    /// The values of x, in a row under the matrix, and of y, in a column beside it, as groups of a rectangle and a text.
+    /// The values of x, in a row under the matrix, and of y, in a column beside it, as groups of a rectangle and a
+    /// text.
     strip_x: Vec<web_sys::Element>,
     strip_y: Vec<web_sys::Element>,
-    /// The value of each node, written beside it: the entries of x at the left of the column nodes and of y at the right of the rows.
+    /// The value of each node, written beside it: the entries of x at the left of the column nodes and of y at the
+    /// right of the rows.
     node_x: Vec<web_sys::Element>,
     node_y: Vec<web_sys::Element>,
     changed_values: RefCell<Vec<web_sys::Element>>,
     hot_strips: Vec<web_sys::Element>,
     changed_strips: RefCell<Vec<web_sys::Element>>,
-    /// The rectangles of the cells of the two data nodes, which the library draws, and the ones that a selection has made hot.
+    /// The rectangles of the cells of the two data nodes, which the library draws, and the ones that a selection has
+    /// made hot.
     x_cells: Vec<web_sys::Element>,
     y_cells: Vec<web_sys::Element>,
     hot: Vec<web_sys::Element>,
@@ -260,8 +266,8 @@ struct Marks {
 }
 
 impl Built {
-    /// Builds the scene of a prepared scenario on the `<svg>` called `svg_id`, which has to exist and be empty. The two data nodes
-    /// start with the values of `run`.
+    /// Builds the scene of a prepared scenario on the `<svg>` called `svg_id`, which has to exist and be empty. The two
+    /// data nodes start with the values of `run`.
     ///
     /// # Errors
     ///
@@ -334,8 +340,8 @@ impl Built {
         let data_ms = now() - t2;
 
         let t3 = now();
-        // The box at the right is the matrix itself, with its values, when it is small enough and the graph is made to be read, and
-        // the square of its pattern otherwise.
+        // The box at the right is the matrix itself, with its values, when it is small enough and the graph is made to
+        // be read, and the square of its pattern otherwise.
         let (mut strip_x, mut strip_y) = (Vec::new(), Vec::new());
         let (matrix_cells, bands) = if options.readable && layout.matrix.is_some() {
             let (cells, bands, strips) = add_matrix(svg_id, prepared, run, &layout)?;
@@ -492,8 +498,8 @@ impl Built {
         }
     }
 
-    /// Highlights the edges of the selected node and the nodes at their other ends, and puts out what the last selection lit. Only
-    /// the edges of the node are written, however many the scene has.
+    /// Highlights the edges of the selected node and the nodes at their other ends, and puts out what the last
+    /// selection lit. Only the edges of the node are written, however many the scene has.
     ///
     /// # Errors
     ///
@@ -551,7 +557,8 @@ impl Built {
         add_class(&self.node_groups[own], "spmv-picked")?;
         self.picked.push(self.node_groups[own].clone());
 
-        // The matrix, drawn in full: the nonzeros of the node are lit, and a band runs across its row or down its column.
+        // The matrix, drawn in full: the nonzeros of the node are lit, and a band runs across its row or down its
+        // column.
         if !self.matrix_cells.is_empty() {
             for k in &paths {
                 add_class(&self.matrix_cells[*k], "spmv-on")?;
@@ -587,8 +594,9 @@ impl Built {
             }
         }
 
-        // The entries of x and y that the node uses or makes: a row uses the entries of x at its nonzeros and makes its own entry of y, and
-        // a column is one entry of x that goes into the entries of y at its nonzeros. Only the entries that a data node shows can be marked.
+        // The entries of x and y that the node uses or makes: a row uses the entries of x at its nonzeros and makes its
+        // own entry of y, and a column is one entry of x that goes into the entries of y at its nonzeros. Only the
+        // entries that a data node shows can be marked.
         let (x_hot, y_hot): (Vec<usize>, Vec<usize>) = match selection {
             Selection::Row(i) => (matrix.row(i).map(|(j, _)| j).collect(), vec![i]),
             Selection::Column(j) => (vec![j], matrix.col(j).map(|(i, _)| i).collect()),
@@ -649,8 +657,8 @@ impl Built {
         self.row_nodes[i]
     }
 
-    /// Writes the windows of x and y into the two data nodes, and gives the time each took in milliseconds. The library rewrites
-    /// the cells that changed.
+    /// Writes the windows of x and y into the two data nodes, and gives the time each took in milliseconds. The library
+    /// rewrites the cells that changed.
     ///
     /// # Errors
     ///
@@ -790,8 +798,9 @@ impl Built {
         self.worked.as_ref().map(|w| w.row)
     }
 
-    /// Draws the worked product again for another row, keeping the view that a person has panned and zoomed to. The library cannot
-    /// take a node away, so the scene is made again, which for a graph small enough to be worked is a few tens of nodes.
+    /// Draws the worked product again for another row, keeping the view that a person has panned and zoomed to. The
+    /// library cannot take a node away, so the scene is made again, which for a graph small enough to be worked is a
+    /// few tens of nodes.
     ///
     /// # Errors
     ///
@@ -853,9 +862,9 @@ pub(crate) fn elements(root: &web_sys::Element, selector: &str) -> Result<Vec<we
         .collect())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The words under the three boxes that say what each is, in the scene, so that they pan and zoom with it. A caption is a few short lines,
-/// each short enough to sit under the box it names.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The words under the three boxes that say what each is, in the scene, so that they pan and zoom with it. A caption is
+/// a few short lines, each short enough to sit under the box it names.
 fn add_captions(svg_id: &str, prepared: &Prepared, layout: &Layout) -> Result<(), String> {
     let document = web_sys::window().and_then(|w| w.document()).ok_or("there is no document")?;
     let svg = document.get_element_by_id(svg_id).ok_or("no host")?;
@@ -914,7 +923,8 @@ fn add_captions(svg_id: &str, prepared: &Prepared, layout: &Layout) -> Result<()
         (layout.spy_caption, "pattern", pattern),
     ];
     let mut captions = captions.to_vec();
-    // The example is the first nonzero of the matrix, so that the caption says something that can be checked on the picture.
+    // The example is the first nonzero of the matrix, so that the caption says something that can be checked on the
+    // picture.
     let (i, j, v) = (0..prepared.matrix().rows)
         .find_map(|i| prepared.matrix().row(i).next().map(|(j, v)| (i, j, v)))
         .unwrap_or((0, 0, 0));
@@ -947,9 +957,9 @@ fn add_captions(svg_id: &str, prepared: &Prepared, layout: &Layout) -> Result<()
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Writes the value of each node beside it, the entry of x at the left of a column node and the entry of y at the right of a row node,
-/// so that what a step changes is seen on the graph and not only in the boxes above it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes the value of each node beside it, the entry of x at the left of a column node and the entry of y at the right
+/// of a row node, so that what a step changes is seen on the graph and not only in the boxes above it.
 fn add_node_values(
     svg_id: &str,
     prepared: &Prepared,
@@ -997,9 +1007,10 @@ fn add_node_values(
     Ok((xs, ys))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The matrix drawn in full: a grid with the index of each row and column, a cell with its value for each nonzero, and nothing for a
-/// zero, so that the grid stays quiet. It also makes the two bands, hidden until a row or a column is selected, that run across it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The matrix drawn in full: a grid with the index of each row and column, a cell with its value for each nonzero, and
+/// nothing for a zero, so that the grid stays quiet. It also makes the two bands, hidden until a row or a column is
+/// selected, that run across it.
 ///
 /// It returns the cells of the nonzeros in the order of the nonzeros by row, and the row band and the column band.
 fn add_matrix(svg_id: &str, prepared: &Prepared, run: &Run, layout: &Layout) -> Result<MatrixParts, String> {
@@ -1126,8 +1137,9 @@ fn add_matrix(svg_id: &str, prepared: &Prepared, run: &Run, layout: &Layout) -> 
             cells.push(cell);
         }
     }
-    // The vectors, lined up with the matrix: x is a row under it, one value beneath each column, and y a column beside it, one value
-    // level with each row, so that a row of A is multiplied by the row of x and its sum is the entry of y at its end.
+    // The vectors, lined up with the matrix: x is a row under it, one value beneath each column, and y a column beside
+    // it, one value level with each row, so that a row of A is multiplied by the row of x and its sum is the entry of y
+    // at its end.
     let strip = |class: &str, r: crate::layout::Rect, value: i64| -> Result<web_sys::Element, String> {
         let cell = make("g", &[("class", &format!("spmv-vec-cell {class}"))])?;
         put(
@@ -1190,8 +1202,9 @@ type MatrixParts = (
     (Vec<web_sys::Element>, Vec<web_sys::Element>),
 );
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The square that shows where the nonzeros are: one `<path>` however many there are, in a group in the scene's content group.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The square that shows where the nonzeros are: one `<path>` however many there are, in a group in the scene's content
+/// group.
 fn add_spy(svg_id: &str, prepared: &Prepared, layout: &Layout) -> Result<(), String> {
     let document = web_sys::window().and_then(|w| w.document()).ok_or("there is no document")?;
     let svg = document.get_element_by_id(svg_id).ok_or("no host")?;

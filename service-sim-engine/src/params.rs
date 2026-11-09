@@ -168,7 +168,8 @@ impl Params {
 
     /// # Errors
     ///
-    /// Returns [`Error::Invalid`] if a range is reversed, or a percentage is above 100, or a duration or a gap is not positive.
+    /// Returns [`Error::Invalid`] if a range is reversed, or a percentage is above 100, or a duration or a gap is not
+    /// positive.
     pub fn validate(&self, limits: &Limits) -> Result<(), Error> {
         self.config()?;
         let ranges = [

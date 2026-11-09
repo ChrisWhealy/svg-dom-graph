@@ -10,8 +10,8 @@ use wasm_bindgen::JsCast;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A deliberate fault in what was observed, to prove that the comparison notices it.
 ///
-/// It is applied to the observed checkpoint and never to the scene, so it tests the check and not the library. A run with a
-/// fault must come out `invalid_incorrect` and name the section that the fault damaged.
+/// It is applied to the observed checkpoint and never to the scene, so it tests the check and not the library. A run
+/// with a fault must come out `invalid_incorrect` and name the section that the fault damaged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fault {
     /// The first connector's start is a unit out.
@@ -82,8 +82,8 @@ impl Fault {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A leak put into every cycle on purpose, to prove that the endurance check notices a leak.
 ///
-/// It is made after each teardown and before the resources are counted, and it is never undone. A check that cannot see these
-/// cannot be trusted to see a real one.
+/// It is made after each teardown and before the resources are counted, and it is never undone. A check that cannot see
+/// these cannot be trusted to see a real one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Leak {
     /// This many bytes are allocated and never freed.
@@ -144,9 +144,9 @@ impl Run<'_> {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes the operation wrong, after the reference model has been given the right one.
     ///
-    /// A node is put out of place, an edge is put the wrong way round, and a removal leaves a host in the document. It is
-    /// done to the prepared operation, so the library is called with it exactly as a correct one would be and nothing in a
-    /// timed interval is different. The checkpoint that follows must find the difference.
+    /// A node is put out of place, an edge is put the wrong way round, and a removal leaves a host in the document. It
+    /// is done to the prepared operation, so the library is called with it exactly as a correct one would be and
+    /// nothing in a timed interval is different. The checkpoint that follows must find the difference.
     pub(super) fn corrupt(&mut self, prepared: Prepared) -> Result<Prepared, String> {
         self.corrupted = true;
         let displace = |point: Point| Point::new(point.x + DISPLACEMENT as f64, point.y);

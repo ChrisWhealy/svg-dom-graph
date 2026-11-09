@@ -33,8 +33,8 @@ pub fn numbers_in(text: &str) -> Vec<f64> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The nodes that a node's accessible name says it outputs to.
 ///
-/// The name reads `label. Output to X. Input from Y.`, so it is split on its full stops and the clauses that begin with the
-/// words "Output to" are the targets.
+/// The name reads `label. Output to X. Input from Y.`, so it is split on its full stops and the clauses that begin with
+/// the words "Output to" are the targets.
 pub fn outputs_in(accessible_name: &str) -> Vec<String> {
     accessible_name
         .split(". ")

@@ -23,7 +23,8 @@ use svg_dom_graph::{
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
-/// The files behind this demo: the Argand diagram, the sliders of `demo-common`, the explorer that they drive, and the roots of unity.
+/// The files behind this demo: the Argand diagram, the sliders of `demo-common`, the explorer that they drive, and the
+/// roots of unity.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("complex_numbers/argand/mod.rs", "argand/mod.rs"),
     crate::source_file!("src/controls/sliders/mod.rs", "../../../src/controls/sliders/mod.rs"),
@@ -99,24 +100,26 @@ fn add_node(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the complex number demo: an Argand diagram that two sliders change, and the roots of unity.
 ///
-/// - **One number, seven ways.** A diagram of `3 + 4i`, whose modulus is exactly 5, with its real part and imaginary part
-///   drawn as the two legs of the right triangle it makes with the real axis (the adjacent leg along the real axis in
-///   green, and the opposite leg in purple), and its modulus and angle. A slider runs along the bottom of the diagram, as long as the real
-///   axis, and sets the real part. A second runs up the left side, as long as the imaginary axis, and sets the imaginary
-///   part. As either moves, the diagram is drawn again, and each of seven nodes is given the new number: rectangular,
-///   polar in degrees and in radians, trigonometric, exponential, log-polar and as the real 2×2 matrix that multiplies in
-///   the same way. See [`explorer`].
+/// - **One number, seven ways.** A diagram of `3 + 4i`, whose modulus is exactly 5, with its real part and imaginary
+///   part drawn as the two legs of the right triangle it makes with the real axis (the adjacent leg along the real axis
+///   in green, and the opposite leg in purple), and its modulus and angle. A slider runs along the bottom of the
+///   diagram, as long as the real axis, and sets the real part. A second runs up the left side, as long as the
+///   imaginary axis, and sets the imaginary part. As either moves, the diagram is drawn again, and each of seven nodes
+///   is given the new number: rectangular, polar in degrees and in radians, trigonometric, exponential, log-polar and
+///   as the real 2×2 matrix that multiplies in the same way. See [`explorer`].
 /// - **The roots of unity.** The points of the unit circle that, raised to the power `n`, give 1. They are the twiddle
-///   factors of an `n`-point Fourier transform. A slider above the diagram sets `n` from 1 to 20, and the diagram and the
-///   two nodes of the numbers, in rectangular and in polar form, are drawn again for it. See [`roots`].
+///   factors of an `n`-point Fourier transform. A slider above the diagram sets `n` from 1 to 20, and the diagram and
+///   the two nodes of the numbers, in rectangular and in polar form, are drawn again for it. See [`roots`].
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if `index.html` is missing the stages and the slider that this builds into.
+/// Returns `Err` if any library call fails, or if `index.html` is missing the stages and the slider that this builds
+/// into.
 pub(crate) fn build_complex_demo() -> Result<(), String> {
     let document = demo_common::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(1400.0, 700.0))?;
-    // A second handle on the same `<svg>`, because `Scene::new` takes the first. It creates the diagram and the sliders.
+    // A second handle on the same `<svg>`, because `Scene::new` takes the first. It creates the diagram and the
+    // sliders.
     let drawing = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?).map_err(stringify)?;
     let content_group = document

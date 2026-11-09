@@ -1,5 +1,5 @@
-//! The elements that the window's own HTML declares: the place of the scene, the text panel, the
-//! live region and the error line. The graph, the stack, the roster and the condensation are all in the scene.
+//! The elements that the window's own HTML declares: the place of the scene, the text panel, the live region and the
+//! error line. The graph, the stack, the roster and the condensation are all in the scene.
 
 use super::projection::PANEL;
 use demo_common::util::required_element;

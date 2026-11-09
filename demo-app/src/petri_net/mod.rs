@@ -121,8 +121,8 @@ fn always_full_requested() -> bool {
 ///    straight to any snapshot. The buttons step, restart and play a script, enter and leave manual mode, fire the
 ///    selected transition and emphasise the wiring of the selected target.
 /// 2. The net, with a ring for each of the four producers on the left, the two buffer places in the middle and a ring
-///    for each of the three consumers on the right. Every place and every transition can be reached by the keyboard,
-///    as one stop, and has a name that says its tokens or its status and what it is missing.
+///    for each of the three consumers on the right. Every place and every transition can be reached by the keyboard, as
+///    one stop, and has a name that says its tokens or its status and what it is missing.
 ///
 /// Beside the scene is a text panel that says all that the picture says: what fired, the tokens it moved, which
 /// transitions it enabled and disabled, who waits on the buffer, and the counts. Every snapshot comes from firing the

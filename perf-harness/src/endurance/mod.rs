@@ -1,16 +1,19 @@
-//! Reads an endurance series: whether live bytes keep growing, and whether memory capacity is reused, once the warm-up is over.
+//! Reads an endurance series: whether live bytes keep growing, and whether memory capacity is reused, once the warm-up
+//! is over.
 //!
-//! The series has one point for each cycle that was sampled after its teardown. Cycles that ran a checkpoint are left out,
-//! since the checking uses memory of its own, so the series has gaps. Each point therefore carries the number of its cycle and
-//! whether that cycle was in the measured part, and every boundary here is drawn from those, never from where a point sits in
-//! the list. Counting entries would over-skip whenever a cycle of the warm-up was one of those left out.
+//! The series has one point for each cycle that was sampled after its teardown. Cycles that ran a checkpoint are left
+//! out, since the checking uses memory of its own, so the series has gaps. Each point therefore carries the number of
+//! its cycle and whether that cycle was in the measured part, and every boundary here is drawn from those, never from
+//! where a point sits in the list. Counting entries would over-skip whenever a cycle of the warm-up was one of those
+//! left out.
 //!
 //! Two figures are kept apart, because they answer different questions:
 //!
-//! * The net change is the live bytes at the last measured cycle less those at the reference, which is the last warm-up point
-//!   or, with no warm-up, the first measured one. It says how far live memory moved, and one stray reading can move it.
-//! * The slope is the least-squares line through the measured points, against their cycle numbers. It says how fast live
-//!   memory moves each cycle, and needs at least [`MIN_POINTS_FOR_TREND`] points to be called a trend at all.
+//! * The net change is the live bytes at the last measured cycle less those at the reference, which is the last warm-up
+//!   point or, with no warm-up, the first measured one. It says how far live memory moved, and one stray reading can
+//!   move it.
+//! * The slope is the least-squares line through the measured points, against their cycle numbers. It says how fast
+//!   live memory moves each cycle, and needs at least [`MIN_POINTS_FOR_TREND`] points to be called a trend at all.
 
 use crate::stats::slope;
 
@@ -68,7 +71,8 @@ pub fn summarize(points: &[SeriesPoint]) -> Summary {
         None
     };
 
-    // The reference leads the sequence when it is a warm-up point, so that growth right after the warm-up is not missed.
+    // The reference leads the sequence when it is a warm-up point, so that growth right after the warm-up is not
+    // missed.
     let sequence: Vec<&SeriesPoint> = last_warmup.into_iter().chain(measured.iter().copied()).collect();
     let capacities: Option<Vec<f64>> = sequence.iter().map(|p| p.capacity).collect();
     let grow_events = capacities
@@ -100,10 +104,11 @@ pub enum Verdict {
 
 /// Judges whether live bytes keep growing, with `allowance_bytes` of growth over the whole measured interval tolerated.
 ///
-/// Two measures must both be within the allowance. The net change is how far live bytes moved. The trend is the slope carried
-/// across the interval, which catches steady growth that one low reading at the end would hide from the net change. A run
-/// whose live bytes are exact, as these are, can use an allowance of zero. A workload with a structure that grows legitimately,
-/// such as a table that doubles, would state the allowance it needs and the manifest would carry it.
+/// Two measures must both be within the allowance. The net change is how far live bytes moved. The trend is the slope
+/// carried across the interval, which catches steady growth that one low reading at the end would hide from the net
+/// change. A run whose live bytes are exact, as these are, can use an allowance of zero. A workload with a structure
+/// that grows legitimately, such as a table that doubles, would state the allowance it needs and the manifest would
+/// carry it.
 pub fn judge(summary: &Summary, allowance_bytes: f64) -> Verdict {
     let (Some(net), Some(slope), Some(first), Some(last)) = (
         summary.net_live_change,

@@ -1,15 +1,17 @@
 //! Checks that the counting allocator tells the truth, before its figures are used.
 //!
-//! The design says the allocator is not authoritative until it has been shown to count a deliberately retained allocation, a
-//! release, and a leaked closure. Each step is repeated many times, so that a counter that drifts or counts twice shows.
+//! The design says the allocator is not authoritative until it has been shown to count a deliberately retained
+//! allocation, a release, and a leaked closure. Each step is repeated many times, so that a counter that drifts or
+//! counts twice shows.
 //!
 //! The steps are:
 //!
 //! 1. Retain blocks of a known size. Every one must add exactly its size and one block.
 //! 2. Release them. The count must return exactly to where it started.
-//! 3. Leak closures with `Closure::forget`, as the library does. Each must add at least what it captures, and the bytes must stay.
-//! 4. Call the library's own `svg_buttons::watch`, which leaks two closures a call. It must add bytes on every call, the same
-//!    on each, and removing the element it watches must not give them back.
+//! 3. Leak closures with `Closure::forget`, as the library does. Each must add at least what it captures, and the bytes
+//!    must stay.
+//! 4. Call the library's own `svg_buttons::watch`, which leaks two closures a call. It must add bytes on every call,
+//!    the same on each, and removing the element it watches must not give them back.
 //! 5. Grow one vector a byte at a time, which reallocates. The count must equal its capacity, and release exactly.
 //! 6. Repeat the retain and release again and again. Each must return exactly to the start.
 //! 7. The linear memory is at least as large as the most that was ever live.
@@ -44,8 +46,8 @@ fn difference(after: AllocStats, before: AllocStats) -> (isize, isize) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn retained_and_released() -> Vec<Value> {
-    // The outer vector is made before the starting reading, so that pushing into it allocates nothing of its own.
-    // The vector that records each reading is made before it too, for the same reason.
+    // The outer vector is made before the starting reading, so that pushing into it allocates nothing of its own. The
+    // vector that records each reading is made before it too, for the same reason.
     let mut held: Vec<Vec<u8>> = Vec::with_capacity(ROUNDS);
     let mut per_block: Vec<(isize, isize)> = Vec::with_capacity(ROUNDS);
     let start = stats();
@@ -97,8 +99,9 @@ fn leaked_closures() -> Value {
     drop(black_box(vec![0u8; 1 << 20]));
     let total = difference(stats(), start).0;
 
-    // Every closure adds at least what it captures, and the bytes never go down. The most it may add beyond that is a bound,
-    // since wasm-bindgen keeps tables of its own that grow from time to time, so the overhead is not the same on every call.
+    // Every closure adds at least what it captures, and the bytes never go down. The most it may add beyond that is a
+    // bound, since wasm-bindgen keeps tables of its own that grow from time to time, so the overhead is not the same on
+    // every call.
     let each_at_least = deltas.iter().all(|d| *d >= CAPTURE as isize);
     let never_falls = live_after_each.windows(2).all(|pair| pair[1] >= pair[0]);
     let overhead_total = total - (ROUNDS * CAPTURE) as isize;
@@ -173,8 +176,9 @@ fn library_leak() -> Value {
     let leaked = difference(stats(), start).0;
     stage.remove();
     let after_removal = difference(stats(), start).0;
-    // The library's leak has no size that can be known in advance, so this shows what matters about it: that it is counted,
-    // that every call adds, that the bytes never fall, and that removing the element it watches does not give them back.
+    // The library's leak has no size that can be known in advance, so this shows what matters about it: that it is
+    // counted, that every call adds, that the bytes never fall, and that removing the element it watches does not give
+    // them back.
     let positive = deltas.iter().all(|d| *d > 0);
     let never_falls = live_after_each.windows(2).all(|pair| pair[1] >= pair[0]);
     let smallest = deltas.iter().min().copied().unwrap_or(0);

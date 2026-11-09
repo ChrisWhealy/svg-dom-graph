@@ -1,7 +1,7 @@
 //! A read-only picture of the engine between two slices, which is what a projection draws.
 //!
-//! It holds nothing that the engine needs to run and nothing that a hash covers, so reading it cannot change a run. The engine's own
-//! types stay private, and these are copies of what a reader may see.
+//! It holds nothing that the engine needs to run and nothing that a hash covers, so reading it cannot change a run. The
+//! engine's own types stay private, and these are copies of what a reader may see.
 
 use crate::engine::Counters;
 
@@ -75,10 +75,10 @@ pub enum ServerView {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The engine after a whole slice, or before the first, as far as a reader can see it.
 ///
-/// It does not hold every job that has arrived. A run can have tens of thousands of them, and copying them all for each displayed
-/// slice would make the cost of a draw grow with the length of the run and not with what is on the screen. So it holds the jobs that
-/// a projection can name: those in the first `window` places of the queue, those that are running, and the one that was selected.
-/// The rest is in aggregates that the engine keeps as it goes.
+/// It does not hold every job that has arrived. A run can have tens of thousands of them, and copying them all for each
+/// displayed slice would make the cost of a draw grow with the length of the run and not with what is on the screen. So
+/// it holds the jobs that a projection can name: those in the first `window` places of the queue, those that are
+/// running, and the one that was selected. The rest is in aggregates that the engine keeps as it goes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Model {
     /// The tick of the last slice, or 0 before the first.
@@ -87,7 +87,8 @@ pub struct Model {
     pub slice: u64,
     pub counters: Counters,
     pub servers: Vec<ServerView>,
-    /// The ids of the first waiting jobs, in the order that the next dispatch takes them, and no more than the window asked for.
+    /// The ids of the first waiting jobs, in the order that the next dispatch takes them, and no more than the window
+    /// asked for.
     pub waiting: Vec<u64>,
     /// How many jobs wait, which is the length of the queue and not of `waiting`.
     pub waiting_total: usize,

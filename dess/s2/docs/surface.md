@@ -121,7 +121,7 @@ The record is `dess/s2/evidence/mutation-check.json`, and all seventeen are caug
   S2 does not meet a failure, so it does not meet this.
   Stage S4 does.
 - **Keyboard and selection.** Each slot can take the focus from a script, and nothing moves it by key.
-  The controller adds the keys in S3.
+  The controller has an action for each key, and the keys wait for a page to listen on, in the panel stage (see `dess/s3/README.md`).
 - **A stylesheet and a look at the page.** The classes are in place and the CSS is not.
 - **The panel.** No gallery panel hosts the surface, so the hidden-panel predicate of S0 is not exercised.
 - **Firefox.**

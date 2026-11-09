@@ -120,8 +120,9 @@ fn a_string_cannot_be_mistaken_for_its_neighbour() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The hash keeps one buffer that settles at the size of the largest operation, and that is a 64-byte block that stays allocated
-/// for the life of a run. It is the one block that an endurance run's attribution finds that the harness itself owns.
+/// The hash keeps one buffer that settles at the size of the largest operation, and that is a 64-byte block that stays
+/// allocated for the life of a run. It is the one block that an endurance run's attribution finds that the harness
+/// itself owns.
 #[test]
 fn the_encoder_buffer_settles_at_64_bytes_for_the_largest_operation_of_a_workload() -> Result<(), String> {
     let mut encoder = Encoder::new();

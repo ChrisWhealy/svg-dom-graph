@@ -2,8 +2,8 @@
 //! Pure: nothing here touches the DOM.
 //!
 //! The scene is 640 pixels wide. At the top are the selectors for the size and the speed. Under them are the buttons,
-//! and under those the range that goes to any step, with its name and the step written above it. The board is under
-//! all of these, in the middle.
+//! and under those the range that goes to any step, with its name and the step written above it. The board is under all
+//! of these, in the middle.
 
 use super::projection::SCENE_SIZE;
 use svg_dom::root::utils::{Point, Rect, Size};
@@ -78,8 +78,8 @@ pub(super) const SPEED_SELECTOR: SelectorPlace = SelectorPlace {
     },
 };
 
-/// The range: the left end of its track, and how long the track is. The thumb is as wide as 16 pixels, which is half
-/// of it either side of the ends.
+/// The range: the left end of its track, and how long the track is. The thumb is as wide as 16 pixels, which is half of
+/// it either side of the ends.
 pub(super) const RANGE_LEFT: f64 = MARGIN + 8.0;
 pub(super) const RANGE_LENGTH: f64 = WIDTH - 2.0 * RANGE_LEFT;
 

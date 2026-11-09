@@ -1,16 +1,16 @@
 //! The reference model: what a scene should look like after a stream of operations, worked out without a DOM.
 //!
-//! The model owns nothing of the library's. It follows the operations, keeps the boxes and edges they describe, and answers
-//! with a checkpoint in the shape of `perf/schemas/checkpoint.schema.json`. A runner compares its own checkpoint with this
-//! one, so an optimisation that skips work shows up as a difference.
+//! The model owns nothing of the library's. It follows the operations, keeps the boxes and edges they describe, and
+//! answers with a checkpoint in the shape of `perf/schemas/checkpoint.schema.json`. A runner compares its own
+//! checkpoint with this one, so an optimisation that skips work shows up as a difference.
 //!
 //! What it predicts, and how sure that is:
 //!
 //! * Topology and content are exact. They follow from the operations alone.
 //! * Node boxes are exact. A plain node is drawn at the size it was given.
-//! * A connector's ends follow the library's documented rule for a straight connector: each end is where the ray between the
-//!   two boxes' centres crosses that box's boundary. Phase 2 confirmed it against the DOM. Where the two ends coincide the
-//!   library draws no path, and the model records a path with no coordinates.
+//! * A connector's ends follow the library's documented rule for a straight connector: each end is where the ray
+//!   between the two boxes' centres crosses that box's boundary. Phase 2 confirmed it against the DOM. Where the two
+//!   ends coincide the library draws no path, and the model records a path with no coordinates.
 //! * Paint order is node creation order. Phase 2 confirmed in Chrome that a move does not raise a node.
 //! * DOM ids and the accessibility tree are not predicted. They are left empty and listed as not modelled.
 
@@ -166,9 +166,9 @@ impl Checkpoint {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The SHA-256 of the whole checkpoint, geometry included.
     ///
-    /// It says that two models agree to the last bit. It is not how a runner's DOM is compared with the model, which uses
-    /// the tolerance. Every coordinate comes from basic floating-point arithmetic, which is exact to the last bit on every
-    /// platform, so the digest does not depend on the machine.
+    /// It says that two models agree to the last bit. It is not how a runner's DOM is compared with the model, which
+    /// uses the tolerance. Every coordinate comes from basic floating-point arithmetic, which is exact to the last bit
+    /// on every platform, so the digest does not depend on the machine.
     pub fn model_sha256(&self) -> String {
         hex(&Sha256::digest(
             serde_json::to_vec(self).expect("a checkpoint is always serialisable"),
@@ -203,9 +203,9 @@ impl Model {
     ///
     /// # Errors
     ///
-    /// Returns a message if the operation is not allowed in the model's present state: one that needs a scene when there
-    /// is none, a key that is already used, an unknown node, a self-loop or a repeated edge. A stream that does that is a
-    /// bug in the generator, so it stops the run.
+    /// Returns a message if the operation is not allowed in the model's present state: one that needs a scene when
+    /// there is none, a key that is already used, an unknown node, a self-loop or a repeated edge. A stream that does
+    /// that is a bug in the generator, so it stops the run.
     pub fn apply(&mut self, op: &Op) -> Result<(), String> {
         match op {
             Op::Phase { .. } | Op::Checkpoint { .. } => Ok(()),
@@ -277,8 +277,8 @@ impl Model {
     ///
     /// # Errors
     ///
-    /// Returns a message if the scene has been dropped but its host is still in the document, because the model does not
-    /// predict what is left there.
+    /// Returns a message if the scene has been dropped but its host is still in the document, because the model does
+    /// not predict what is left there.
     pub fn checkpoint(&self, view: ViewPolicy) -> Result<Checkpoint, String> {
         if self.state == SceneState::Dropped {
             return Err("a checkpoint was taken between dropping the scene and removing its host".to_string());
@@ -299,9 +299,9 @@ impl Model {
             let (from, to) = (&self.nodes[edge.from], &self.nodes[edge.to]);
             let start = boundary_point(from, centre(to));
             let end = boundary_point(to, centre(from));
-            // The library drops a point that exactly repeats the one before it, so a connector whose two ends are the same
-            // point, such as one between two boxes that touch along a side, is left with a single point and is drawn as an
-            // empty path. It is recorded here as a path with no coordinates.
+            // The library drops a point that exactly repeats the one before it, so a connector whose two ends are the
+            // same point, such as one between two boxes that touch along a side, is left with a single point and is
+            // drawn as an empty path. It is recorded here as a path with no coordinates.
             let coordinates = if start == end { Vec::new() } else { vec![start.0, start.1, end.0, end.1] };
             elements.push(GeometryElement {
                 key: edge_key(from, to),
@@ -375,9 +375,9 @@ fn centre(node: &ModelNode) -> (f64, f64) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the ray from `node`'s centre towards `towards` crosses the boundary of `node`.
 ///
-/// The ray is scaled by whichever of two ratios is smaller: the half-width over the horizontal distance, or the half-height
-/// over the vertical one. That reaches an edge before it would pass a corner. When `towards` is the centre itself the
-/// direction is undefined, and the centre is returned.
+/// The ray is scaled by whichever of two ratios is smaller: the half-width over the horizontal distance, or the
+/// half-height over the vertical one. That reaches an edge before it would pass a corner. When `towards` is the centre
+/// itself the direction is undefined, and the centre is returned.
 fn boundary_point(node: &ModelNode, towards: (f64, f64)) -> (f64, f64) {
     let (cx, cy) = centre(node);
     let (dx, dy) = (towards.0 - cx, towards.1 - cy);

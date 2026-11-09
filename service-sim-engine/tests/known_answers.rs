@@ -1,4 +1,5 @@
-//! The engine against the design's known answers, the S0 pins, the golden hashes that the oracle agreed on, and its own invariants.
+//! The engine against the design's known answers, the S0 pins, the golden hashes that the oracle agreed on, and its own
+//! invariants.
 //!
 //! These run natively and for `wasm32-wasip1`, so the 32-bit build is held to the same hashes as the 64-bit one.
 
@@ -52,8 +53,8 @@ fn the_fixtures_give_the_designs_known_answers() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The parameter hash, the input stream and the event pops of the manifest seed are the S0 pins, which the JavaScript prototype
-/// produced and the oracle reproduced. Rust is the third engine to agree.
+/// The parameter hash, the input stream and the event pops of the manifest seed are the S0 pins, which the JavaScript
+/// prototype produced and the oracle reproduced. Rust is the third engine to agree.
 #[test]
 fn the_manifest_seed_gives_the_s0_pins() {
     let frozen = json(FROZEN);
@@ -75,8 +76,8 @@ fn the_manifest_seed_gives_the_s0_pins() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every scenario of both panels gives the hashes on which the oracle agreed: the number of pops and slices, the event-pop hash and
-/// the checkpoint of the end of the run.
+/// Every scenario of both panels gives the hashes on which the oracle agreed: the number of pops and slices, the
+/// event-pop hash and the checkpoint of the end of the run.
 #[test]
 fn every_panel_scenario_gives_the_golden_hashes() {
     let golden = json(GOLDEN);
@@ -102,8 +103,9 @@ fn every_panel_scenario_gives_the_golden_hashes() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A key names one job (rule R13). Two scripted arrivals that share a key, or a scripted key that the generator uses, are refused
-/// before anything runs, and keys that only look alike are accepted. The cases and their messages are in the contract's data.
+/// A key names one job (rule R13). Two scripted arrivals that share a key, or a scripted key that the generator uses,
+/// are refused before anything runs, and keys that only look alike are accepted. The cases and their messages are in
+/// the contract's data.
 #[test]
 fn the_refusals_of_the_contract_are_refused_in_its_words() {
     for (name, case) in json(ERRORS).as_object().expect("an object") {
@@ -120,7 +122,8 @@ fn the_refusals_of_the_contract_are_refused_in_its_words() {
     }
 }
 
-/// The scenario that a duplicate key would have broken: with two keys, a cancel reaches the job it names and not the other.
+/// The scenario that a duplicate key would have broken: with two keys, a cancel reaches the job it names and not the
+/// other.
 #[test]
 fn a_cancel_reaches_the_job_that_its_key_names() {
     let fixtures = json(FIXTURES);
@@ -143,8 +146,8 @@ fn the_same_seed_gives_the_same_trace_and_another_seed_another() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The invariants of the design, checked after every slice of 200 seeds of each panel: conservation, capacity, and a time that
-/// never goes backwards.
+/// The invariants of the design, checked after every slice of 200 seeds of each panel: conservation, capacity, and a
+/// time that never goes backwards.
 #[test]
 fn the_invariants_hold_after_every_slice() {
     for build in [Scenario::panel as fn(u64) -> Result<Scenario, Error>, Scenario::panel2] {
@@ -230,7 +233,8 @@ fn a_configuration_outside_its_range_is_refused_before_anything_runs() {
     }
 }
 
-/// A scripted event that is not well formed is refused when the engine is built (rule R14), and not when the event pops.
+/// A scripted event that is not well formed is refused when the engine is built (rule R14), and not when the event
+/// pops.
 #[test]
 fn a_scripted_event_that_is_not_well_formed_is_refused_at_construction() {
     let cases: [(ScriptEvent, &str); 6] = [
@@ -250,7 +254,8 @@ fn a_scripted_event_that_is_not_well_formed_is_refused_at_construction() {
     }
 }
 
-/// A bad deadline on a job that would have been rejected on arrival is refused as well, since nothing else would ever look at it.
+/// A bad deadline on a job that would have been rejected on arrival is refused as well, since nothing else would ever
+/// look at it.
 #[test]
 fn a_bad_deadline_on_a_job_that_would_be_rejected_is_still_refused() {
     let config = Config {
@@ -373,7 +378,7 @@ fn an_empty_scenario_has_nothing_to_run() {
     assert_eq!(e.counters().pops, 0);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn engine_for(scenario: &Scenario) -> Engine {
     Engine::new(
         &scenario.config_id,
@@ -386,8 +391,8 @@ fn engine_for(scenario: &Scenario) -> Engine {
     .expect("an engine")
 }
 
-/// The picture that a projection draws agrees, after every slice, with what the slice record says, and reading it changes nothing:
-/// the run's hash is the one of a run that never asked.
+/// The picture that a projection draws agrees, after every slice, with what the slice record says, and reading it
+/// changes nothing: the run's hash is the one of a run that never asked.
 #[test]
 fn the_model_agrees_with_the_slice_record_and_reading_it_changes_nothing() {
     let fixtures = json(FIXTURES);
@@ -419,9 +424,9 @@ fn the_model_agrees_with_the_slice_record_and_reading_it_changes_nothing() {
     });
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A model holds only what a projection can name, whatever the length of the run: the window of the queue, the running jobs and the
-/// selected one. Every other job is in the aggregates.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A model holds only what a projection can name, whatever the length of the run: the window of the queue, the running
+/// jobs and the selected one. Every other job is in the aggregates.
 #[test]
 fn a_model_does_not_copy_the_jobs_that_nobody_can_see() {
     let scenario = Scenario::mixed_outage_7(20_261_106).expect("the frozen revision");
@@ -450,9 +455,9 @@ fn a_model_does_not_copy_the_jobs_that_nobody_can_see() {
     assert_eq!(model.arrived, engine.counters().arrivals);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The count of jobs that wait to retry, which the engine keeps as it goes, equals a count of the jobs after every slice. The count
-/// is made from the final report's job states, which the engine builds in another place.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The count of jobs that wait to retry, which the engine keeps as it goes, equals a count of the jobs after every
+/// slice. The count is made from the final report's job states, which the engine builds in another place.
 #[test]
 fn the_retry_wait_aggregate_equals_a_recount_after_every_slice() {
     let fixtures = json(FIXTURES);

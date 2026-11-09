@@ -7,12 +7,13 @@ use crate::run::Run;
 use crate::spec::{Error, Spec};
 use serde_json::{Value, json};
 
-/// What a scenario was and did: the plan, the statistics, and the hashes of the matrix and of the vectors after every step.
+/// What a scenario was and did: the plan, the statistics, and the hashes of the matrix and of the vectors after every
+/// step.
 ///
 /// # Errors
 ///
-/// Returns [`Error::Invalid`] for a malformed specification, [`Error::Refused`] for one over the budget, or [`Error::Internal`] if
-/// the product disagrees with itself.
+/// Returns [`Error::Invalid`] for a malformed specification, [`Error::Refused`] for one over the budget, or
+/// [`Error::Internal`] if the product disagrees with itself.
 pub fn trace(spec: &Spec, budget: &Budget) -> Result<Value, Error> {
     let Prepared { matrix, plan, .. } = Prepared::new(spec, budget)?;
     let stats = matrix.stats();
@@ -56,10 +57,12 @@ fn labels_hash(spec: &Spec) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A scenario that has passed its checks: a valid specification, within both stages of a budget, and the matrix it generated.
+/// A scenario that has passed its checks: a valid specification, within both stages of a budget, and the matrix it
+/// generated.
 ///
-/// This is the only way to a matrix that a scene is built from. A scene builder that takes a `Prepared` cannot be given a scenario
-/// that was not checked, so a budget is enforced before any scene call by the types and not by the caller's care.
+/// This is the only way to a matrix that a scene is built from. A scene builder that takes a `Prepared` cannot be given
+/// a scenario that was not checked, so a budget is enforced before any scene call by the types and not by the caller's
+/// care.
 #[derive(Debug, Clone)]
 pub struct Prepared {
     spec: Spec,
@@ -68,12 +71,13 @@ pub struct Prepared {
 }
 
 impl Prepared {
-    /// Validates the specification, checks it against the budget, generates the matrix and checks that against the budget.
+    /// Validates the specification, checks it against the budget, generates the matrix and checks that against the
+    /// budget.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Invalid`] for a malformed specification and [`Error::Refused`] for one over the budget. No matrix is
-    /// generated for a specification that the first stage refuses.
+    /// Returns [`Error::Invalid`] for a malformed specification and [`Error::Refused`] for one over the budget. No
+    /// matrix is generated for a specification that the first stage refuses.
     pub fn new(spec: &Spec, budget: &Budget) -> Result<Self, Error> {
         spec.validate()?;
         check_spec(spec, budget)?;

@@ -182,8 +182,8 @@ impl Controller {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The index of node `id`, and its centre when its top-left corner is `origin`. The centre uses the size the
-    /// scene reports for the node, never a radius written down here.
+    /// The index of node `id`, and its centre when its top-left corner is `origin`. The centre uses the size the scene
+    /// reports for the node, never a radius written down here.
     fn centre_of(&self, id: NodeId, origin: Point) -> Option<(usize, Vec2)> {
         let index = self.nodes.iter().position(|node| *node == id)?;
         let size = self.scene.node_rect(id).ok()?.size;

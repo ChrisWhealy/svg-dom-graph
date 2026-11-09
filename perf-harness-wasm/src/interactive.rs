@@ -1,12 +1,12 @@
 //! The scene that Layer C drives with real input.
 //!
-//! Workload W4 builds one scene and checks it, and a browser is then driven through it. This builds that scene on a page, with
-//! every node draggable and the pan and the wheel zoom switched on, and gives the runner what it needs to find where to put the
-//! pointer and to read what a gesture did. Nothing here is timed, since the time that Layer C measures is of the browser's, from
-//! the input to the frame, and it is read in the page and from the trace.
+//! Workload W4 builds one scene and checks it, and a browser is then driven through it. This builds that scene on a
+//! page, with every node draggable and the pan and the wheel zoom switched on, and gives the runner what it needs to
+//! find where to put the pointer and to read what a gesture did. Nothing here is timed, since the time that Layer C
+//! measures is of the browser's, from the input to the frame, and it is read in the page and from the trace.
 //!
-//! The scene is kept in a stage of this module, the way the fixture of the browser tests keeps its own, so that a page can build
-//! it, drive it and take it down again without the runner holding a handle.
+//! The scene is kept in a stage of this module, the way the fixture of the browser tests keeps its own, so that a page
+//! can build it, drive it and take it down again without the runner holding a handle.
 
 use crate::observe::observe;
 use perf_harness::compare::compare;
@@ -47,8 +47,9 @@ fn error(message: impl std::fmt::Display) -> String {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the scene of an interaction manifest at `scale_percent`, checks it against the model, and says what it made.
 ///
-/// The host is as many pixels wide as its view box, so a pixel of the pointer is a unit of the scene at a scale of 100%. Every
-/// node is draggable with collisions allowed, so that where a drag ends is the pointer's doing and not a correction's.
+/// The host is as many pixels wide as its view box, so a pixel of the pointer is a unit of the scene at a scale of
+/// 100%. Every node is draggable with collisions allowed, so that where a drag ends is the pointer's doing and not a
+/// correction's.
 pub fn build(manifest_json: &str, scale_percent: u32) -> String {
     teardown();
     let manifest = match serde_json::from_str(manifest_json)
@@ -199,7 +200,8 @@ pub fn node(key: &str) -> String {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Puts the view back at `scale_percent` with no translation, and each node named in `positions_json`, an object of
-/// `key: [x, y]`, back where it was. The runner does this between samples, so that every sample starts from the same scene.
+/// `key: [x, y]`, back where it was. The runner does this between samples, so that every sample starts from the same
+/// scene.
 pub fn reset(scale_percent: u32, positions_json: &str) -> String {
     let positions: BTreeMap<String, [f64; 2]> = match serde_json::from_str(positions_json) {
         Ok(positions) => positions,
@@ -236,8 +238,8 @@ pub fn teardown() -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Drops the scene and leaves its host in the document, which is what dropping the last handle does by itself. The listeners
-/// that the scene owns go with it, and the elements it drew stay where they are.
+/// Drops the scene and leaves its host in the document, which is what dropping the last handle does by itself. The
+/// listeners that the scene owns go with it, and the elements it drew stay where they are.
 pub fn drop_scene() -> String {
     STAGE.with_borrow_mut(|stage| {
         if let Some(stage) = stage.as_mut() {

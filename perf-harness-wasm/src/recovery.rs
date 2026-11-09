@@ -1,13 +1,13 @@
 //! The scenes that the recovery runner breaks on purpose.
 //!
-//! The runner is a page script that makes a DOM call fail at a chosen place (`perf/page/fault-injector.js`) and looks at what
-//! the library left behind. This is the Rust side of that: it builds a scene of an interaction or recovery manifest on a
-//! numbered slot, so that a scene and its reference can stand side by side, performs one operation at a time, and reads a
-//! scene back into a checkpoint that can be kept under a name and compared with another.
+//! The runner is a page script that makes a DOM call fail at a chosen place (`perf/page/fault-injector.js`) and looks
+//! at what the library left behind. This is the Rust side of that: it builds a scene of an interaction or recovery
+//! manifest on a numbered slot, so that a scene and its reference can stand side by side, performs one operation at a
+//! time, and reads a scene back into a checkpoint that can be kept under a name and compared with another.
 //!
-//! Two things are kept apart. What the scene was asked to do is applied to the reference model as an *intention*, once. What
-//! was done to the scene is a separate call that can fail and be tried again, so a retry never changes the reference.
-//! Nothing here is timed. The times of a recovery are taken around these calls by the page script.
+//! Two things are kept apart. What the scene was asked to do is applied to the reference model as an *intention*, once.
+//! What was done to the scene is a separate call that can fail and be tried again, so a retry never changes the
+//! reference. Nothing here is timed. The times of a recovery are taken around these calls by the page script.
 
 use crate::observe::observe;
 use perf_harness::compare::compare;
@@ -39,7 +39,8 @@ struct Stage {
     scene: Option<Scene>,
     nodes: BTreeMap<String, NodeId>,
     edges: Vec<EdgeId>,
-    /// The keys of the edges whose connectors the scene drew, in the order it drew them, which is how observation names them.
+    /// The keys of the edges whose connectors the scene drew, in the order it drew them, which is how observation names
+    /// them.
     edge_keys: Vec<String>,
     model: Model,
 }
@@ -78,8 +79,8 @@ fn with_stage<T>(slot: u32, work: impl FnOnce(&mut Stage) -> Result<T, String>) 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the scene of `manifest_json` on `slot`, drawn as the stream says, and gives its nodes and edges.
 ///
-/// With `labelled`, every second edge is given a label, since a label is what the label-update fault point needs to break, and
-/// the reference model does not model labels.
+/// With `labelled`, every second edge is given a label, since a label is what the label-update fault point needs to
+/// break, and the reference model does not model labels.
 pub fn build(manifest_json: &str, slot: u32, labelled: bool) -> String {
     teardown(slot);
     let manifest = match serde_json::from_str(manifest_json)
@@ -212,7 +213,8 @@ fn number(op: &serde_json::Value, name: &str) -> Result<i64, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What the scene was asked to do, as the reference model has it. Called once for each thing asked, whatever becomes of it.
+/// What the scene was asked to do, as the reference model has it. Called once for each thing asked, whatever becomes of
+/// it.
 pub fn intend(slot: u32, op_json: &str) -> String {
     let result = (|| {
         let op: serde_json::Value = serde_json::from_str(op_json).map_err(|e| e.to_string())?;
@@ -244,8 +246,8 @@ pub fn intend(slot: u32, op_json: &str) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Does one thing to the scene, which can fail, and says whether it did. A failure is a result and not a trap, and is not
-/// recorded anywhere but in what is returned: the stage keeps only what the scene confirmed.
+/// Does one thing to the scene, which can fail, and says whether it did. A failure is a result and not a trap, and is
+/// not recorded anywhere but in what is returned: the stage keeps only what the scene confirmed.
 pub fn act(slot: u32, op_json: &str) -> String {
     let result = (|| {
         let op: serde_json::Value = serde_json::from_str(op_json).map_err(|e| e.to_string())?;
@@ -331,8 +333,8 @@ pub fn predicted(slot: u32, name: &str) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The differences between two kept checkpoints, `expected` first, as a list of the sections that differ with the first few
-/// accounts of how.
+/// The differences between two kept checkpoints, `expected` first, as a list of the sections that differ with the first
+/// few accounts of how.
 pub fn differences(expected: &str, actual: &str) -> String {
     SAVED.with_borrow(|saved| match (saved.get(expected), saved.get(actual)) {
         (Some(a), Some(b)) => {

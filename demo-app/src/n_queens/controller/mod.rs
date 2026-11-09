@@ -3,8 +3,8 @@
 //!
 //! The controller owns the one number that matters, the index of the snapshot that is on the page. It changes that
 //! number only after the [`Surface`] has drawn the snapshot, so a failed write never leaves the index ahead of the
-//! page.
-//! A write that fails part way marks the page dirty, and the first thing that every button does is to draw it again.
+//! page. A write that fails part way marks the page dirty, and the first thing that every button does is to draw it
+//! again.
 
 use super::{
     projection::{
@@ -180,8 +180,8 @@ impl SeekRequest {
         self.latest.replace(Some((index, generation))).is_none()
     }
 
-    /// The place that was last asked for, which is forgotten. It is `None` if the last request was made against a
-    /// trace other than that of `generation`, which is the one on the page now.
+    /// The place that was last asked for, which is forgotten. It is `None` if the last request was made against a trace
+    /// other than that of `generation`, which is the one on the page now.
     pub(crate) fn take(&self, generation: u64) -> Option<usize> {
         self.latest
             .take()

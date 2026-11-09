@@ -1,18 +1,18 @@
 //! Turns a manifest into the stream of operations a runner has to perform.
 //!
 //! The stream is produced by a visitor and never held in memory, because a long run of a large graph has millions of
-//! operations. Everything here is integer arithmetic over a fixed generator, so the same manifest gives the same stream on
-//! every platform.
+//! operations. Everything here is integer arithmetic over a fixed generator, so the same manifest gives the same stream
+//! on every platform.
 //!
 //! The three workloads share one graph planner and differ in what surrounds it:
 //!
 //! * W1, scene construction: the same graph is built, dropped and removed again and again.
 //! * W2, connector rerouting: one scene is built, and then nodes are moved so that their connectors are routed again.
 //! * W3, scene lifecycle: a different graph is built, dropped and removed on every cycle.
-//! * W5, recovery: the same single build and checkpoint as W4. The failures are put in by a runner, one fault point at a time, and
-//!   are not part of this stream.
-//! * W4, interaction: one scene is built and checked, and a browser is then driven through it with real input. The input is
-//!   planned by [`crate::gestures`], and is not part of this stream.
+//! * W5, recovery: the same single build and checkpoint as W4. The failures are put in by a runner, one fault point at
+//!   a time, and are not part of this stream.
+//! * W4, interaction: one scene is built and checked, and a browser is then driven through it with real input. The
+//!   input is planned by [`crate::gestures`], and is not part of this stream.
 
 use crate::manifest::{Manifest, Workload};
 use crate::ops::{Op, Phase};
@@ -221,8 +221,8 @@ impl Emitter<'_> {
 ///
 /// # Errors
 ///
-/// Returns [`WorkloadError::Plan`] if a graph cannot be planned, and [`WorkloadError::Visit`] with the visitor's message if
-/// it refuses an operation.
+/// Returns [`WorkloadError::Plan`] if a graph cannot be planned, and [`WorkloadError::Visit`] with the visitor's
+/// message if it refuses an operation.
 pub fn generate(manifest: &Manifest, visit: Visit<'_>) -> Result<(), WorkloadError> {
     let mut emitter = Emitter {
         visit,
@@ -238,7 +238,8 @@ pub fn generate(manifest: &Manifest, visit: Visit<'_>) -> Result<(), WorkloadErr
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The graph that a scene of this manifest is built from, which is the one that the interaction workload plans gestures over.
+/// The graph that a scene of this manifest is built from, which is the one that the interaction workload plans gestures
+/// over.
 ///
 /// # Errors
 ///
@@ -260,8 +261,8 @@ fn plan_for(manifest: &Manifest, stream: u64) -> Result<GraphPlan, WorkloadError
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// W1 and W3: build, then drop and remove, once for every warm-up and measured iteration.
 ///
-/// A checkpoint follows the build of every `checkpoint_every`th cycle and of the last. One more follows the last removal,
-/// to show that nothing is left.
+/// A checkpoint follows the build of every `checkpoint_every`th cycle and of the last. One more follows the last
+/// removal, to show that nothing is left.
 fn cycles(manifest: &Manifest, emitter: &mut Emitter<'_>, new_graph_each_cycle: bool) -> Result<(), WorkloadError> {
     let warmup = u64::from(manifest.execution.warmup_iterations);
     let total = manifest.total_iterations();
@@ -274,9 +275,10 @@ fn cycles(manifest: &Manifest, emitter: &mut Emitter<'_>, new_graph_each_cycle: 
 
     for cycle in 0..total {
         emitter.phase_marker(cycle, warmup)?;
-        // A graph that is new every cycle is planned before anything is emitted, as it always was, and is dropped as soon as it
-        // has been built. Holding it to the end of the cycle would leave it allocated while the scene is torn down, and a runner
-        // counting the bytes that stay allocated after a teardown would count the generator's own plan, as an early one did.
+        // A graph that is new every cycle is planned before anything is emitted, as it always was, and is dropped as
+        // soon as it has been built. Holding it to the end of the cycle would leave it allocated while the scene is
+        // torn down, and a runner counting the bytes that stay allocated after a teardown would count the generator's
+        // own plan, as an early one did.
         {
             let planned;
             let plan = match &fixed {
@@ -301,8 +303,8 @@ fn cycles(manifest: &Manifest, emitter: &mut Emitter<'_>, new_graph_each_cycle: 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// W4: build the scene once and checkpoint it.
 ///
-/// What the browser does to it afterwards is a plan of its own, so that a stream that is only the build is the same on every
-/// layer, and a checkpoint proves that the scene it is about to be driven through is the one that was meant.
+/// What the browser does to it afterwards is a plan of its own, so that a stream that is only the build is the same on
+/// every layer, and a checkpoint proves that the scene it is about to be driven through is the one that was meant.
 fn interaction(manifest: &Manifest, emitter: &mut Emitter<'_>) -> Result<(), WorkloadError> {
     let plan = plan_for(manifest, STREAM_GRAPH)?;
     emitter.emit(Op::CreateScene)?;
@@ -313,8 +315,8 @@ fn interaction(manifest: &Manifest, emitter: &mut Emitter<'_>) -> Result<(), Wor
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// W2: build once and checkpoint, then make one move for every warm-up and measured iteration.
 ///
-/// Each move draws its node and its place from the moves stream. One move in four is aimed at the node of highest degree.
-/// The draws are made whether or not they are used, so the stream does not depend on which branch was taken.
+/// Each move draws its node and its place from the moves stream. One move in four is aimed at the node of highest
+/// degree. The draws are made whether or not they are used, so the stream does not depend on which branch was taken.
 fn rerouting(manifest: &Manifest, emitter: &mut Emitter<'_>) -> Result<(), WorkloadError> {
     let warmup = u64::from(manifest.execution.warmup_iterations);
     let total = manifest.total_iterations();

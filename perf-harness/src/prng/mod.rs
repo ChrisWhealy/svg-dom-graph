@@ -1,7 +1,8 @@
 //! The pseudo-random number generator that every workload draws from.
 //!
-//! It is SplitMix64, written out here and not taken from a crate, so that no dependency upgrade can change what a seed means.
-//! It uses only 64-bit integer arithmetic, so it gives the same numbers on every platform, including a 32-bit one.
+//! It is SplitMix64, written out here and not taken from a crate, so that no dependency upgrade can change what a seed
+//! means. It uses only 64-bit integer arithmetic, so it gives the same numbers on every platform, including a 32-bit
+//! one.
 
 /// A SplitMix64 generator.
 #[derive(Debug, Clone)]
@@ -17,7 +18,8 @@ impl SplitMix64 {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A generator for one named stream of a seed, so that unrelated choices do not share a sequence.
     ///
-    /// The stream number is mixed into the seed, and the first output of the result seeds the generator that is returned.
+    /// The stream number is mixed into the seed, and the first output of the result seeds the generator that is
+    /// returned.
     pub fn derive(seed: u64, stream: u64) -> Self {
         let mut base = Self::new(seed ^ stream.wrapping_mul(0xD6E8_FEB8_6659_FD93));
         Self::new(base.next_u64())

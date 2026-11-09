@@ -1,8 +1,9 @@
 //! What a runner reports after one repetition of one workload in one mode.
 //!
-//! It is the part of a result document that only the runner can know: the metrics, the raw observations, how the checkpoints
-//! came out and which operations were really executed. The orchestrator wraps it with the environment and the manifest to
-//! make the document that `perf/schemas/result.schema.json` describes. Both runners, native and wasm, produce this one shape.
+//! It is the part of a result document that only the runner can know: the metrics, the raw observations, how the
+//! checkpoints came out and which operations were really executed. The orchestrator wraps it with the environment and
+//! the manifest to make the document that `perf/schemas/result.schema.json` describes. Both runners, native and wasm,
+//! produce this one shape.
 
 use crate::manifest::Mode;
 use serde::Serialize;
@@ -94,10 +95,10 @@ impl RunOutcome {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether a checkpoint with this index is executed in a performance run.
 ///
-/// A performance run keeps its timed region free of checks, so it skips the checkpoints along the way. It still has to prove
-/// that what it timed was right, so it executes the last two outside the timing: the last, and the one before it. For the
-/// cycle workloads those are the scene after the final build and the empty page after the final removal. For rerouting,
-/// they are the state a short while before the end, and the end.
+/// A performance run keeps its timed region free of checks, so it skips the checkpoints along the way. It still has to
+/// prove that what it timed was right, so it executes the last two outside the timing: the last, and the one before it.
+/// For the cycle workloads those are the scene after the final build and the empty page after the final removal. For
+/// rerouting, they are the state a short while before the end, and the end.
 pub fn performance_runs_checkpoint(index: u64, total: u64) -> bool {
     index + 2 >= total
 }

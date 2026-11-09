@@ -236,8 +236,9 @@ fn a_wheel_zoom_keeps_the_pointer_where_it_is_and_stays_within_the_librarys_scal
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_scales_a_manifest_may_ask_for_are_the_librarys_range() -> Result<(), String> {
-    // The library keeps a view between a quarter and four times, and a step is a quarter more. Those are constants it does not
-    // export, so a browser run is what holds the plan to them: a sample whose view did not end where the plan said fails.
+    // The library keeps a view between a quarter and four times, and a step is a quarter more. Those are constants it
+    // does not export, so a browser run is what holds the plan to them: a sample whose view did not end where the plan
+    // said fails.
     let scales = Interaction::SCALE_RANGE_PERCENT;
     if *scales.start() != 25 || *scales.end() != 400 || ZOOM_STEP != 1.25 {
         return Err(format!("{scales:?} {ZOOM_STEP}"));
@@ -328,8 +329,9 @@ fn small_text() -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A known answer. The plan of the reference manifest has this digest on every platform, the 32-bit wasm build included, so a
-/// change to the generator, to how a gesture is drawn, or to the arithmetic that predicts its effect shows here at once.
+/// A known answer. The plan of the reference manifest has this digest on every platform, the 32-bit wasm build
+/// included, so a change to the generator, to how a gesture is drawn, or to the arithmetic that predicts its effect
+/// shows here at once.
 #[test]
 fn the_plan_of_the_reference_manifest_is_fixed() -> Result<(), String> {
     let manifest = Manifest::from_toml(&small_text()).map_err(|e| e.to_string())?;

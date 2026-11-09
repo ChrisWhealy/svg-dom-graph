@@ -2,8 +2,8 @@
 
 use crate::spec::{Error, Spec};
 
-/// The limits an application sets before it turns a description into scene calls (`docs/security.md`), and the model that turns a
-/// size into an estimate of the page's elements.
+/// The limits an application sets before it turns a description into scene calls (`docs/security.md`), and the model
+/// that turns a size into an estimate of the page's elements.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Budget {
     pub max_nodes: u64,
@@ -20,11 +20,11 @@ pub struct Budget {
 }
 
 impl Default for Budget {
-    /// The budget the gallery panel uses. Every figure has a measured basis, recorded in `spmv/docs/resource-risks.md`: Chrome 157 on
-    /// one machine, so it is a budget for that class of device and not a guarantee for another.
+    /// The budget the gallery panel uses. Every figure has a measured basis, recorded in `spmv/docs/resource-risks.md`:
+    /// Chrome 157 on one machine, so it is a budget for that class of device and not a guarantee for another.
     ///
-    /// The page model is a least-squares fit of 38 measured pages, rounded up so that it never falls below the page that was
-    /// measured: about 4 elements for a node, 1 for an edge and 2 for a data cell.
+    /// The page model is a least-squares fit of 38 measured pages, rounded up so that it never falls below the page
+    /// that was measured: about 4 elements for a node, 1 for an edge and 2 for a data cell.
     fn default() -> Self {
         Self {
             max_nodes: 10_000,
@@ -160,8 +160,8 @@ pub fn check_spec(spec: &Spec, budget: &Budget) -> Result<(), Error> {
     )
 }
 
-/// The second stage: the check that needs the generated matrix, made before any scene call. It is the degree alone, since the
-/// stage before has bounded the edges and the estimate (contract decision 5).
+/// The second stage: the check that needs the generated matrix, made before any scene call. It is the degree alone,
+/// since the stage before has bounded the edges and the estimate (contract decision 5).
 ///
 /// # Errors
 ///

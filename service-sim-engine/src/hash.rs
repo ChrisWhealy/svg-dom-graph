@@ -18,8 +18,8 @@ pub(crate) fn hex(bytes: &[u8]) -> String {
     out
 }
 
-/// A byte writer. Integers are little-endian and unsigned, a string is a `u32` length and its UTF-8 bytes, and a list is a
-/// `u32` count and its items.
+/// A byte writer. Integers are little-endian and unsigned, a string is a `u32` length and its UTF-8 bytes, and a list
+/// is a `u32` count and its items.
 #[derive(Debug, Default)]
 pub struct Writer {
     bytes: Vec<u8>,

@@ -1,18 +1,18 @@
-//! Where to put a deliberate error into the executed stream, to prove that a run which ends in the right place says so when it
-//! does not.
+//! Where to put a deliberate error into the executed stream, to prove that a run which ends in the right place says so
+//! when it does not.
 //!
-//! A performance run executes only the last two checkpoints. They must between them vouch for everything that was timed, so
-//! a mutation that is applied wrongly just before either of them has to make the run invalid. A runner is given the
-//! ordinal of that mutation, which is its position among all the operations of the stream, and applies it wrongly there.
-//! It is the operation that is wrong and not what is observed, so the whole chain is tested: the operation, the state it
-//! leaves, the model's prediction and the comparison.
+//! A performance run executes only the last two checkpoints. They must between them vouch for everything that was
+//! timed, so a mutation that is applied wrongly just before either of them has to make the run invalid. A runner is
+//! given the ordinal of that mutation, which is its position among all the operations of the stream, and applies it
+//! wrongly there. It is the operation that is wrong and not what is observed, so the whole chain is tested: the
+//! operation, the state it leaves, the model's prediction and the comparison.
 
 use crate::manifest::Manifest;
 use crate::ops::Op;
 use crate::workload::{WorkloadError, generate};
 
-/// How far a node is put out, in the same units as the stream's coordinates. It is large enough to be unmistakable, and small
-/// enough for the node to stay where a reader would expect it.
+/// How far a node is put out, in the same units as the stream's coordinates. It is large enough to be unmistakable, and
+/// small enough for the node to stay where a reader would expect it.
 pub const DISPLACEMENT: i64 = 7;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -50,7 +50,8 @@ pub struct Corruption {
 ///
 /// # Errors
 ///
-/// Returns [`WorkloadError`] if the stream cannot be generated, or if it has no such checkpoint or no mutation before it.
+/// Returns [`WorkloadError`] if the stream cannot be generated, or if it has no such checkpoint or no mutation before
+/// it.
 pub fn locate(manifest: &Manifest, target: Target) -> Result<Corruption, WorkloadError> {
     let mut ops: Vec<Op> = Vec::new();
     generate(manifest, &mut |op: &Op| {

@@ -234,8 +234,8 @@ fn a_checkpoint_satisfies_the_checkpoint_schema() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two boxes that touch along a side have the same point as both ends of the connector between them, and the library draws no
-/// path for it. Found by a run of 1,000 nodes and 1,100 random moves, in which two boxes came to touch.
+/// Two boxes that touch along a side have the same point as both ends of the connector between them, and the library
+/// draws no path for it. Found by a run of 1,000 nodes and 1,100 random moves, in which two boxes came to touch.
 #[test]
 fn a_connector_between_boxes_that_touch_has_no_path() -> Result<(), String> {
     // 80 wide, side by side with no gap: the ray between the centres meets both boundaries at x = 80.

@@ -1,6 +1,6 @@
-//! The scene in a real browser: that it is the matrix it was built from, that its data nodes show the product after every step, that
-//! a budget refuses before any scene call, that a teardown leaves the page as it was, and the costs that `docs/security.md` documents.
-//! Run with `wasm-pack test --headless --chrome spmv-scene`.
+//! The scene in a real browser: that it is the matrix it was built from, that its data nodes show the product after
+//! every step, that a budget refuses before any scene call, that a teardown leaves the page as it was, and the costs
+//! that `docs/security.md` documents. Run with `wasm-pack test --headless --chrome spmv-scene`.
 #![cfg(target_arch = "wasm32")]
 
 use spmv_core::budget::Budget;
@@ -39,7 +39,8 @@ fn prepared(s: &Spec) -> Result<Prepared, String> {
     Prepared::new(s, &Budget::default()).map_err(|e| e.to_string())
 }
 
-/// The `n`th group of the scene's content group: the column nodes, then the row nodes, then the two data nodes, then the square.
+/// The `n`th group of the scene's content group: the column nodes, then the row nodes, then the two data nodes, then
+/// the square.
 fn group(host: &Host, n: u32) -> Result<web_sys::Element, String> {
     let found = host
         .svg()?
@@ -64,8 +65,8 @@ fn want(values: &[i64]) -> Vec<String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The scene has one node for each column and row, one connector for each nonzero, the two data nodes and the square, every label is
-/// the one the contract gives, and no id is used twice.
+/// The scene has one node for each column and row, one connector for each nonzero, the two data nodes and the square,
+/// every label is the one the contract gives, and no id is used twice.
 #[wasm_bindgen_test]
 fn the_scene_is_the_matrix_it_was_built_from() -> Result<(), String> {
     for (n, s) in [
@@ -144,8 +145,8 @@ fn the_scene_is_the_matrix_it_was_built_from() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// After every step the two data nodes show the windows of x and y, exactly. A scene built afresh at that step shows the same cells,
-/// so the cells the library rewrote are the cells a full render would have drawn.
+/// After every step the two data nodes show the windows of x and y, exactly. A scene built afresh at that step shows
+/// the same cells, so the cells the library rewrote are the cells a full render would have drawn.
 #[wasm_bindgen_test]
 fn the_data_nodes_show_the_product_after_every_step() -> Result<(), String> {
     for (n, s) in [
@@ -201,8 +202,9 @@ fn the_data_nodes_show_the_product_after_every_step() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A scenario over the budget is refused with a reason before anything is built: no scene exists to call, the empty host stays empty,
-/// and a size that would take gigabytes is answered at once. A refusal is reported apart from a rendering.
+/// A scenario over the budget is refused with a reason before anything is built: no scene exists to call, the empty
+/// host stays empty, and a size that would take gigabytes is answered at once. A refusal is reported apart from a
+/// rendering.
 #[wasm_bindgen_test]
 fn a_scenario_over_the_budget_is_refused_before_any_scene_call() -> Result<(), String> {
     let host = Host::create("sm-refused", (100.0, 100.0))?;
@@ -257,9 +259,10 @@ fn teardown_returns_the_page_to_where_it_was_every_time() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The documented risk of a node's degree: every edge appends a relationship clause to both ends, so the description of a node grows
-/// with its degree. The hub's description is longer than any other node's, and is at least as long as its degree times a label.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The documented risk of a node's degree: every edge appends a relationship clause to both ends, so the description of
+/// a node grows with its degree. The hub's description is longer than any other node's, and is at least as long as its
+/// degree times a label.
 #[wasm_bindgen_test]
 fn the_description_of_a_node_grows_with_its_degree() -> Result<(), String> {
     let s = spec(120, 60, 4, (1, 90), 8, 6, (1, 1));
@@ -307,8 +310,8 @@ fn connector_paths(host: &Host) -> Result<Vec<String>, String> {
         .collect())
 }
 
-/// The documented risk of a drag: a move redraws every connector on the node, and only those. Moving the hub changes exactly as many
-/// connectors as its degree, and moving a node that has none changes none.
+/// The documented risk of a drag: a move redraws every connector on the node, and only those. Moving the hub changes
+/// exactly as many connectors as its degree, and moving a node that has none changes none.
 #[wasm_bindgen_test]
 fn moving_a_node_redraws_exactly_its_connectors() -> Result<(), String> {
     let s = spec(80, 40, 3, (1, 80), 4, 5, (1, 1));
@@ -342,7 +345,8 @@ fn moving_a_node_redraws_exactly_its_connectors() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The layout and the scene agree about where a node is, and the data nodes and the square do not overlap the graph or each other.
+/// The layout and the scene agree about where a node is, and the data nodes and the square do not overlap the graph or
+/// each other.
 #[wasm_bindgen_test]
 fn the_layout_is_where_the_scene_draws() -> Result<(), String> {
     let s = spec(70, 55, 3, (2, 40), 9, 20, (3, 1));
@@ -389,8 +393,8 @@ fn the_layout_is_where_the_scene_draws() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The greatest figures the product can reach, written into every cell, stay inside the data node's frame: a cell keeps the width it
-/// was drawn with, so a wider figure would show as text outside the frame.
+/// The greatest figures the product can reach, written into every cell, stay inside the data node's frame: a cell keeps
+/// the width it was drawn with, so a wider figure would show as text outside the frame.
 #[wasm_bindgen_test]
 fn the_greatest_figures_stay_inside_their_data_node() -> Result<(), String> {
     for (n, cells) in [(0, 20u64), (1, 100)] {
@@ -436,10 +440,10 @@ fn the_greatest_figures_stay_inside_their_data_node() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The budget's model of the page never falls below the page: a budget that underestimated would let through a scene bigger than it
-/// said. It also is not far above it, since an estimate that refused a third of what fits would be a poor budget. The model was fitted
-/// to measured pages, and this keeps it honest for the shapes the tests build.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The budget's model of the page never falls below the page: a budget that underestimated would let through a scene
+/// bigger than it said. It also is not far above it, since an estimate that refused a third of what fits would be a
+/// poor budget. The model was fitted to measured pages, and this keeps it honest for the shapes the tests build.
 #[wasm_bindgen_test]
 fn the_budgets_model_of_the_page_never_falls_below_the_page() -> Result<(), String> {
     let budget = Budget::default();
@@ -474,7 +478,7 @@ fn the_budgets_model_of_the_page_never_falls_below_the_page() -> Result<(), Stri
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn readable() -> BuildOptions {
     BuildOptions {
         readable: true,
@@ -490,8 +494,8 @@ fn has(e: &web_sys::Element, name: &str) -> bool {
     class_of(e).split_whitespace().any(|c| c == name)
 }
 
-/// A readable scene gives every connector the sign and the size of its value, in the order of the nonzeros by row, and every node the
-/// tag that an event is traced back to a node by.
+/// A readable scene gives every connector the sign and the size of its value, in the order of the nonzeros by row, and
+/// every node the tag that an event is traced back to a node by.
 #[wasm_bindgen_test]
 fn a_readable_scene_signs_every_edge_and_tags_every_node() -> Result<(), String> {
     let s = spec(9, 7, 3, (0, 0), 4, 5, (2, 2));
@@ -555,8 +559,8 @@ fn connector_elements(host: &Host) -> Result<Vec<web_sys::Element>, String> {
         .collect())
 }
 
-/// Selecting a node lights exactly its edges and the nodes at their other ends, and puts out what the last selection lit. Selecting
-/// nothing puts everything out. A scene that was not built to be read refuses.
+/// Selecting a node lights exactly its edges and the nodes at their other ends, and puts out what the last selection
+/// lit. Selecting nothing puts everything out. A scene that was not built to be read refuses.
 #[wasm_bindgen_test]
 fn selecting_a_node_lights_exactly_its_edges_and_neighbours() -> Result<(), String> {
     let s = spec(30, 20, 3, (3, 60), 4, 6, (2, 2));
@@ -707,14 +711,14 @@ fn edge_labels_say_the_value_of_each_edge() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn screen_rect(e: &web_sys::Element) -> (f64, f64, f64, f64) {
     let r = e.get_bounding_client_rect();
     (r.left(), r.top(), r.right(), r.bottom())
 }
 
-/// The three boxes of the window say what they are. Each caption says its words, is under its own box, and overlaps no node, no data
-/// node, no square and no other caption, for a graph that is read and for one that is packed into blocks.
+/// The three boxes of the window say what they are. Each caption says its words, is under its own box, and overlaps no
+/// node, no data node, no square and no other caption, for a graph that is read and for one that is packed into blocks.
 #[wasm_bindgen_test]
 fn the_captions_explain_the_boxes_and_overlap_nothing() -> Result<(), String> {
     for (n, s) in [
@@ -808,7 +812,8 @@ fn the_captions_explain_the_boxes_and_overlap_nothing() -> Result<(), String> {
                 )?;
             }
         }
-        // The caption in the channel, which says what the number on a line is, is above the first node and apart from everything.
+        // The caption in the channel, which says what the number on a line is, is above the first node and apart from
+        // everything.
         if !texts("channel")?.is_empty() {
             let channel = union("channel")?;
             check(
@@ -839,8 +844,8 @@ fn the_captions_explain_the_boxes_and_overlap_nothing() -> Result<(), String> {
     Ok(())
 }
 
-/// A small matrix is drawn in full, with a cell for each nonzero and none for a zero, and a selection lights its cells, its band and the
-/// entries of x and y that it uses; a step outlines the entries that it changed.
+/// A small matrix is drawn in full, with a cell for each nonzero and none for a zero, and a selection lights its cells,
+/// its band and the entries of x and y that it uses; a step outlines the entries that it changed.
 #[wasm_bindgen_test]
 fn the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses() -> Result<(), String> {
     let s = spec(8, 8, 3, (0, 0), 1, 8, (1, 1));
@@ -958,7 +963,7 @@ fn the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses() -> Result<(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn worked_options() -> BuildOptions {
     BuildOptions {
         readable: true,
@@ -976,8 +981,8 @@ fn numbers_in(host: &Host, selector: &str) -> Result<Vec<String>, String> {
         .collect())
 }
 
-/// The worked product draws the multiplication as A, x and y and then, for the selected row, a multiplication for each of its numbers
-/// and the additions that make the entry of y, and every number in it is the number that the core holds.
+/// The worked product draws the multiplication as A, x and y and then, for the selected row, a multiplication for each
+/// of its numbers and the additions that make the entry of y, and every number in it is the number that the core holds.
 #[wasm_bindgen_test]
 fn the_worked_product_ends_at_the_entry_of_y_for_every_row() -> Result<(), String> {
     let s = spec(8, 8, 3, (0, 0), 1, 8, (1, 1));
@@ -1066,7 +1071,8 @@ fn node_rects(host: &Host) -> Result<Vec<(String, Rectangle)>, String> {
         .collect())
 }
 
-/// In the worked product the vector x is a single column, the matrix is a grid, and no node, however long the row, is drawn on another.
+/// In the worked product the vector x is a single column, the matrix is a grid, and no node, however long the row, is
+/// drawn on another.
 #[wasm_bindgen_test]
 fn the_worked_product_is_laid_out_with_x_as_a_column_and_nothing_on_top_of_anything() -> Result<(), String> {
     for (n, s) in [
@@ -1159,8 +1165,9 @@ fn the_worked_product_is_laid_out_with_x_as_a_column_and_nothing_on_top_of_anyth
     Ok(())
 }
 
-/// The output is drawn as bars level with its entries, each as long as its number against the largest, to the right for a positive number
-/// and to the left for a negative one, and a step marks the bars that changed and the numbers of A that the changed entry of x fed.
+/// The output is drawn as bars level with its entries, each as long as its number against the largest, to the right for
+/// a positive number and to the left for a negative one, and a step marks the bars that changed and the numbers of A
+/// that the changed entry of x fed.
 #[wasm_bindgen_test]
 fn the_output_is_drawn_as_bars_and_a_step_marks_what_it_fed() -> Result<(), String> {
     let s = spec(8, 8, 3, (0, 0), 1, 8, (1, 1));

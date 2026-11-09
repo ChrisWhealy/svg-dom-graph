@@ -1,11 +1,12 @@
 //! A pure function from the engine's state to fixed slots: what is written where, and nothing about how.
 //!
-//! Every slot has a key that never changes, and the list of slots has the same keys in the same order for a given number of servers.
-//! A slot that has nothing to say is blank and hidden from assistive technology, and is never removed. So a draw is a matter of
-//! writing the fields that differ, and a full redraw is a matter of writing all of them, and the two reach the same page.
+//! Every slot has a key that never changes, and the list of slots has the same keys in the same order for a given
+//! number of servers. A slot that has nothing to say is blank and hidden from assistive technology, and is never
+//! removed. So a draw is a matter of writing the fields that differ, and a full redraw is a matter of writing all of
+//! them, and the two reach the same page.
 //!
-//! Nothing here reads the DOM. [`Projection::canonical`] is the text that the page is compared with, and its hash is the design's
-//! `dom_projection_sha`.
+//! Nothing here reads the DOM. [`Projection::canonical`] is the text that the page is compared with, and its hash is
+//! the design's `dom_projection_sha`.
 
 use service_sim_engine::{Engine, Model, ServerView, hash::sha256_hex};
 
@@ -41,7 +42,8 @@ pub struct View {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One element of the overlay that has content: the text it shows, its class, its accessible name and whether it is hidden.
+/// One element of the overlay that has content: the text it shows, its class, its accessible name and whether it is
+/// hidden.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Slot {
     pub key: String,
@@ -73,8 +75,8 @@ pub struct Write {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Projection {
     pub slots: Vec<Slot>,
-    /// The values of the data node, as the engine holds them: ticks and counts are 64 bits wide, and none is narrowed. They change
-    /// with every slice, since the first is the slice ordinal.
+    /// The values of the data node, as the engine holds them: ticks and counts are 64 bits wide, and none is narrowed.
+    /// They change with every slice, since the first is the slice ordinal.
     pub data: [u64; DATA_CELLS],
 }
 
@@ -97,8 +99,8 @@ impl Projection {
         self.slots.len() == other.slots.len() && self.slots.iter().zip(&other.slots).all(|(a, b)| a.key == b.key)
     }
 
-    /// The text that the page is compared with: one line for each slot, and one for the data. The fields are tab separated, with a
-    /// tab or a newline in a field written out, so that no two projections have the same text.
+    /// The text that the page is compared with: one line for each slot, and one for the data. The fields are tab
+    /// separated, with a tab or a newline in a field written out, so that no two projections have the same text.
     #[must_use]
     pub fn canonical(&self) -> String {
         let mut text = String::new();
@@ -114,8 +116,8 @@ impl Projection {
         text
     }
 
-    /// The design's `dom_projection_sha`, when it is taken of the page's own content, and the hash of what should be there when it
-    /// is taken of the projection.
+    /// The design's `dom_projection_sha`, when it is taken of the page's own content, and the hash of what should be
+    /// there when it is taken of the projection.
     #[must_use]
     pub fn sha256(&self) -> String {
         sha256_hex(self.canonical().as_bytes())
@@ -138,8 +140,8 @@ pub fn canonical_line(key: &str, text: &str, class: &str, label: &str, hidden: b
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The writes that turn `old` into `new`. With no `old` (nothing has been drawn, or what was drawn cannot be trusted) it is every
-/// field of every slot, which is a full redraw.
+/// The writes that turn `old` into `new`. With no `old` (nothing has been drawn, or what was drawn cannot be trusted)
+/// it is every field of every slot, which is a full redraw.
 ///
 /// `new` has to have the shape of `old`, and the caller checks that with [`Projection::same_shape`].
 #[must_use]
@@ -199,8 +201,8 @@ fn priority_word(priority: u8) -> &'static str {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The model that [`project`] needs for a reader who has chosen `view`: the window of the queue, the running jobs and the selected
-/// one, and nothing of the jobs that nobody can see. Its cost does not grow with the length of the run.
+/// The model that [`project`] needs for a reader who has chosen `view`: the window of the queue, the running jobs and
+/// the selected one, and nothing of the jobs that nobody can see. Its cost does not grow with the length of the run.
 #[must_use]
 pub fn extract(engine: &Engine, view: &View) -> Model {
     engine.model(QUEUE_SLOTS, view.selected)
@@ -209,8 +211,8 @@ pub fn extract(engine: &Engine, view: &View) -> Model {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the model looks like to a reader who has chosen `view`.
 ///
-/// The model has to be the one that [`extract`] made for the same view. A model extracted for another selection may not hold the
-/// job that this view selects, and that is a caller's defect, which a debug build reports.
+/// The model has to be the one that [`extract`] made for the same view. A model extracted for another selection may not
+/// hold the job that this view selects, and that is a caller's defect, which a debug build reports.
 #[must_use]
 pub fn project(model: &Model, view: &View) -> Projection {
     debug_assert_eq!(

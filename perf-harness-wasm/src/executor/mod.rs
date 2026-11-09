@@ -1,13 +1,13 @@
 //! Executes a workload against a real scene in a browser, and reports what it measured.
 //!
 //! The stream comes from `perf-harness`, which generates it from the manifest. Each operation is applied through the
-//! library's public API. The reference model is driven alongside, and at a checkpoint what the document shows is compared with
-//! what the model predicted.
+//! library's public API. The reference model is driven alongside, and at a checkpoint what the document shows is
+//! compared with what the model predicted.
 //!
-//! Timing is of synchronous API calls. `performance.now()` is read where one kind of operation gives way to another, and
-//! never inside an operation, so a segment of the same kind is one observation (a build of nodes, say) or one batch of moves.
-//! Checks, resource counts and the model all happen between segments, outside the timing. None of this is a frame time: the
-//! browser has not painted when these calls return, and the browser layer measures that.
+//! Timing is of synchronous API calls. `performance.now()` is read where one kind of operation gives way to another,
+//! and never inside an operation, so a segment of the same kind is one observation (a build of nodes, say) or one batch
+//! of moves. Checks, resource counts and the model all happen between segments, outside the timing. None of this is a
+//! frame time: the browser has not painted when these calls return, and the browser layer measures that.
 
 mod attribute;
 mod checkpoint;
@@ -69,7 +69,8 @@ struct Run<'a> {
     /// The operations that wait to be run together, all of one kind, and what they are.
     pending: Vec<Prepared>,
     pending_meta: Option<Waiting>,
-    /// The most that can wait. It is the size of the vector, which is made at full size so that it never grows during a run.
+    /// The most that can wait. It is the size of the vector, which is made at full size so that it never grows during a
+    /// run.
     pending_capacity: usize,
     /// The ids that a run of `add_node` calls gave back, kept until the calls are over.
     scratch_ids: Vec<NodeId>,
@@ -115,7 +116,8 @@ impl<'a> Run<'a> {
             Ok(())
         })
         .map_err(describe)?;
-        // Rerouting and interaction build one scene and keep it, so they have one cycle whatever their iteration counts say.
+        // Rerouting and interaction build one scene and keep it, so they have one cycle whatever their iteration counts
+        // say.
         let total_cycles = if matches!(
             manifest.workload,
             Workload::ConnectorRerouting | Workload::Interaction | Workload::Recovery
@@ -279,17 +281,18 @@ pub struct Options {
     pub fault: Option<Fault>,
     /// A delay in the harness's own work, in microseconds, for every operation.
     ///
-    /// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it. The
-    /// self-test runs a workload with and without it, and fails if a figure moves.
+    /// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it.
+    /// The self-test runs a workload with and without it, and fails if a figure moves.
     pub harness_delay_us: f64,
     /// A slowdown inside the timed interval, in microseconds, after every library call of a node, an edge or a move.
     ///
-    /// Unlike the delay above it is meant to show. It stands in for a change that makes the library slower, to prove that a
-    /// comparison with a baseline notices one.
+    /// Unlike the delay above it is meant to show. It stands in for a change that makes the library slower, to prove
+    /// that a comparison with a baseline notices one.
     pub slowdown_us: f64,
     /// A leak in every cycle.
     pub leak: Option<Leak>,
-    /// The last mutation before one of the two executed checkpoints is applied wrongly. See [`perf_harness::corruption`].
+    /// The last mutation before one of the two executed checkpoints is applied wrongly. See
+    /// [`perf_harness::corruption`].
     pub corrupt: Option<Target>,
 }
 

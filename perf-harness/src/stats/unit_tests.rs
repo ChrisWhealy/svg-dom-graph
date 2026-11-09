@@ -5,8 +5,8 @@ fn close(a: f64, b: f64) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The nearest-rank method: the p-th percentile of n values is the value at rank ceil(p n / 100). For the ten values 1 to 10
-/// that makes the median the 5th, the 90th percentile the 9th and the 25th percentile the 3rd.
+/// The nearest-rank method: the p-th percentile of n values is the value at rank ceil(p n / 100). For the ten values 1
+/// to 10 that makes the median the 5th, the 90th percentile the 9th and the 25th percentile the 3rd.
 #[test]
 fn percentiles_are_nearest_rank() -> Result<(), String> {
     let sorted: Vec<f64> = (1..=10).map(f64::from).collect();
@@ -30,7 +30,8 @@ fn a_description_has_the_hand_worked_figures() -> Result<(), String> {
     if !close(d.within.mean, 5.0) || !close(d.within.stddev, (32.0f64 / 7.0).sqrt()) {
         return Err(format!("mean {} and stddev {}", d.within.mean, d.within.stddev));
     }
-    // Quartiles by nearest rank: rank 2 is 4 and rank 6 is 5, so the interquartile range is 1 and the fences are 2.5 and 6.5.
+    // Quartiles by nearest rank: rank 2 is 4 and rank 6 is 5, so the interquartile range is 1 and the fences are 2.5
+    // and 6.5.
     if !close(d.within.iqr, 1.0) || !close(d.within.tukey_low, 2.5) || !close(d.within.tukey_high, 6.5) {
         return Err(format!("{:?}", d.within));
     }
@@ -118,8 +119,8 @@ fn a_slope_is_the_least_squares_line_through_where_the_points_really_are() -> Re
     if !close(real, 3.0) || close(positional, 3.0) {
         return Err(format!("by x {real}, by position {positional}"));
     }
-    // A noisy line: 0 -> 1, 1 -> 3, 2 -> 2, 3 -> 5. The means are 1.5 and 2.75, the cross-products add to 5.5 and the squared
-    // deviations of x to 5, so the slope is 1.1.
+    // A noisy line: 0 -> 1, 1 -> 3, 2 -> 2, 3 -> 5. The means are 1.5 and 2.75, the cross-products add to 5.5 and the
+    // squared deviations of x to 5, so the slope is 1.1.
     if !close(slope(&[(0.0, 1.0), (1.0, 3.0), (2.0, 2.0), (3.0, 5.0)]).ok_or("no slope")?, 1.1) {
         return Err("the noisy line was not 1.1".to_string());
     }
