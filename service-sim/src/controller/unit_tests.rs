@@ -580,22 +580,27 @@ fn a_disposed_controller_draws_nothing_and_late_callbacks_are_inert() {
 
 #[test]
 fn scheduled_callbacks_hold_no_strong_reference_to_the_controller() {
-    let (c, log) = start(e0());
+    let (c, _) = start(e0());
     c.set_speed(10);
     c.play();
-    c.seek(4);
+    assert_eq!(c.scheduler().held(), 1);
     assert_eq!(
         Rc::strong_count(&c.inner),
         1,
-        "a timer and a frame are waiting, and neither holds the controller"
+        "a timer is waiting, and it does not hold the controller"
     );
-    let _ = log;
-    // Dropping the controller while its callbacks are held lets it go, and the callbacks find nothing to act on.
-    let scheduler_probe = Rc::downgrade(&c.inner);
-    let held = c.scheduler().held();
-    assert_eq!(held, 2);
+    // A seek takes the timer back and waits for a frame, which does not hold the controller either.
+    c.seek(4);
+    assert_eq!((c.scheduler().held(), c.scheduler().pending_frames()), (1, 1));
+    assert_eq!(
+        Rc::strong_count(&c.inner),
+        1,
+        "a frame is waiting, and it does not hold the controller"
+    );
+    // Dropping the controller while its callback is held lets it go, and the callback finds nothing to act on.
+    let probe = Rc::downgrade(&c.inner);
     drop(c);
-    assert!(scheduler_probe.upgrade().is_none(), "the controller was released");
+    assert!(probe.upgrade().is_none(), "the controller was released");
 }
 
 #[test]
@@ -696,4 +701,128 @@ fn a_hidden_host_is_announced_once_for_the_whole_episode_and_again_after_it_was_
     log.borrow_mut().presence = Presence::Hidden;
     c.next();
     assert_eq!(log.borrow().announces.len(), 2, "a second episode is announced again");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Navigation has one owner at a time: a manual request first cancels what is playing and what is seeking, so that the
+// last request a person made is the one that wins. The callbacks of what was cancelled are kept, as ones already on
+// their way would be.
+
+#[test]
+fn a_seek_back_to_the_committed_slice_cancels_the_seek_that_was_pending() {
+    let (c, log) = start(e0());
+    c.scheduler().keep_cancelled(true);
+    assert_eq!(c.seek(10), Outcome::Pending);
+    let token = c.seek_token();
+    assert_eq!(c.seek(0), Outcome::AtBoundary, "the committed slice is slice 0");
+    assert!(
+        c.seek_token() > token,
+        "the request that ended at a boundary still replaced the seek"
+    );
+    let draws = log.borrow().draws.len();
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 0, "the earlier seek did not override the later request");
+    assert_eq!(log.borrow().draws.len(), draws);
+    assert_eq!(c.scheduler().pending_frames(), 0);
+}
+
+#[test]
+fn restart_and_previous_at_the_first_slice_cancel_a_pending_seek_too() {
+    for which in 0..2 {
+        let (c, _) = start(e0());
+        c.scheduler().keep_cancelled(true);
+        c.seek(7);
+        let outcome = if which == 0 { c.restart() } else { c.previous() };
+        assert_eq!(outcome, Outcome::AtBoundary);
+        run_frames(&c);
+        assert_eq!(c.committed_slice(), 0, "request {which}");
+    }
+}
+
+#[test]
+fn next_while_playing_stops_playback_and_the_timer_that_was_waiting_does_nothing() {
+    let (c, log) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.play();
+    assert_eq!(c.next(), Outcome::Done);
+    assert!(!c.is_playing(), "a manual step ends playback");
+    assert_eq!(c.scheduler().pending(), 0);
+    c.scheduler().advance_by(10_000);
+    assert_eq!(
+        c.committed_slice(),
+        1,
+        "the timer of the playback that was stopped did not step again"
+    );
+    assert_eq!(log.borrow().playing, vec![true, false]);
+}
+
+#[test]
+fn a_seek_while_playing_stops_playback_and_the_seek_is_the_only_thing_that_moves_the_slice() {
+    let (c, _) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.play();
+    c.scheduler().advance_by(100);
+    assert_eq!(c.committed_slice(), 1);
+    assert_eq!(c.seek(6), Outcome::Pending);
+    assert!(!c.is_playing());
+    c.scheduler().advance_by(10_000);
+    assert_eq!(
+        c.committed_slice(),
+        1,
+        "no tick of the stopped playback moved the slice before the seek arrived"
+    );
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 6);
+    c.scheduler().advance_by(10_000);
+    assert_eq!(c.committed_slice(), 6, "and none after it");
+}
+
+#[test]
+fn play_while_a_seek_is_pending_cancels_the_seek_and_plays_on_from_the_committed_slice() {
+    let (c, _) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.seek(8);
+    assert_eq!(c.play(), Outcome::Done);
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 0, "the seek's frame, though it still ran, did nothing");
+    c.scheduler().advance_by(100);
+    assert_eq!(
+        c.committed_slice(),
+        1,
+        "playback went on from the committed slice, one slice a delay"
+    );
+    c.scheduler().advance_by(100);
+    assert_eq!(c.committed_slice(), 2);
+}
+
+#[test]
+fn a_seek_while_another_is_pending_and_a_next_while_one_is_pending_each_leave_one_owner() {
+    let (c, _) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.seek(9);
+    assert_eq!(c.next(), Outcome::Done, "a step cancels the seek before it");
+    run_frames(&c);
+    assert_eq!(
+        c.committed_slice(),
+        1,
+        "the seek that was pending did not move the slice after the step"
+    );
+    assert_eq!(c.scheduler().pending_frames(), 0);
+}
+
+#[test]
+fn pause_stops_playback_and_leaves_a_pending_seek_alone() {
+    let (c, _) = start(generated(3));
+    c.set_speed(100);
+    c.seek(5);
+    c.play();
+    // Play cancelled the seek, so ask for it again, and then pause: a pause is not a navigation, and the seek arrives.
+    c.seek(5);
+    c.pause();
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 5, "a pause does not cancel a seek");
+    assert!(!c.is_playing());
 }

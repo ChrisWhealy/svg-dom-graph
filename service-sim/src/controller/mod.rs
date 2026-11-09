@@ -4,6 +4,10 @@
 //! there when it had (design section 6). It holds no browser, so every rule of playback, seeking, hiding, repair and
 //! cancellation is tested natively with a fake host and a [`ManualScheduler`](crate::scheduler::ManualScheduler).
 //!
+//! Navigation has one owner at a time. A manual request (next, previous, restart, seek, retry or play) first cancels
+//! playback and any pending seek, even if it ends at a boundary, so that the last request a person made is the one that
+//! wins. A pause stops playback only, and is not a navigation.
+//!
 //! Three counters keep a stale callback inert. The playback epoch counts every stop of playback, the seek token counts
 //! every replacement of a seek, and the scenario generation counts every change of history. A callback carries the
 //! values that it was scheduled under and holds only a weak reference to the controller, and it does nothing if any of
@@ -282,11 +286,13 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows the next slice. Nowhere to go at the last one, and then a dirty page is repaired.
     pub fn next(&self) -> Outcome {
+        self.inner.claim_navigation();
         self.inner.step_next()
     }
 
     /// Shows the slice before the committed one, by replaying the run to it at a frame.
     pub fn previous(&self) -> Outcome {
+        self.inner.claim_navigation();
         let at = self.inner.state.borrow().committed_slice;
         if at == 0 {
             return self.inner.boundary();
@@ -296,6 +302,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
 
     /// Shows the first slice, by replaying nothing at a frame.
     pub fn restart(&self) -> Outcome {
+        self.inner.claim_navigation();
         if self.inner.state.borrow().committed_slice == 0 {
             return self.inner.boundary();
         }
@@ -304,6 +311,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
 
     /// Shows slice `target`, by replaying the run to it at a frame. A target past the end is the last slice.
     pub fn seek(&self, target: u64) -> Outcome {
+        self.inner.claim_navigation();
         self.inner.start_seek(target)
     }
 
@@ -311,7 +319,10 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     pub fn retry(&self) -> Outcome {
         let target = self.inner.state.borrow().retry;
         match target {
-            Some(t) => self.inner.start_seek(t),
+            Some(t) => {
+                self.inner.claim_navigation();
+                self.inner.start_seek(t)
+            },
             None => Outcome::Done,
         }
     }
@@ -319,6 +330,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Starts playback. It begins from the committed slice, and the first slice comes after one delay.
     pub fn play(&self) -> Outcome {
+        self.inner.claim_navigation();
         self.inner.play()
     }
 
@@ -398,6 +410,15 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes a manual navigation the only owner of the slice that is shown: playback is stopped and a seek that was
+    /// pending is cancelled, and every callback of either that is already on its way is stale. It is done first, before
+    /// the request is looked at, so that a request that ends at a boundary has still replaced what came before it, and
+    /// the last request that a person made is the one that wins. Playback's own ticks do not come through here, since a
+    /// tick must not stop the playback that it is part of.
+    fn claim_navigation(&self) {
+        self.stop_and_invalidate();
+    }
+
     /// Stops playback and takes back everything that was scheduled, and makes every callback already on its way stale.
     fn stop_and_invalidate(&self) {
         let (timer, frame, was_playing) = {
@@ -711,17 +732,9 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         if target == committed {
             return self.boundary();
         }
-        // A seek replaces the one before it, and a frame that is on its way for the one before it is stale.
-        let old = {
-            let mut st = self.state.borrow_mut();
-            st.seek_token += 1;
-            st.retry = None;
-            st.seek = None;
-            st.frame.take()
-        };
-        if let Some(h) = old {
-            self.scheduler.cancel_frame(h);
-        }
+        // The caller claimed the navigation, so the seek before this one was cancelled, and a frame that is on its way
+        // for it is stale.
+        self.state.borrow_mut().retry = None;
         let factory = Rc::clone(&self.state.borrow().factory);
         let engine = match factory() {
             Ok(e) => e,

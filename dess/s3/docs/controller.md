@@ -35,6 +35,18 @@ A slice is committed in this order.
    It is not retried.
 6. Only now move the cursor.
 
+## Navigation has one owner
+
+A manual request is a next, a previous, a restart, a seek, a retry or a play.
+Each one first cancels playback and any seek that is pending, and only then looks at its own target.
+So a request that ends at a boundary has still replaced what came before it, and the last request that a person made is the one that wins.
+A pause is not a navigation.
+It stops playback and leaves a pending seek alone, which is the distinction that is kept on purpose.
+Playback's own ticks do not come through this rule, since a tick must not stop the playback that it belongs to.
+
+The review that found this gave the case of a seek to slice 10 followed by a seek to slice 0 while the committed slice was 0.
+The second returned at a boundary and did not cancel the first, whose frame then committed slice 10.
+
 ## Tokens
 
 A callback carries the epoch, the generation or the seek token that it was scheduled under, and holds only a weak reference to the controller.
@@ -73,14 +85,15 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | A host that leaves in the middle of a draw | On a fake host, in a seek, and on the real surface after each of its overlay writes and its setter, the slice is not committed, nothing is written after the departure, and a return repairs the page |
 | A failed write | Nothing is committed, one report, one repair and no retry, and a repair that fails leaves the page dirty until the next request, even one at a boundary |
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
+| Navigation ownership | Seek then seek back to the committed slice, restart and previous at the first slice, play then next, play then seek, seek then play, and seek then next, each with the callbacks of what was cancelled kept, leave the last request in force. A pause leaves a seek alone |
 | No cycle | A timer and a frame that are waiting hold no strong reference to the controller |
 | Closures | Over 60 cycles on the page's own timers, every closure is dropped, whether the task ran or was cancelled |
 | The real gallery | A timer queued before the gallery's own route hides a panel runs after the hint, finds the panel hidden, and finds its probe still connected |
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in eighteen ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all eighteen are caught.
+`dess/s3/mutation-check.mjs` breaks the code in twenty-one ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all twenty-one are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |

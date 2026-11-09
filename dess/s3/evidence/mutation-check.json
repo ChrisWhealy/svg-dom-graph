@@ -41,16 +41,6 @@
       "built": true
     },
     {
-      "name": "a seek that replaces another does not advance the seek token",
-      "kind": "native",
-      "caught": true,
-      "failed": [
-        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
-        "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert"
-      ],
-      "built": true
-    },
-    {
       "name": "a timer of an old epoch is not stale",
       "kind": "native",
       "caught": true,
@@ -100,8 +90,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
-        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one"
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
+        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown"
       ],
       "built": true
     },
@@ -142,6 +132,48 @@
       "built": true
     },
     {
+      "name": "a step does not cancel playback or a pending seek",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_seek_while_another_is_pending_and_a_next_while_one_is_pending_each_leave_one_owner",
+        "controller::unit_tests::next_while_playing_stops_playback_and_the_timer_that_was_waiting_does_nothing"
+      ],
+      "built": true
+    },
+    {
+      "name": "a seek does not cancel what was pending before it looks at its target",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_seek_back_to_the_committed_slice_cancels_the_seek_that_was_pending",
+        "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
+        "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
+        "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert",
+        "controller::unit_tests::a_seek_while_playing_stops_playback_and_the_seek_is_the_only_thing_that_moves_the_slice",
+        "controller::unit_tests::scheduled_callbacks_hold_no_strong_reference_to_the_controller"
+      ],
+      "built": true
+    },
+    {
+      "name": "play does not cancel a pending seek",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::play_while_a_seek_is_pending_cancels_the_seek_and_plays_on_from_the_committed_slice"
+      ],
+      "built": true
+    },
+    {
+      "name": "restart does not cancel what was pending before it reaches a boundary",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::restart_and_previous_at_the_first_slice_cancel_a_pending_seek_too"
+      ],
+      "built": true
+    },
+    {
       "name": "a hidden panel is taken for a live one",
       "kind": "browser",
       "caught": true,
@@ -166,8 +198,7 @@
       "caught": true,
       "failed": [
         "the_page_is_the_committed_slice_by_next_and_by_seek",
-        "playback_on_the_pages_timers_runs_to_the_end_and_leaves_no_closure",
-        "cancelling_a_task_drops_its_closure_over_many_cycles"
+        "playback_on_the_pages_timers_runs_to_the_end_and_leaves_no_closure"
       ],
       "built": true
     }

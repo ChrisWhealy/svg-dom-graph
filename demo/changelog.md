@@ -39,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S1: Pure Rust `service-sim-engine` (`72adf2b`)
 - DESS S2: Long-lived fixed Scene, overlay, reserved data node; exact incremental projection; class compatibility test (`1c599ba`)
 - Sparse Matrix Vector Product (SPMV): Test scale and resource limits (`fdf53ff`)
-- DESS S3: Manual clock, epochs/tokens, synchronous hidden predicate, pre/post-draw host checks, forced mid-draw detach. Reflow comments (``)
+- DESS S3: Manual clock, epochs/tokens, synchronous hidden predicate, pre/post-draw host checks, forced mid-draw detach. Reflow comments (`0647f47`)
 
 ### Changed
 
@@ -111,3 +111,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - SPMV: Prevent refused build from destroying existing scene (`c527c9f`)
 - SPMV: Prevent rebuild after refusal from destroying preserved graph (`36c9f0a`)
 - SPMV: Prevent callback retention after playback stops inside its own frame (`3a1dd8f`)
+- DESS S3: Prevent navigation requests from leaving conflict operations active (``)

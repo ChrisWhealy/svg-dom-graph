@@ -45,13 +45,6 @@ const MUTATIONS = [
     '            st.seek_token += 1;\n            st.seek = None;',
     'native'
   ],
-  [
-    CONTROLLER,
-    'a seek that replaces another does not advance the seek token',
-    '            st.seek_token += 1;\n            st.retry = None;',
-    '            st.retry = None;',
-    'native'
-  ],
   [CONTROLLER, 'a timer of an old epoch is not stale', 'st.epoch != epoch || ', '', 'native'],
   [CONTROLLER, 'a frame of an old seek is not stale', 'st.seek_token != token || ', '', 'native'],
   [
@@ -108,6 +101,34 @@ const MUTATIONS = [
     'a pause leaves its timer waiting',
     '            st.epoch += 1;\n            (st.timer.take(), std::mem::replace(&mut st.playing, false))',
     '            st.epoch += 1;\n            (None, std::mem::replace(&mut st.playing, false))',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'a step does not cancel playback or a pending seek',
+    '    pub fn next(&self) -> Outcome {\n        self.inner.claim_navigation();',
+    '    pub fn next(&self) -> Outcome {',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'a seek does not cancel what was pending before it looks at its target',
+    '    pub fn seek(&self, target: u64) -> Outcome {\n        self.inner.claim_navigation();',
+    '    pub fn seek(&self, target: u64) -> Outcome {',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'play does not cancel a pending seek',
+    '    pub fn play(&self) -> Outcome {\n        self.inner.claim_navigation();',
+    '    pub fn play(&self) -> Outcome {',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'restart does not cancel what was pending before it reaches a boundary',
+    '    pub fn restart(&self) -> Outcome {\n        self.inner.claim_navigation();',
+    '    pub fn restart(&self) -> Outcome {',
     'native'
   ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
