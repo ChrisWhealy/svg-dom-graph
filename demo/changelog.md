@@ -53,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Treat WASM memory usage as a high water mark that does not need to shrink after teardown (`4365961`)
 - Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (`a6beaff`)
 - Refactor `perf/README` into multiple chapters (`65511d1`)
-- SPMV: Improve keyboard accessibility for large graph selections (``)
+- SPMV: Improve keyboard accessibility for large graph selections (`51b0617`)
 
 ### Fixed
 
@@ -108,3 +108,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - SPMV: Prevent a run from resuming when a hidden window becomes visible (`d898b2e`)
 - SPMV: Prevent Rust closures from leaking after animation cancellation (`5b0c6ec`)
 - SPMV: Prevent refused build from destroying existing scene (`c527c9f`)
+- SPMV: Prevent rebuild after refusal from destroying preserved graph (``)

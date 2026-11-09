@@ -376,7 +376,15 @@ fn make_scene(document: &web_sys::Document, prepared: &Prepared, run: &Run) -> R
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the scenario the controls describe, or says why it was refused.
-fn build() -> Result<(), String> {
+/// What a request to build came to. A request that is refused is not a failure, and it leaves the graph that was there, so a caller that
+/// goes on to tear that graph down has to know that nothing new was built.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BuildOutcome {
+    Built,
+    Refused,
+}
+
+fn build() -> Result<BuildOutcome, String> {
     clear_error(ERROR);
     let spec = spec_from_controls()?;
     let budget = Budget::default();
@@ -401,7 +409,7 @@ fn build() -> Result<(), String> {
                     &format!("Refused ({}). No node, edge or data node was made.", r.code),
                 );
             }
-            return Ok(());
+            return Ok(BuildOutcome::Refused);
         },
         Err(e) => return Err(e.to_string()),
     };
@@ -543,7 +551,7 @@ fn build() -> Result<(), String> {
             ),
         );
     }
-    Ok(())
+    Ok(BuildOutcome::Built)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -929,7 +937,10 @@ fn drag() -> Result<(), String> {
 
 /// Builds the scenario and tears it down ten times, and says whether the page ended where it began.
 fn rebuild() -> Result<(), String> {
-    build()?;
+    // A request that is refused builds nothing and leaves the graph that is there, and there is nothing here to tear down and build again.
+    if build()? == BuildOutcome::Refused {
+        return Ok(());
+    }
     let Some(prepared) = PANEL.with(|p| p.borrow().live.as_ref().map(|l| l.prepared.clone())) else {
         return Ok(());
     };
@@ -1076,7 +1087,7 @@ pub(crate) fn build_sparse_matrix_demo() -> Result<(), String> {
 pub(crate) fn build_sparse_matrix_window() -> Result<(), String> {
     let shell = build_host(&document()?, ROOT)?;
     PANEL.with(|p| p.borrow_mut().shell = Some(shell));
-    on("spmv-build", "click", build)?;
+    on("spmv-build", "click", || build().map(|_| ()))?;
     on("spmv-step", "click", step)?;
     on("spmv-run", "click", toggle_run)?;
     on("spmv-drag", "click", drag)?;
@@ -1117,5 +1128,5 @@ pub(crate) fn build_sparse_matrix_window() -> Result<(), String> {
         .add_event_listener_with_callback("visibilitychange", hiding.as_ref().unchecked_ref())
         .map_err(|e| format!("could not attach the visibilitychange listener: {e:?}"))?;
     hiding.forget();
-    build()
+    build().map(|_| ())
 }

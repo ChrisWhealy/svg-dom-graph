@@ -421,6 +421,15 @@ try {
     await click('spmv-step')
     check((await text('spmv-n-step')) !== stepBefore && /^Step 2:/.test(await text('spmv-n-step')), `${control} ${value}: the graph that was kept still steps`)
     check((await chrome.evaluate(`document.getElementById('spmv-verdict').className`)).includes('spmv-refused'), `${control} ${value}: a refusal is styled apart`)
+    // Rebuild 10 times, asked for while the request is still refused, does not take the graph that was kept away.
+    const planKept = await text('spmv-n-plan')
+    await click('spmv-rebuild')
+    await pause(500)
+    check((await sceneSvgs()) === 1 && (await marker()) === had.marker && (await text('spmv-n-plan')) === planKept, `${control} ${value}: Rebuild 10 times after a refusal leaves the graph that was kept`)
+    check((await text('spmv-n-rebuild')) === '—' && (await text('spmv-verdict')).startsWith('Refused before anything was built'), `${control} ${value}: no rebuild was run, and the refusal is still what the readout says`)
+    const stepKept = await text('spmv-n-step')
+    await click('spmv-step')
+    check((await text('spmv-n-step')) !== stepKept, `${control} ${value}: the graph that was kept after Rebuild still steps`)
     // With no graph there, a refusal builds nothing and says so.
     await click('spmv-teardown')
     await click('spmv-build')

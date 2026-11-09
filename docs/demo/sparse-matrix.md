@@ -146,6 +146,7 @@ The product is exact integer arithmetic, so the oracle in `spmv/reference-js/` a
 Before any `Scene` call is made, the size is checked against a budget.
 A size over it is refused with a reason, in a message styled apart from the readout of a drawing.
 The check is made before anything is changed, so a graph that was there stays, with its readouts and its view, and the message says so.
+Rebuild 10 times asked for after a refusal does nothing, so it cannot take that graph away.
 
 | Choice | Refusal |
 |---|---|
