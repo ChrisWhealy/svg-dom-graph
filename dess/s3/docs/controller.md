@@ -109,6 +109,7 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
 | A retry | Next, play, restart, previous and a seek that works each discard the retry of a seek that failed to be scheduled. A seek that fails in its turn offers its own target, and a hide leaves the retry |
 | A chunk of zero | A forced chunk of zero is one slice a frame, and a seek still arrives in three frames for three slices |
+| A repair that the host leaves | An explicit repair, a repair inside play, and the repair of a show each stop playback and every callback at once, mark the page dirty, announce once, and say that the host is unavailable and not that a write failed |
 | Boundary requests | Restart and previous at the first slice, a seek to the committed slice, and next at the last slice repair a dirty page first. A repair that fails is a failure and not a boundary, a host that is not there is unavailable, and a repair that works leaves the no-op |
 | Selection and switch transactions | A selection or a scenario switch whose draw fails, is refused because the host is hidden, or has the host leave in the middle of its draw, is not published. The committed projection, the selection, the generation and the old scenario's next slice are as they were, and the page is repaired to them |
 | An engine error | The engine is made to refuse the sixth slice by a limit. A seek, a step and playback each leave the cursor, the committed projection, the page and the unknown last slice as they were, and report once. A natural end still records the last slice |
@@ -120,8 +121,8 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in thirty-two ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all thirty-two are caught.
+`dess/s3/mutation-check.mjs` breaks the code in thirty-four ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all thirty-four are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |

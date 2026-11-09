@@ -1214,3 +1214,73 @@ fn a_retry_survives_a_hide_since_a_hide_is_not_a_navigation() {
     run_frames(&c);
     assert_eq!(c.committed_slice(), 5);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// A repair is a draw, and a host can leave in the middle of one as in the middle of any other. Every path that repairs
+// has to treat that as the commit does: stop, invalidate, announce once, and say that the host is unavailable, and not
+// that the write failed.
+
+#[test]
+fn an_explicit_repair_that_the_host_leaves_in_the_middle_of_is_unavailable_and_stops_playback() {
+    let (c, log) = start(generated(3));
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(100);
+    c.play();
+    let draws = log.borrow().draws.len();
+    log.borrow_mut().detach_at = Some(draws + 1);
+    assert_eq!(
+        c.repair(),
+        Outcome::Unavailable,
+        "the host is gone, which is not a failed write"
+    );
+    assert!(!c.is_playing(), "playback stopped at once");
+    assert!(c.is_dirty());
+    assert_eq!(log.borrow().announces.len(), 1, "one announcement");
+    assert!(log.borrow().reports.is_empty(), "and no error");
+    assert_eq!(c.scheduler().pending(), 0);
+    c.scheduler().advance_by(10_000);
+    assert_eq!(c.committed_slice(), 0, "the timer that was waiting did nothing");
+    assert_eq!(log.borrow().draws.len(), draws + 1);
+}
+
+#[test]
+fn a_repair_inside_play_whose_host_leaves_is_unavailable() {
+    let (c, log) = start(e0());
+    log.borrow_mut().fail_at = vec![2, 3];
+    c.next();
+    assert!(c.is_dirty());
+    log.borrow_mut().detach_at = Some(4);
+    assert_eq!(c.play(), Outcome::Unavailable);
+    assert!(!c.is_playing());
+    assert_eq!(log.borrow().announces.len(), 1);
+}
+
+#[test]
+fn a_repair_that_a_show_makes_when_the_host_leaves_again_is_a_new_episode_and_is_announced_once() {
+    let (c, log) = start(e0());
+    log.borrow_mut().fail_at = vec![2, 3];
+    c.next();
+    log.borrow_mut().presence = Presence::Hidden;
+    c.presence_changed();
+    log.borrow_mut().presence = Presence::Live;
+    let draws = log.borrow().draws.len();
+    // The show repairs the page, and the host leaves in the middle of that repair.
+    log.borrow_mut().detach_at = Some(draws + 1);
+    c.presence_changed();
+    assert!(c.is_dirty());
+    assert_eq!(
+        log.borrow().announces.len(),
+        2,
+        "the hide was announced, the show began a new episode, and the host leaving in its repair is announced once more"
+    );
+}
+
+#[test]
+fn a_repair_that_works_still_clears_the_dirty_mark_and_never_starts_playback() {
+    let (c, log) = start(e0());
+    log.borrow_mut().fail_at = vec![2, 3];
+    c.next();
+    assert_eq!(c.repair(), Outcome::Done);
+    assert!(!c.is_dirty() && !c.is_playing());
+    assert_eq!(page(&log), Some(c.committed().canonical()));
+}

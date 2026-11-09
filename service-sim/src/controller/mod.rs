@@ -482,8 +482,13 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
         let projection = self.state.borrow().committed.clone();
         let result = self.host.borrow_mut().draw(&projection, true);
+        // A repair is a draw, and a host can leave in the middle of one. It is treated as the commit treats it:
+        // playback and every callback on its way are stopped at once, the page is marked dirty, and the host is
+        // announced as unavailable.
         if !self.live() {
+            self.stop_and_invalidate();
             self.state.borrow_mut().dirty = true;
+            self.announce_unavailable();
             return false;
         }
         match result {
@@ -654,7 +659,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             return self.unavailable();
         }
         if self.state.borrow().dirty && !self.full_repair() {
-            return Outcome::Failed;
+            return if self.live() { Outcome::Failed } else { Outcome::Unavailable };
         }
         {
             let st = self.state.borrow();
@@ -926,7 +931,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             self.stop_and_invalidate();
             return self.unavailable();
         }
-        if self.full_repair() { Outcome::Done } else { Outcome::Failed }
+        if self.full_repair() {
+            Outcome::Done
+        } else if self.live() {
+            Outcome::Failed
+        } else {
+            // The host left in the middle of the repair, which the repair has already announced.
+            Outcome::Unavailable
+        }
     }
 
     /// Changes the history in a transaction. The new scenario is staged and drawn in full, and it replaces the old one

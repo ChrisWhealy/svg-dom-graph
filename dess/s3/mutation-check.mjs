@@ -196,6 +196,20 @@ const MUTATIONS = [
     '        // it claims.\n    }',
     'native'
   ],
+  [
+    CONTROLLER,
+    'a repair that the host leaves in the middle of does not stop playback',
+    '        if !self.live() {\n            self.stop_and_invalidate();\n            self.state.borrow_mut().dirty = true;\n            self.announce_unavailable();\n            return false;',
+    '        if !self.live() {\n            self.state.borrow_mut().dirty = true;\n            self.announce_unavailable();\n            return false;',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'a repair that the host leaves in the middle of is reported as a failed write',
+    '        } else if self.live() {\n            Outcome::Failed\n        } else {\n            // The host left in the middle of the repair, which the repair has already announced.\n            Outcome::Unavailable\n        }',
+    '        } else {\n            Outcome::Failed\n        }',
+    'native'
+  ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [
