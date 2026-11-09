@@ -545,14 +545,16 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A request that has nowhere to go: a dirty page is repaired first, and then nothing else happens.
+    /// A request that has nowhere to go: a dirty page is repaired first, and then nothing else happens. A repair that
+    /// fails makes the request a failure, and not a boundary, so that a caller can tell a no-op from a recovery that
+    /// did not work. One that cannot be made because the host went is unavailable.
     fn boundary(&self) -> Outcome {
         if !self.live() {
             self.stop_and_invalidate();
             return self.unavailable();
         }
-        if self.state.borrow().dirty {
-            self.full_repair();
+        if self.state.borrow().dirty && !self.full_repair() {
+            return if self.live() { Outcome::Failed } else { self.unavailable() };
         }
         Outcome::AtBoundary
     }

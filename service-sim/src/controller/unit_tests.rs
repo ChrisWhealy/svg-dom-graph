@@ -1085,3 +1085,54 @@ fn suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible()
     assert!(!c.is_playing());
     assert_eq!(c.play(), Outcome::Done);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_boundary_request_whose_repair_fails_is_a_failure_and_not_a_no_op() {
+    // A request that has nowhere to go repairs a dirty page first. Four ways to reach a boundary, each with a page made
+    // dirty by a failed draw and a repair that fails, and then a repair that is made to fail again by the boundary
+    // request itself.
+    type Ask = fn(&C) -> Outcome;
+    let asks: [(&str, u64, Ask); 4] = [
+        ("restart at the first slice", 0, |c| c.restart()),
+        ("previous at the first slice", 0, |c| c.previous()),
+        ("a seek to the committed slice", 0, |c| c.seek(0)),
+        ("next at the last slice", 12, |c| c.next()),
+    ];
+    for (what, at, ask) in asks {
+        let (c, log) = start(e0());
+        if at > 0 {
+            c.seek(at);
+            run_frames(&c);
+            assert_eq!(c.next(), Outcome::AtBoundary, "{what}: the last slice is known");
+        }
+        let draws = log.borrow().draws.len();
+        // The draw that makes the page dirty fails, and so does the repair that follows it.
+        log.borrow_mut().fail_at = vec![draws + 1, draws + 2];
+        c.select_job(Some(0));
+        assert!(c.is_dirty(), "{what}: the page is dirty");
+        // The repair that the boundary request makes fails too.
+        log.borrow_mut().fail_at = vec![draws + 3];
+        assert_eq!(ask(&c), Outcome::Failed, "{what}: a failed repair is not a boundary no-op");
+        assert!(c.is_dirty(), "{what}: it is still dirty");
+        // And when the repair succeeds, it is the no-op that it was.
+        assert_eq!(
+            ask(&c),
+            Outcome::AtBoundary,
+            "{what}: a repair that worked leaves a boundary no-op"
+        );
+        assert!(!c.is_dirty(), "{what}: the page is repaired");
+        assert_eq!(page(&log), Some(c.committed().canonical()));
+    }
+}
+
+#[test]
+fn a_boundary_request_to_a_host_that_is_not_there_is_unavailable_and_not_a_failure() {
+    let (c, log) = start(e0());
+    log.borrow_mut().fail_at = vec![2, 3];
+    c.next();
+    assert!(c.is_dirty());
+    log.borrow_mut().presence = Presence::Hidden;
+    assert_eq!(c.restart(), Outcome::Unavailable);
+    assert!(c.is_dirty());
+}

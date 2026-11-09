@@ -57,7 +57,7 @@ const MUTATIONS = [
   [
     CONTROLLER,
     'a request with nowhere to go does not repair a dirty page',
-    '        if self.state.borrow().dirty {\n            self.full_repair();\n        }\n        Outcome::AtBoundary',
+    '        if self.state.borrow().dirty && !self.full_repair() {\n            return if self.live() { Outcome::Failed } else { self.unavailable() };\n        }\n        Outcome::AtBoundary',
     '        Outcome::AtBoundary',
     'native'
   ],
@@ -173,6 +173,13 @@ const MUTATIONS = [
     'a page that is being left is not stopped',
     '    pub fn suspend(&self) {\n        self.inner.stop_and_invalidate();',
     '    pub fn suspend(&self) {',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'a boundary request whose repair failed reports a boundary',
+    '        if self.state.borrow().dirty && !self.full_repair() {\n            return if self.live() { Outcome::Failed } else { self.unavailable() };\n        }\n        Outcome::AtBoundary',
+    '        if self.state.borrow().dirty {\n            self.full_repair();\n        }\n        Outcome::AtBoundary',
     'native'
   ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],

@@ -6,8 +6,8 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_seek_never_commits_it",
-        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_draw_is_never_committed_and_is_repaired_on_return",
-        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either"
+        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either",
+        "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_draw_is_never_committed_and_is_repaired_on_return"
       ],
       "built": true
     },
@@ -16,8 +16,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
         "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
         "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw",
         "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it"
       ],
@@ -28,8 +28,9 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
+        "controller::unit_tests::a_boundary_request_whose_repair_fails_is_a_failure_and_not_a_no_op",
         "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
         "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it"
       ],
       "built": true
@@ -78,6 +79,7 @@
       "kind": "native",
       "caught": true,
       "failed": [
+        "controller::unit_tests::a_boundary_request_whose_repair_fails_is_a_failure_and_not_a_no_op",
         "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary"
       ],
       "built": true
@@ -251,6 +253,15 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::suspend_stops_playback_and_seeks_without_asking_whether_the_page_is_visible"
+      ],
+      "built": true
+    },
+    {
+      "name": "a boundary request whose repair failed reports a boundary",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_boundary_request_whose_repair_fails_is_a_failure_and_not_a_no_op"
       ],
       "built": true
     },

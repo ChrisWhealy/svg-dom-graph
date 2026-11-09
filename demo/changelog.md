@@ -114,4 +114,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Prevent navigation requests from leaving conflict operations active (`13f49de`)
 - DESS S3: Prevent engine errors during seeking from being treated as normal completion (`e176772`)
 - DESS S3: Prevent failed selection and scenario switches from changing committed state (`519cc9e`)
-- DESS S3: Add lifecycle listeners to directly observe document visibility transitions (``)
+- DESS S3: Add lifecycle listeners to directly observe document visibility transitions (`606eb4d`)
+- DESS S3: Return `Outcome::Failed` rather than `Outcome::AtBoundary` when boundary repair fails (``)
