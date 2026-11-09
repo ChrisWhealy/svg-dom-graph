@@ -108,4 +108,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - SPMV: Prevent a run from resuming when a hidden window becomes visible (`d898b2e`)
 - SPMV: Prevent Rust closures from leaking after animation cancellation (`5b0c6ec`)
 - SPMV: Prevent refused build from destroying existing scene (`c527c9f`)
-- SPMV: Prevent rebuild after refusal from destroying preserved graph (``)
+- SPMV: Prevent rebuild after refusal from destroying preserved graph (`36c9f0a`)
+- SPMV: Prevent callback retention after playback stops inside its own frame (``)

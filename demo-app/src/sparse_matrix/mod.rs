@@ -692,6 +692,9 @@ fn step() -> Result<(), String> {
     PANEL.with(|p| {
         let mut p = p.borrow_mut();
         let live = p.live.as_mut().ok_or("Nothing is built yet.")?;
+        if injected("__spmvFailNextStep") {
+            return Err("A failure was injected into this step.".to_owned());
+        }
         let start = now();
         let before = live.built.is_readable().then(|| (live.run.x.clone(), live.run.y.clone()));
         live.run.advance(live.verified).map_err(|e| e.to_string())?;
@@ -821,7 +824,44 @@ fn frame(generation: u32) {
         }
     });
     frame_body(generation);
-    PANEL.with(|p| p.borrow_mut().in_frame = false);
+    let stopped = PANEL.with(|p| {
+        let mut p = p.borrow_mut();
+        p.in_frame = false;
+        !p.running
+    });
+    if stopped {
+        release_when_unwound();
+    }
+}
+
+/// Lets go of the callback that has just run, after the browser's call of it has returned. A run that stops inside its own frame, for a
+/// failed step or a failed request for the next frame or a hidden page, has no later frame to release it, and it cannot be dropped while
+/// it is running. A microtask runs when the call has returned, and before anything else does.
+fn release_when_unwound() {
+    let release = Closure::once_into_js(|| {
+        PANEL.with(|p| {
+            let mut p = p.borrow_mut();
+            if !p.in_frame && !p.running {
+                p.finished = None;
+            }
+        });
+    });
+    if let Some(window) = web_sys::window() {
+        window.queue_microtask(release.unchecked_ref());
+    }
+}
+
+/// Whether a test has asked for a failure at `name`, which it does by setting that property of the window. It is read once and cleared, so
+/// that a failure is injected once. Nothing sets one but a test.
+fn injected(name: &str) -> bool {
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    let asked = js_sys::Reflect::get(&window, &name.into()).is_ok_and(|v| v.is_truthy());
+    if asked {
+        js_sys::Reflect::set(&window, &name.into(), &wasm_bindgen::JsValue::FALSE).ok();
+    }
+    asked
 }
 
 fn frame_body(generation: u32) {
@@ -864,6 +904,9 @@ fn frame_body(generation: u32) {
 
 fn schedule(generation: u32) -> Result<(), String> {
     let window = web_sys::window().ok_or("no window")?;
+    if injected("__spmvFailNextSchedule") {
+        return Err("A failure was injected into asking for the next frame.".to_owned());
+    }
     let callback = FrameCallback::new(generation);
     let id = window
         .request_animation_frame(callback.closure.as_ref().unchecked_ref())

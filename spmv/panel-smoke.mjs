@@ -29,7 +29,9 @@ const chrome = await launch()
 const thrown = []
 chrome.on('Runtime.exceptionThrown', e => thrown.push(e.exceptionDetails?.exception?.description ?? e.exceptionDetails?.text))
 chrome.on('Runtime.consoleAPICalled', e => {
-  if (e.type === 'error') thrown.push(`console.error: ${(e.args ?? []).map(a => a.value ?? a.description).join(' ')}`)
+  const said = (e.args ?? []).map(a => a.value ?? a.description).join(' ')
+  // A failure that the test injected is expected to be reported, and is the only error that is not a fault.
+  if (e.type === 'error' && !said.startsWith('A failure was injected')) thrown.push(`console.error: ${said}`)
 })
 await chrome.send('Runtime.enable')
 await chrome.send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 950, deviceScaleFactor: 1, mobile: false })
@@ -395,6 +397,26 @@ try {
   check((await stepsDone()) === hiddenAt, 'a run does not start again when the window comes back')
   check((await alive()) === 0, 'a window that was hidden in the middle of a run leaves no frame callback behind')
   await other.closeTab()
+
+  // A run that stops inside its own frame has no later frame to release its callback, so it must be released without another action: for
+  // a failed step, a failed request for the next frame, and a page that is hidden and still given frames.
+  const alive2 = () => chrome.evaluate(`Number(document.getElementById('spmv-root').getAttribute('data-live-frame-callbacks') ?? -1)`)
+  for (const [what, inject, undo] of [
+    ['a failed step', `window.__spmvFailNextStep = true`, `window.__spmvFailNextStep = false`],
+    ['a failed request for the next frame', `window.__spmvFailNextSchedule = true`, `window.__spmvFailNextSchedule = false`],
+    ['a hidden page that is still given frames', `Object.defineProperty(document, 'hidden', { value: true, configurable: true })`, `delete document.hidden`]
+  ]) {
+    await choose('spmv-speed', '0')
+    await click('spmv-run')
+    await pause(80)
+    check((await alive2()) >= 1, `${what}: a run holds a frame callback before it fails`)
+    await chrome.evaluate(inject)
+    await pause(500)
+    check((await chrome.evaluate(`document.getElementById('spmv-run').textContent`)) === 'Run', `${what}: the run stopped by itself`)
+    check((await alive2()) === 0, `${what}: no frame callback is left once the run has stopped, with no other action`)
+    await chrome.evaluate(undo)
+  }
+  await choose('spmv-speed', '500')
 
   // - - - Refusals: reported apart from a drawing, with the reason, and a graph that was there is left as it was.
   const sceneSvgs = () => chrome.evaluate(`document.querySelectorAll('.spmv-scene-svg').length`)
