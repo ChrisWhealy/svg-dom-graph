@@ -189,6 +189,13 @@ const MUTATIONS = [
     '.chunk = slices;',
     'native'
   ],
+  [
+    CONTROLLER,
+    'a later navigation leaves the retry of a seek that it superseded',
+    '        // it claims.\n        self.state.borrow_mut().retry = None;\n    }',
+    '        // it claims.\n    }',
+    'native'
+  ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [

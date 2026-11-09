@@ -432,6 +432,10 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
     /// tick must not stop the playback that it is part of.
     fn claim_navigation(&self) {
         self.stop_and_invalidate();
+        // A retry is the latest request that failed to be scheduled, and a later request has superseded it. A hide does
+        // not, so it is not cleared by the stop above, and a retry that was asked for is captured by the caller before
+        // it claims.
+        self.state.borrow_mut().retry = None;
     }
 
     /// Stops playback and takes back everything that was scheduled, and makes every callback already on its way stale.

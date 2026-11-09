@@ -55,7 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (`a6beaff`)
 - Refactor `perf/README` into multiple chapters (`65511d1`)
 - SPMV: Improve keyboard accessibility for large graph selections (`51b0617`)
-- DESS S3: Normalise `Some(0)` to `Some(1)` when specifying seek frames (``)
+- DESS S3: Normalise `Some(0)` to `Some(1)` when specifying seek frames (`237b5cd`)
 
 ### Fixed
 
@@ -117,3 +117,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Prevent failed selection and scenario switches from changing committed state (`519cc9e`)
 - DESS S3: Add lifecycle listeners to directly observe document visibility transitions (`606eb4d`)
 - DESS S3: Return `Outcome::Failed` rather than `Outcome::AtBoundary` when boundary repair fails (`8ce8c39`)
+- DESS S3: Prevent a superseded seek from retaining its retry target (``)

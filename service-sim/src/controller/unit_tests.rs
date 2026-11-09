@@ -1154,3 +1154,63 @@ fn a_forced_chunk_of_zero_is_one_slice_a_frame_and_a_seek_still_makes_progress()
     assert_eq!(c.committed_slice(), 3);
     assert_eq!(c.committed().canonical(), straight(&factory, 3, &View::default()).canonical());
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_retry_that_a_later_navigation_made_obsolete_is_discarded() {
+    type Ask = fn(&C) -> Outcome;
+    let asks: [(&str, Ask); 5] = [
+        ("next", |c| c.next()),
+        ("play", |c| c.play()),
+        ("restart", |c| c.restart()),
+        ("previous", |c| c.previous()),
+        ("a seek that works", |c| c.seek(3)),
+    ];
+    for (what, ask) in asks {
+        let (c, _) = start(generated(3));
+        c.next();
+        c.scheduler().fail_next_frames(1);
+        assert_eq!(c.seek(6), Outcome::Failed);
+        assert_eq!(c.pending_retry(), Some(6), "{what}: the failed seek offers a retry");
+        ask(&c);
+        assert_eq!(
+            c.pending_retry(),
+            None,
+            "{what}: a later navigation discarded the retry that it superseded"
+        );
+        let slice = c.committed_slice();
+        c.pause();
+        assert_eq!(c.retry(), Outcome::Done, "{what}: there is nothing to retry");
+        run_frames(&c);
+        assert_ne!(c.committed_slice(), 6, "{what}: the superseded seek was not started");
+        let _ = slice;
+    }
+}
+
+#[test]
+fn a_seek_that_fails_in_its_turn_replaces_the_retry_with_its_own_target() {
+    let (c, _) = start(generated(3));
+    c.scheduler().fail_next_frames(2);
+    assert_eq!(c.seek(6), Outcome::Failed);
+    assert_eq!(c.seek(3), Outcome::Failed);
+    assert_eq!(c.pending_retry(), Some(3), "the retry is the latest request, and not the first");
+    assert_eq!(c.retry(), Outcome::Pending);
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 3);
+    assert_eq!(c.pending_retry(), None);
+}
+
+#[test]
+fn a_retry_survives_a_hide_since_a_hide_is_not_a_navigation() {
+    let (c, log) = start(generated(3));
+    c.scheduler().fail_next_frames(1);
+    c.seek(5);
+    log.borrow_mut().presence = Presence::Hidden;
+    c.presence_changed();
+    log.borrow_mut().presence = Presence::Live;
+    c.presence_changed();
+    assert_eq!(c.pending_retry(), Some(5), "the latest request is still the seek that failed");
+    assert_eq!(c.retry(), Outcome::Pending);
+    run_frames(&c);
+    assert_eq!(c.committed_slice(), 5);
+}
