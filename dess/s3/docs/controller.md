@@ -86,7 +86,8 @@ A hidden gallery panel is still in the document, so attachment alone is not enou
 
 A seek replays the run from its first slice into a new engine, at an animation frame.
 Staging happens on that engine and never touches the committed state, so a seek that is replaced half way changes nothing that is shown.
-A forced test mode replays one slice a frame, to make the races of cancellation reachable.
+A forced test mode replays a few slices a frame, to make the races of cancellation reachable.
+A chunk of zero would ask for a frame for ever without doing any work, so it is taken as one.
 A replay that ends because the run has no more slices has found the last slice, and records it.
 A replay that ends because the engine refused to go on has found nothing, and records nothing.
 It reports the error once, and the cursor, the committed projection and the last slice stay as they were.
@@ -103,6 +104,7 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | A host that leaves in the middle of a draw | On a fake host, in a seek, and on the real surface after each of its overlay writes and its setter, the slice is not committed, nothing is written after the departure, and a return repairs the page |
 | A failed write | Nothing is committed, one report, one repair and no retry, and a repair that fails leaves the page dirty until the next request, even one at a boundary |
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
+| A chunk of zero | A forced chunk of zero is one slice a frame, and a seek still arrives in three frames for three slices |
 | Boundary requests | Restart and previous at the first slice, a seek to the committed slice, and next at the last slice repair a dirty page first. A repair that fails is a failure and not a boundary, a host that is not there is unavailable, and a repair that works leaves the no-op |
 | Selection and switch transactions | A selection or a scenario switch whose draw fails, is refused because the host is hidden, or has the host leave in the middle of its draw, is not published. The committed projection, the selection, the generation and the old scenario's next slice are as they were, and the page is repaired to them |
 | An engine error | The engine is made to refuse the sixth slice by a limit. A seek, a step and playback each leave the cursor, the committed projection, the page and the unknown last slice as they were, and report once. A natural end still records the last slice |
@@ -114,8 +116,8 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in thirty ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all thirty are caught.
+`dess/s3/mutation-check.mjs` breaks the code in thirty-one ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all thirty-one are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |

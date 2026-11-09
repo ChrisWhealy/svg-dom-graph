@@ -273,10 +273,10 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Makes a seek replay one slice at a time, so that a test can cancel it between frames. `None` replays a whole
-    /// seek in one frame.
+    /// Makes a seek replay a few slices a frame, so that a test can cancel it between frames. `None` replays a whole
+    /// seek in one frame. A chunk of zero would ask for a frame for ever without doing any work, so it is taken as one.
     pub fn force_chunk(&self, slices: Option<u64>) {
-        self.inner.state.borrow_mut().chunk = slices;
+        self.inner.state.borrow_mut().chunk = slices.map(|n| n.max(1));
     }
 
     /// Changes the time between the slices of playback. If it is playing, the next slice is scheduled again at the new

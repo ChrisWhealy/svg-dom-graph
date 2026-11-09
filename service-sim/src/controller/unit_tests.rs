@@ -1136,3 +1136,21 @@ fn a_boundary_request_to_a_host_that_is_not_there_is_unavailable_and_not_a_failu
     assert_eq!(c.restart(), Outcome::Unavailable);
     assert!(c.is_dirty());
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_forced_chunk_of_zero_is_one_slice_a_frame_and_a_seek_still_makes_progress() {
+    let factory = generated(3);
+    let (c, _) = start(Rc::clone(&factory));
+    c.force_chunk(Some(0));
+    c.seek(3);
+    // A chunk that did no work would ask for a frame for ever, so the frames are counted and the count is bounded.
+    let mut frames = 0;
+    while c.scheduler().advance_frame() {
+        frames += 1;
+        assert!(frames <= 10, "the seek is not making progress");
+    }
+    assert_eq!(frames, 3, "three slices at one a frame, as for a chunk of one");
+    assert_eq!(c.committed_slice(), 3);
+    assert_eq!(c.committed().canonical(), straight(&factory, 3, &View::default()).canonical());
+}

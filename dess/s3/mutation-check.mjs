@@ -182,6 +182,13 @@ const MUTATIONS = [
     '        if self.state.borrow().dirty {\n            self.full_repair();\n        }\n        Outcome::AtBoundary',
     'native'
   ],
+  [
+    CONTROLLER,
+    'a forced chunk of zero is accepted, and a seek makes no progress',
+    '.chunk = slices.map(|n| n.max(1));',
+    '.chunk = slices;',
+    'native'
+  ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [
