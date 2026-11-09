@@ -47,6 +47,20 @@ Playback's own ticks do not come through this rule, since a tick must not stop t
 The review that found this gave the case of a seek to slice 10 followed by a seek to slice 0 while the committed slice was 0.
 The second returned at a boundary and did not cancel the first, whose frame then committed slice 10.
 
+## Selection and scenario switches are transactions
+
+What the controller calls committed is what was shown.
+A selection is staged with the projection that it makes, and the view is published by the commit and not before it.
+A draw that fails leaves the selection that was on the page, so a later slice is not drawn with one that never was.
+A scenario switch stages the new engine and draws its first slice in full.
+It replaces the old scenario only if that draw succeeded while the host was still there.
+Otherwise the old scenario is still committed, the page is repaired to it, and the switch can be asked for again.
+A switch is a navigation, so playback and a pending seek are cancelled whether or not it succeeds.
+
+The review that found this noted that the switch was not transactional.
+It installed the new scenario and then drew it, so a failed draw left a scenario installed that had never been shown.
+That is not an intended exception, and it is now tested.
+
 ## Tokens
 
 A callback carries the epoch, the generation or the seek token that it was scheduled under, and holds only a weak reference to the controller.
@@ -88,6 +102,7 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | A host that leaves in the middle of a draw | On a fake host, in a seek, and on the real surface after each of its overlay writes and its setter, the slice is not committed, nothing is written after the departure, and a return repairs the page |
 | A failed write | Nothing is committed, one report, one repair and no retry, and a repair that fails leaves the page dirty until the next request, even one at a boundary |
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
+| Selection and switch transactions | A selection or a scenario switch whose draw fails, is refused because the host is hidden, or has the host leave in the middle of its draw, is not published. The committed projection, the selection, the generation and the old scenario's next slice are as they were, and the page is repaired to them |
 | An engine error | The engine is made to refuse the sixth slice by a limit. A seek, a step and playback each leave the cursor, the committed projection, the page and the unknown last slice as they were, and report once. A natural end still records the last slice |
 | Navigation ownership | Seek then seek back to the committed slice, restart and previous at the first slice, play then next, play then seek, seek then play, and seek then next, each with the callbacks of what was cancelled kept, leave the last request in force. A pause leaves a seek alone |
 | No cycle | A timer and a frame that are waiting hold no strong reference to the controller |
@@ -96,8 +111,8 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in twenty-two ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all twenty-two are caught.
+`dess/s3/mutation-check.mjs` breaks the code in twenty-five ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all twenty-five are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |

@@ -93,6 +93,8 @@ struct Staged {
     slice: u64,
     model: Model,
     projection: Projection,
+    /// The selection that the projection was made for, which is published with it.
+    view: View,
 }
 
 /// A seek that is being replayed, a slice or a frame's worth at a time.
@@ -238,6 +240,13 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     #[must_use]
     pub fn generation(&self) -> u64 {
         self.inner.state.borrow().generation
+    }
+
+    /// The job that the committed projection has selected, if any. It changes only when a draw with that selection was
+    /// committed.
+    #[must_use]
+    pub fn selected(&self) -> Option<u64> {
+        self.inner.state.borrow().view.selected
     }
 
     /// The number of the last slice of the run, once it has been reached.
@@ -517,6 +526,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         st.committed_slice = target.slice;
         st.committed_model = target.model;
         st.committed = target.projection;
+        st.view = target.view;
         st.staged = None;
         st.reported = false;
         st.announced = false;
@@ -592,6 +602,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             slice: staged.slice,
             model: staged.model.clone(),
             projection: staged.projection.clone(),
+            view: staged.view,
         };
         let outcome = self.render_then_commit(staged);
         if outcome != Outcome::Done {
@@ -620,6 +631,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             slice: committed + 1,
             model,
             projection,
+            view: st.view,
         }))
     }
 
@@ -848,10 +860,8 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             return;
         }
         let job = self.state.borrow_mut().seek.take().expect("a seek job");
-        let (model, projection) = {
-            let st = self.state.borrow();
-            model_and_projection(&job.engine, &st.view)
-        };
+        let view = self.state.borrow().view;
+        let (model, projection) = model_and_projection(&job.engine, &view);
         {
             let mut st = self.state.borrow_mut();
             st.engine = job.engine;
@@ -861,6 +871,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             slice: job.at,
             model,
             projection,
+            view,
         });
         let _ = outcome;
     }
@@ -871,12 +882,11 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             self.stop_and_invalidate();
             return self.unavailable();
         }
-        let committed = {
-            let mut st = self.state.borrow_mut();
-            st.view = View { selected: id };
-            st.staged = None;
-            st.committed_slice
-        };
+        // The selection is staged with the projection that it makes, and is published by the commit and not before it.
+        // A draw that fails leaves the view that was shown, so that a later slice is not drawn with a selection that
+        // was never on the page.
+        let committed = self.state.borrow().committed_slice;
+        let view = View { selected: id };
         if self.state.borrow().engine_at != committed {
             match self.replay(committed) {
                 Ok(engine) => {
@@ -890,14 +900,12 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
                 },
             }
         }
-        let (model, projection) = {
-            let st = self.state.borrow();
-            model_and_projection(&st.engine, &st.view)
-        };
+        let (model, projection) = model_and_projection(&self.state.borrow().engine, &view);
         self.render_then_commit(Staged {
             slice: committed,
             model,
             projection,
+            view,
         })
     }
 
@@ -909,29 +917,45 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         if self.full_repair() { Outcome::Done } else { Outcome::Failed }
     }
 
+    /// Changes the history in a transaction. The new scenario is staged and drawn in full, and it replaces the old one
+    /// only if that draw succeeded while the host was still there. Otherwise the old scenario is what is committed, and
+    /// the page is repaired to it. A switch is a navigation, so playback and a pending seek are cancelled whether or
+    /// not it succeeds.
     fn switch_scenario(self: &Rc<Self>, factory: Factory, engine: Engine) -> Outcome {
-        self.stop_and_invalidate();
-        {
-            let mut st = self.state.borrow_mut();
-            st.generation += 1;
-            let view = View::default();
-            let (model, projection) = model_and_projection(&engine, &view);
-            st.factory = factory;
-            st.engine = engine;
-            st.engine_at = 0;
-            st.staged = None;
-            st.committed_slice = 0;
-            st.committed_model = model;
-            st.committed = projection;
-            st.view = view;
-            st.last_slice = None;
-            st.retry = None;
-            st.dirty = true;
-        }
+        self.claim_navigation();
         if !self.live() {
             return self.unavailable();
         }
-        if self.full_repair() { Outcome::Done } else { Outcome::Failed }
+        let view = View::default();
+        let (model, projection) = model_and_projection(&engine, &view);
+        let result = self.host.borrow_mut().draw(&projection, true);
+        if !self.live() {
+            self.state.borrow_mut().dirty = true;
+            return self.unavailable();
+        }
+        if let Err(failure) = result {
+            self.state.borrow_mut().dirty = true;
+            self.report_once(&describe(&failure));
+            // One immediate repair, of the scenario that is still committed.
+            self.full_repair();
+            return Outcome::Failed;
+        }
+        let mut st = self.state.borrow_mut();
+        st.generation += 1;
+        st.factory = factory;
+        st.engine = engine;
+        st.engine_at = 0;
+        st.staged = None;
+        st.committed_slice = 0;
+        st.committed_model = model;
+        st.committed = projection;
+        st.view = view;
+        st.last_slice = None;
+        st.retry = None;
+        st.dirty = false;
+        st.reported = false;
+        st.announced = false;
+        Outcome::Done
     }
 
     fn presence_changed(self: &Rc<Self>) {

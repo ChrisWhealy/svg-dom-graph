@@ -112,4 +112,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - SPMV: Prevent rebuild after refusal from destroying preserved graph (`36c9f0a`)
 - SPMV: Prevent callback retention after playback stops inside its own frame (`3a1dd8f`)
 - DESS S3: Prevent navigation requests from leaving conflict operations active (`13f49de`)
-- DESS S3: Prevent engine errors during seeking from being treated as normal completion (``)
+- DESS S3: Prevent engine errors during seeking from being treated as normal completion (`e176772`)
+- DESS S3: Prevent failed selection and scenario switches from changing committed state (``)

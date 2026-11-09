@@ -6,6 +6,7 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_draw_is_never_committed_and_is_repaired_on_return",
+        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either",
         "controller::unit_tests::a_host_that_leaves_in_the_middle_of_a_seek_never_commits_it"
       ],
       "built": true
@@ -15,8 +16,9 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
         "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
+        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it",
         "controller::unit_tests::a_slice_that_was_staged_is_not_worked_out_again_after_a_failed_draw"
       ],
       "built": true
@@ -27,7 +29,8 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
-        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped"
+        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
+        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it"
       ],
       "built": true
     },
@@ -148,8 +151,8 @@
       "failed": [
         "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
         "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
-        "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert",
         "controller::unit_tests::a_seek_back_to_the_committed_slice_cancels_the_seek_that_was_pending",
+        "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert",
         "controller::unit_tests::a_seek_while_playing_stops_playback_and_the_seek_is_the_only_thing_that_moves_the_slice",
         "controller::unit_tests::scheduled_callbacks_hold_no_strong_reference_to_the_controller"
       ],
@@ -179,6 +182,36 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::an_engine_error_during_a_seek_commits_nothing_and_does_not_end_the_run"
+      ],
+      "built": true
+    },
+    {
+      "name": "a selection is published before its draw succeeded",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_failed_draw_of_a_selection_changed_in_the_middle_of_a_draw_is_not_published_either",
+        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it"
+      ],
+      "built": true
+    },
+    {
+      "name": "a scenario that failed to draw is installed anyway",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_scenario_switch_whose_draw_failed_leaves_the_old_scenario_committed_and_repaired"
+      ],
+      "built": true
+    },
+    {
+      "name": "a commit does not publish the selection that it drew",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::a_scenario_switch_whose_draw_failed_leaves_the_old_scenario_committed_and_repaired",
+        "controller::unit_tests::a_selection_whose_draw_failed_is_not_published_and_a_later_step_does_not_use_it",
+        "controller::unit_tests::selecting_a_job_redraws_the_same_slice_with_the_highlight_and_a_later_slice_keeps_it"
       ],
       "built": true
     },

@@ -138,6 +138,21 @@ const MUTATIONS = [
     '                    Err(e) => {\n                        let _ = e;\n                        failed = None::<String>;\n                        ended = true;\n                        break;',
     'native'
   ],
+  [
+    CONTROLLER,
+    'a selection is published before its draw succeeded',
+    '        let view = View { selected: id };\n',
+    '        let view = View { selected: id };\n        self.state.borrow_mut().view = view;\n',
+    'native'
+  ],
+  [
+    CONTROLLER,
+    'a scenario that failed to draw is installed anyway',
+    '            self.full_repair();\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();\n        st.generation += 1;',
+    '            self.full_repair();\n        }\n        let mut st = self.state.borrow_mut();\n        st.generation += 1;',
+    'native'
+  ],
+  [CONTROLLER, 'a commit does not publish the selection that it drew', '        st.view = target.view;\n', '', 'native'],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [
