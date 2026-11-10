@@ -43,7 +43,7 @@
       "caught": true,
       "built": true,
       "status": 1,
-      "first": "FAIL simulation.engine_is_not_stepped_in_a_timed_interval: fail, the engine was stepped inside the timed interval of 70 batches, so those timings hold engine work"
+      "first": "FAIL the run is valid (invalid_incorrect)"
     },
     {
       "name": "the priming window is one slice short, so every window shifts",
@@ -67,6 +67,24 @@
       "name": "a slot is never written, and the timing is of the cheaper draw",
       "file": "service-sim/src/surface.rs",
       "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "the Seek control has no accessible name",
+      "file": "perf-harness-wasm/src/service_perf.rs",
+      "mode": "correctness",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "a Seek takes the focus away from its control",
+      "file": "perf-harness-wasm/src/service_perf.rs",
+      "mode": "correctness",
       "caught": true,
       "built": true,
       "status": 1,

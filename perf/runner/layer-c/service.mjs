@@ -390,23 +390,41 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
     const group = svg.querySelector('g')
     return JSON.stringify({ viewBox: svg.getAttribute('viewBox'), transform: group?.getAttribute('transform') ?? null, active: document.activeElement?.id ?? null })
   })()`)
+  // What a pointer must not change: the view of the scene, and which control has the focus, which is the one that was used.
+  const invariants = async (before, expectedActive, what) => {
+    const now = JSON.parse(await view())
+    if (now.viewBox !== before.viewBox || now.transform !== before.transform) fail('interaction', `${what} moved the view`)
+    else pass()
+    if (now.active !== expectedActive) fail('interaction', `${what} left the focus on ${now.active} and not on ${expectedActive}`)
+    else pass()
+  }
+  /** All three controls in the browser's own accessibility tree, each by its role and name, and the Play control's pressed state. */
+  const controlsInTree = async (what, pressed) => {
+    const nodes = (await page.send('Accessibility.getFullAXTree')).result.nodes
+    const named = (role, pattern) => nodes.find(n => n.role?.value === role && pattern.test(String(n.name?.value ?? '')))
+    const next = named('button', /^Next slice$/)
+    const play = named('button', /^(Play|Pause)$/)
+    const seek = named('slider', /^Seek to slice$/)
+    if (!next) fail('accessibility', `${what}: no button named Next slice is in the accessibility tree`)
+    else pass()
+    if (!seek) fail('accessibility', `${what}: no slider named Seek to slice is in the accessibility tree`)
+    else pass()
+    if (!play) fail('accessibility', `${what}: no button named Play or Pause is in the accessibility tree`)
+    else {
+      const state = String(play.properties?.find(p => p.name === 'pressed')?.value?.value ?? '')
+      const name = play.name.value
+      if (state !== pressed || name !== (pressed === 'true' ? 'Pause' : 'Play'))
+        fail('accessibility', `${what}: the Play control is named ${name} and pressed ${state}, and ${pressed === 'true' ? 'Pause' : 'Play'} and pressed ${pressed} were meant`)
+      else pass()
+    }
+  }
   const heldAt = []
   try {
     await controls('install')
     let s = await controls('reset', seed, 0, manifest.simulation.arrivals)
     heldAt.push([0, s.engine_sha256])
-    // The controls are in the browser's accessibility tree, by name.
     await page.send('Accessibility.enable')
-    const tree = (await page.send('Accessibility.getFullAXTree')).result
-    const buttons = tree.nodes
-      .filter(n => n.role?.value === 'button')
-      .map(n => `${n.name?.value}|${n.properties?.find(p => p.name === 'pressed')?.value?.value ?? ''}`)
-    if (buttons.some(b => b.startsWith('Next slice')) && buttons.some(b => b.startsWith('Play'))) pass()
-    else
-      fail(
-        'accessibility',
-        `the accessibility tree has the buttons ${JSON.stringify(buttons)}, and Next slice and Play were meant`
-      )
+    await controlsInTree('at the start', 'false')
     for (let k = 1; k <= 12; k++) {
       const before = JSON.parse(await view())
       await page.evaluate("document.getElementById('perf-sim-next').focus()")
@@ -432,17 +450,24 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
         fail('interaction', `focus was on ${now.active} and not on the control that was clicked, after slice ${k}`)
       else pass()
     }
-    // A real Play commits one slice, and a real Pause stops with nothing pending.
+    // A real Play commits one slice, and a real Pause stops with nothing pending. While it plays the control is pressed and named Pause, and
+    // the view and the focus are as they were after each of the two clicks.
     await controls('setSpeed', 1000)
     const before = await state()
+    const viewBeforePlay = JSON.parse(await view())
     await click('perf-sim-play')
+    await invariants(viewBeforePlay, 'perf-sim-play', 'a real Play click')
+    await controlsInTree('during playback', 'true')
     let at = await state()
     for (let i = 0; i < 400 && at.timer_entries === before.timer_entries; i++) {
       await pause(10)
       at = await state()
     }
     await pause(150)
+    await invariants(viewBeforePlay, 'perf-sim-play', 'a timer tick of playback')
     await click('perf-sim-play')
+    await invariants(viewBeforePlay, 'perf-sim-play', 'a real Pause click')
+    await controlsInTree('after Pause', 'false')
     const after = await state()
     heldAt.push([after.committed_slice, after.engine_sha256])
     if (
@@ -463,6 +488,7 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
     // A real Seek: a real click on the range control, which the browser turns into a value, and a replay to that slice at a frame. The cursor has
     // to arrive there, the engine has to hold the independent engine's hash for it, and a Next after it has to commit the slice that follows.
     await page.evaluate("document.getElementById('perf-sim-seek').focus()")
+    const viewBeforeSeek = JSON.parse(await view())
     const sliderAt = await controls('rect', 'perf-sim-seek')
     await press(page, sliderAt.x, sliderAt.y)
     await release(page, sliderAt.x, sliderAt.y)
@@ -473,6 +499,8 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
       seeked = await state()
     }
     heldAt.push([seeked.committed_slice, seeked.engine_sha256])
+    await invariants(viewBeforeSeek, 'perf-sim-seek', 'a real Seek')
+    await controlsInTree('after Seek', 'false')
     const arrived =
       target > 0 &&
       seeked.committed_slice === target &&
@@ -485,7 +513,9 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
         'interaction',
         `a real click on the Seek control chose slice ${target}, and the controller is at ${seeked.committed_slice}`
       )
+    const viewBeforeNext = JSON.parse(await view())
     await click('perf-sim-next')
+    await invariants(viewBeforeNext, 'perf-sim-next', 'a Next click after a Seek')
     const afterSeek = await state()
     heldAt.push([afterSeek.committed_slice, afterSeek.engine_sha256])
     if (afterSeek.committed_slice === target + 1 && afterSeek.engine_sha256 === trace.checkpoints[target + 1]) pass()

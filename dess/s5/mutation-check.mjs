@@ -22,7 +22,7 @@ const HOST = 'service-sim/src/host.rs'
 const EXECUTOR = 'perf-harness-wasm/src/service_perf.rs'
 const PAGE = 'perf/runner/page/service-sim.js'
 
-// [file, what is wrong, from, to, the mode that sees it]
+// [file, what is wrong, from, to, the mode that sees it, the layers that see it (b when absent)]
 const MUTATIONS = [
   [
     SURFACE,
@@ -55,8 +55,8 @@ const MUTATIONS = [
   [
     EXECUTOR,
     'the four slices of a batch are worked out inside the timed interval',
-    '        let made = sim.controller.prepare_ahead(u64::from(count))?;',
-    '        let made = u64::from(count);',
+    '        let checkpoints = sim.controller.prepare_ahead_with_checkpoints(u64::from(count))?;',
+    '        let checkpoints = vec![String::new(); count as usize];',
     'performance'
   ],
   [
@@ -79,6 +79,22 @@ const MUTATIONS = [
     'Field::Text => el.text.set_text_content(Some(&slot.text)),',
     'Field::Text => {},',
     'performance'
+  ],
+  [
+    EXECUTOR,
+    'the Seek control has no accessible name',
+    '    seek.set_attribute("aria-label", "Seek to slice").map_err(js("seek"))?;\n',
+    '',
+    'correctness',
+    'c'
+  ],
+  [
+    EXECUTOR,
+    'a Seek takes the focus away from its control',
+    '                        if let Some(target) = value {\n                            c.seek(target);',
+    '                        if let Some(target) = value {\n                            if let Some(e) = slider.dyn_ref::<web_sys::HtmlElement>() {\n                                let _ = e.blur();\n                            }\n                            c.seek(target);',
+    'correctness',
+    'c'
   ]
 ]
 
@@ -130,7 +146,7 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
 
 const results = []
 try {
-  for (const [file, name, from, to, mode] of MUTATIONS) {
+  for (const [file, name, from, to, mode, layers = 'b'] of MUTATIONS) {
     fs.writeFileSync(path.join(tree, file), originals.get(file).replace(from, to))
     const ran = spawnSync(
       'node',
@@ -140,7 +156,7 @@ try {
         '--mode',
         mode,
         '--layers',
-        'b',
+        layers,
         '--repetitions',
         '1',
         '--out-dir',

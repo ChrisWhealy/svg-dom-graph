@@ -127,7 +127,7 @@ The endurance mode runs 70 cycles with no growth in live bytes, listeners or ele
 A refused seed has to be refused in every mode, a wrong checkpoint has to make Layers B invalid, and a controller that reads layout has to fail its gate.
 It also checks that three repetitions are diagnostic and five are not, and that a late Pause is rejected for the extra tick and for nothing else.
 
-`dess/s5/mutation-check.mjs` breaks the product in eight small ways, one at a time, in a copy of the tree, and the orchestrator has to fail each.
+`dess/s5/mutation-check.mjs` breaks the product in ten small ways, one at a time, in a copy of the tree, and the orchestrator has to fail each.
 The working tree is never touched, so nothing can be committed mutated.
 
 ## What S5 does not show
