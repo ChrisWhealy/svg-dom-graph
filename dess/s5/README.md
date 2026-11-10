@@ -139,3 +139,6 @@ Each mutation is built on its own first, and one that does not build is reported
 - The Seek control is the fixture's own range input and not the gallery's.
 - The 100,000-pop trace is not run through the browser: its manifest names Layer A alone, and the orchestrator enforces that.
 - A stale, hidden or failed tick in the Play series is rejected for the repetition and is not counted separately.
+- A click or tick that the trace cannot place in a frame is counted as `frames_unattributed` with its reason, and is given no time.
+  A series needs at least 15 of its 30 attributed.
+  On a loaded runner a frame can end before the main thread's work in it does, so one lost observation does not invalidate a run.

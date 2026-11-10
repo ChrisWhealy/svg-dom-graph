@@ -34,6 +34,12 @@ const PRESENT_WAIT_MS = 150
 const QUIET_MS = 1300
 /** Play needs at least this much wall time a repetition: 40 cycles at 1 Hz is 40 seconds, and the rest is the browser, the trace and the teardown. */
 export const PLAY_MINIMUM_WALL_MS = 90_000
+/**
+ * The fewest attributed observations of a series of 30 that a run keeps. The trace cannot always place an input in a frame, and on a loaded
+ * runner a frame can end before the main thread's work in it does, so a few are unavailable. They are counted with their reasons and are never
+ * given a guessed time, as in the interaction workload. A series with fewer than half attributed has no median worth keeping, and is invalid.
+ */
+export const MIN_ATTRIBUTED = 15
 
 const describeSamples = (binary, name, unit, values, mechanism) => {
   if (values.length === 0) return { name, layer: 'C', status: 'unavailable', reason: 'no observation was made' }
@@ -129,6 +135,8 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
     const play = []
     const clickToTimer = []
     const unattributed = {}
+    let nextLost = 0
+    let playLost = 0
     const lose = reason => {
       const key = reason.replace(/\d+/g, 'N')
       unattributed[key] = (unattributed[key] ?? 0) + 1
@@ -164,12 +172,13 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
           next.push(frame.latencyMs)
         } else lose(frame.reason)
       }
-      if (next.length !== MEASURED)
+      if (next.length < MIN_ATTRIBUTED)
         fail(
           'interaction',
-          `${next.length} Next observations were attributed, and ${MEASURED} were meant: ${JSON.stringify(unattributed)}`
+          `${next.length} Next observations were attributed, and at least ${MIN_ATTRIBUTED} of ${MEASURED} are needed: ${JSON.stringify(unattributed)}`
         )
       else pass()
+      nextLost = MEASURED - next.length
       if (nextQualifier !== 'update')
         fail('interaction', `the Next frames were found with the qualifier ${nextQualifier}, and update was meant`)
     }
@@ -243,12 +252,13 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
           if (!mark || !(mark.startMs > frame.presentedAtPageMs))
             fail('interaction', `the Pause of tick ${n} was not marked after its presentation`)
         }
-        if (play.length !== MEASURED)
+        if (play.length < MIN_ATTRIBUTED)
           fail(
             'interaction',
-            `${play.length} Play observations were attributed, and ${MEASURED} were meant: ${JSON.stringify(unattributed)}`
+            `${play.length} Play observations were attributed, and at least ${MIN_ATTRIBUTED} of ${MEASURED} are needed: ${JSON.stringify(unattributed)}`
           )
         else pass()
+        playLost = MEASURED - play.length
         held(after, PRIMING + WARMUP + MEASURED, 'after the Play series')
         // Nothing happens after the last Pause: no commit, no callback, no timer.
         await pause(QUIET_MS)
@@ -322,6 +332,26 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
       )
       outcome.samples['simulation.play.click_to_timer_entry'] = clickToTimer
     }
+    // What the trace could not place in a frame is counted, with its reasons, and is never given a time.
+    const lostReasons = JSON.stringify(unattributed)
+    if (series.includes('next'))
+      outcome.metrics.push(
+        count(
+          'simulation.next.frames_unattributed',
+          'count',
+          nextLost,
+          nextLost ? `the trace could not place these in a frame: ${lostReasons}` : 'every measured click was placed in a frame'
+        )
+      )
+    if (playWanted && !rejected)
+      outcome.metrics.push(
+        count(
+          'simulation.play.frames_unattributed',
+          'count',
+          playLost,
+          playLost ? `the trace could not place these in a frame: ${lostReasons}` : 'every measured tick was placed in a frame'
+        )
+      )
     if (next.length) outcome.samples['simulation.next.input_to_presentation'] = next
     if (play.length) outcome.samples['simulation.play.timer_to_presentation'] = play
     outcome.notes.push(`Next frames were found with the ${nextQualifier ?? 'update'} qualifier`)
