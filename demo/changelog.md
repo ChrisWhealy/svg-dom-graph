@@ -123,4 +123,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Prevent a superseded seek from retaining its retry target (`63dbda0`)
 - DESS S3: Handle mid-draw detachment during explicit repairs consistently (`9d7cd89`)
 - DESS S4: Attribute recovery timing samples to the correct fault points (`6dce998`)
-- DESS S4: Ensure endurance gate exercises every required fault point before declaring success (``)
+- DESS S4: Ensure endurance gate exercises every required fault point before declaring success (`7432a97`)
+- DESS S4: Prevent real timer delays from introducing non-determinism (``)

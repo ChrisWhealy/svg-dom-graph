@@ -488,7 +488,8 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
       if (mid.playing || mid.waiting_tasks !== 0) broken.push('playback or a timer was left')
       if (!/not|could|refused/.test(mid.announcement ?? '')) broken.push('the failure was not reported to a person')
       const again = act(0, { op: 'play' })
-      const moved = await until(() => cp(0).committed_slice > SLICE)
+      // This is the browser's own timer, and not a held one: it has to tick twice, so that the timer that a tick asks for is a real one too.
+      const moved = await until(() => cp(0).committed_slice > SLICE + 1)
       if (again.outcome !== 'done' || !moved) broken.push('Play did not work once the browser gave a timer')
       act(0, { op: 'pause' })
       point('service_timer_request', 1, { refused: refused.outcome }, broken)
@@ -565,68 +566,132 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
       }
     }
 
-    // service_gallery_hidden: the panel is hidden while playing, with the hint and without it, and a timer that was already queued runs.
+    // The three that follow decide which callback runs and when. The timers and the frames are held by the injector and run one at a time, so
+    // no interval of the wall clock is waited for, and a stale callback is run on purpose, in the order that a test chooses. A microtask
+    // turn is waited for, which is how the scheduler releases a closure that has run, and which does not depend on the load of the page.
+    const microtasks = async () => {
+      for (let turn = 0; turn < 3; turn++) await Promise.resolve()
+    }
+    const hold = on => {
+      window.__timers.hold(on)
+      window.__frames.hold(on)
+    }
+    const release = () => {
+      window.__timers.clear()
+      window.__frames.clear()
+      window.__frames.hold(false)
+    }
+    // Every held timer is run, in the order asked for, and every held frame.
+    const runAll = () => {
+      for (const { id } of window.__timers.pending()) window.__timers.fire(id)
+      window.__frames.release()
+    }
+
+    // service_gallery_hidden: the panel is hidden while playing, with the timer taken back and with it kept, and the timer that was already
+    // queued runs.
     for (const kept of [false, true]) {
       const before = at(0, scenario, SLICE)
+      hold(true)
       act(0, { op: 'keep_cancelled', on: kept })
       act(0, { op: 'set_speed', ms: 30 })
       act(0, { op: 'play' })
       call(h.service_show_panel, 0, false)
+      // The hint is a mutation observer, which is delivered as a microtask at the end of the task that hid the panel, before any timer.
+      await microtasks()
       const hiddenAt = cp(0)
-      await wait(200)
+      const queued = window.__timers.pending().length
+      runAll()
+      await microtasks()
       const mid = cp(0)
       const broken = []
+      if (queued !== (kept ? 1 : 0))
+        broken.push(`${queued} timers were queued after the hide, and ${kept ? 1 : 0} were expected`)
       if (mid.playing || mid.waiting_tasks !== 0) broken.push('playback or a timer outlived the hide')
       if (mid.committed_slice !== hiddenAt.committed_slice || mid.page_sha256 !== hiddenAt.page_sha256)
         broken.push('a callback committed or wrote while the panel was hidden')
+      if (window.__timers.pending().length !== 0) broken.push('a callback that ran asked for another timer')
       if (mid.live_closures !== 0) broken.push(`${mid.live_closures} closures are alive`)
       call(h.service_show_panel, 0, true)
-      await wait(100)
+      await microtasks()
       const shown = cp(0)
       if (shown.playing || shown.committed_slice !== mid.committed_slice)
         broken.push('showing the panel resumed playback')
       if (shown.dirty || shown.page_sha256 !== mid.page_sha256)
         broken.push('the page was not whole when the panel was shown')
+      if (window.__timers.pending().length !== 0) broken.push('showing the panel asked for a timer')
       act(0, { op: 'keep_cancelled', on: false })
+      release()
       void before
       point('service_gallery_hidden', kept ? 2 : 1, { kept_callback: kept }, broken)
     }
 
-    // service_teardown_late_tick: the controller is disposed, and a callback that was already on its way runs after it.
+    // service_teardown_late_tick: the controller is disposed, and a timer and a frame that were already on their way run after it.
     {
       const before = at(0, scenario, SLICE)
+      hold(true)
       act(0, { op: 'keep_cancelled', on: true })
       act(0, { op: 'set_speed', ms: 30 })
       act(0, { op: 'play' })
       act(0, { op: 'seek', target: SLICE + 4 })
       act(0, { op: 'dispose' })
-      await wait(200)
+      const onTheirWay = { timers: window.__timers.pending().length, frames: window.__frames.pending() }
+      runAll()
+      await microtasks()
       const mid = cp(0)
       const broken = []
+      if (onTheirWay.timers === 0 || onTheirWay.frames === 0)
+        broken.push(`${onTheirWay.timers} timers and ${onTheirWay.frames} frames were on their way, so no late callback was run`)
       if (!sameLogical(before, mid)) broken.push('a late callback committed a slice after the disposal')
       if (mid.playing || mid.waiting_tasks !== 0) broken.push('a timer or a frame is still waiting')
+      if (window.__timers.pending().length !== 0 || window.__frames.pending() !== 0)
+        broken.push('a late callback asked for a timer or a frame')
       if (mid.live_closures !== 0) broken.push(`${mid.live_closures} closures are alive after the callbacks ran`)
-      point('service_teardown_late_tick', 1, { live_closures: mid.live_closures }, broken)
+      release()
+      point('service_teardown_late_tick', 1, { live_closures: mid.live_closures, ...onTheirWay }, broken)
     }
-    // service_teardown_late_tick, again: a timer that a change of speed took back runs late, and its epoch is no longer the playback's.
-    {
+
+    // service_teardown_late_tick, again: a timer that a change of speed took back runs late, and its epoch is no longer the playback's. It
+    // is run before the timer that replaced it, and then after.
+    for (const staleFirst of [true, false]) {
       const before = at(0, scenario, SLICE)
+      hold(true)
       act(0, { op: 'keep_cancelled', on: true })
       act(0, { op: 'set_speed', ms: 300 })
       act(0, { op: 'play' })
       act(0, { op: 'set_speed', ms: 320 })
-      await wait(450)
-      const mid = cp(0)
-      act(0, { op: 'pause' })
-      act(0, { op: 'keep_cancelled', on: false })
+      const [stale, current] = window.__timers.pending()
       const broken = []
-      if (mid.committed_slice !== before.committed_slice + 1)
-        broken.push(
-          `${mid.committed_slice - before.committed_slice} slices were committed in the time of one, so a stale timer ran`
-        )
-      if (agreesWithOracle(mid) === false) broken.push('the slice that was reached differs from the oracle')
-      point('service_teardown_late_tick', 2, { committed: mid.committed_slice }, broken)
+      if (!stale || !current || stale.delay !== 300 || current.delay !== 320)
+        broken.push('the timer that was taken back and the timer that replaced it were not both queued')
+      else {
+        const afterStale = () => cp(0).committed_slice
+        const run = which => window.__timers.fire(which.id)
+        if (staleFirst) {
+          run(stale)
+          if (afterStale() !== before.committed_slice) broken.push('the stale timer committed a slice')
+          if (window.__timers.pending().length !== 1) broken.push('the stale timer asked for another timer')
+          run(current)
+        } else {
+          run(current)
+          run(stale)
+        }
+        const mid = cp(0)
+        if (mid.committed_slice !== before.committed_slice + 1)
+          broken.push(
+            `${mid.committed_slice - before.committed_slice} slices were committed by two timers of which one was stale`
+          )
+        if (window.__timers.pending().length !== 1)
+          broken.push(`${window.__timers.pending().length} timers are queued, and the playback should have exactly one`)
+        if (agreesWithOracle(mid) === false) broken.push('the slice that was reached differs from the oracle')
+      }
+      act(0, { op: 'pause' })
+      window.__timers.pending().forEach(({ id }) => window.__timers.fire(id))
+      act(0, { op: 'keep_cancelled', on: false })
+      release()
+      point('service_teardown_late_tick', staleFirst ? 2 : 3, { stale_first: staleFirst }, broken)
     }
+    // The browser's own timer and frame are used by the two sweeps above that wait for one: Play with a timer that the browser gave, and a
+    // seek that is asked for again. They poll for the result with a generous limit, and do not assert on an interval.
     teardownAll()
     return { rows, calls: rows.length, agrees: true, times: [] }
   }

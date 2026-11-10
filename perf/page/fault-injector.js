@@ -137,23 +137,57 @@
     }
   }
 
-  // Timers, which a page can be made to refuse, as a browser that will not give one would.
+  // Timers, which a page can be made to refuse, as a browser that will not give one would, or to hold, so that a test decides which runs
+  // and when, and no wall-clock interval is waited for.
   //   __timers.refuseNext()   the next setTimeout throws
+  //   __timers.hold(true)     requested timers are kept with their delay and not scheduled, and a cleared one is taken out of the queue
+  //   __timers.pending()      the held timers, as { id, delay }, in the order that they were asked for
+  //   __timers.fire(id)       runs one held timer now, and says what it threw, if anything
+  // While timers are held a page's own `setTimeout` is held too, so a test does not wait on one.
   const nativeSetTimeout = window.setTimeout.bind(window)
+  const nativeClearTimeout = window.clearTimeout.bind(window)
+  const heldTimers = new Map()
+  let holdingTimers = false
+  let nextTimer = 2_000_000
   let refuseTimer = 0
   window.setTimeout = (callback, ...rest) => {
     if (refuseTimer > 0) {
       refuseTimer--
       throw new DOMException('an injected refusal of a timer', 'InvalidStateError')
     }
+    if (holdingTimers) {
+      heldTimers.set(nextTimer, { callback, delay: rest[0] ?? 0 })
+      return nextTimer++
+    }
     return nativeSetTimeout(callback, ...rest)
+  }
+  window.clearTimeout = id => {
+    if (heldTimers.delete(id)) return
+    nativeClearTimeout(id)
   }
   window.__timers = {
     refuseNext: () => {
       refuseTimer = 1
     },
+    hold: on => {
+      holdingTimers = on
+    },
+    pending: () => [...heldTimers].map(([id, { delay }]) => ({ id, delay })),
+    fire: id => {
+      const timer = heldTimers.get(id)
+      if (!timer) return { ran: false, threw: null }
+      heldTimers.delete(id)
+      try {
+        timer.callback()
+        return { ran: true, threw: null }
+      } catch (error) {
+        return { ran: true, threw: String(error?.message ?? error) }
+      }
+    },
     clear: () => {
       refuseTimer = 0
+      holdingTimers = false
+      heldTimers.clear()
     }
   }
 
