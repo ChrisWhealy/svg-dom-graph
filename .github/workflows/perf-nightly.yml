@@ -14,10 +14,10 @@ on:
 jobs:
   w6-play:
     name: W6 Layer C Play (nightly)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      PERF_RUNNER_CLASS: github-ubuntu-latest
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
       PERF_CHROME_NO_SANDBOX: '1'
     steps:
       - uses: actions/checkout@v7
@@ -25,7 +25,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Install wasm-pack
@@ -47,7 +47,7 @@ jobs:
           echo "W6 Layer C, Next and Play, three repetitions: $((finished - started)) seconds" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Keep the results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-nightly-${{ github.sha }}
           path: target/perf-nightly

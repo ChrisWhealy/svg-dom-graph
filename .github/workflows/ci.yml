@@ -11,7 +11,7 @@ env:
 jobs:
   lint-test:
     name: fmt · clippy · test · doc
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -80,7 +80,7 @@ jobs:
 
   wasm:
     name: wasm build (library · demo-app)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -109,7 +109,7 @@ jobs:
   # language, and the wasm32 run is the check that it does not depend on the width of an integer.
   perf-harness:
     name: perf harness (workloads · schemas)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -117,7 +117,7 @@ jobs:
           components: clippy
           targets: wasm32-unknown-unknown, wasm32-wasip1
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -256,9 +256,9 @@ jobs:
   # runner class (section 8.1), and perf-smoke is not given `--enforce-statistical` until there is one.
   perf-smoke:
     name: perf smoke (W1 to W4 and W6 · baseline comparison report)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
-      PERF_RUNNER_CLASS: github-ubuntu-latest
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
       # The runner's Chrome runs without its sandbox, as the CDP shards do, since the sandbox needs a privilege the runner lacks.
       PERF_CHROME_NO_SANDBOX: "1"
     steps:
@@ -267,7 +267,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Install wasm-pack
@@ -314,7 +314,7 @@ jobs:
       # Historical runs are kept as artifacts and never committed. A baseline is committed only by the promotion command.
       - name: Keep the results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-smoke-${{ github.sha }}
           path: target/perf-smoke
@@ -322,7 +322,7 @@ jobs:
 
   library-version:
     name: published library version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -338,7 +338,7 @@ jobs:
 
   msrv:
     name: MSRV (1.85)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.85.0
@@ -352,7 +352,7 @@ jobs:
 
   browser-tests:
     name: wasm-pack test (${{ matrix.browser }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       # Don't let one engine failing cancel the other — we want to see which broke.
       fail-fast: false
@@ -364,7 +364,8 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      # ubuntu-latest runners default to Ubuntu 24.04, which enables AppArmor's unprivileged-user-namespace
+      # The jobs are pinned to ubuntu-24.04 and not to ubuntu-latest, which moves to Ubuntu 26 from October 2026 and would change the browsers, the
+      # kernel and this sandbox rule under a green build. Moving to a newer image is a change that is made on purpose. Ubuntu 24.04 enables AppArmor's unprivileged-user-namespace
       # restriction by default. Firefox's (and Chromium's) content sandbox needs one, so headless launch fails
       # without this. Tracked upstream at https://github.com/actions/runner-images/issues/10015.
       - name: Allow unprivileged user namespaces (Firefox/Chromium sandbox needs this on Ubuntu 24.04 runners)
@@ -401,7 +402,7 @@ jobs:
   # The lints are their own job so that they run once, not once for every shard of the tests below.
   cdp-lint:
     name: CDP clippy (fixture · tests)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -434,7 +435,7 @@ jobs:
   # invocation) without starting Actix, so this exercises the precise path `cargo demo` uses.
   cdp-build:
     name: Build the demo and the CDP fixture for the shards
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -462,7 +463,7 @@ jobs:
       # Both paths are uploaded in one artifact, which keeps their paths relative to the repository root, so that
       # downloading it into the checkout puts each exactly where the tests look for it.
       - name: Share the builds with the shards
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cdp-builds
           path: |
@@ -482,12 +483,12 @@ jobs:
   # are not optional, and `--strict` fails the check if python-qrcode is missing. See .github/scripts/check-qr-exports.sh.
   qr-export-decoders:
     name: QR code export · ZXing-C++ · python-qrcode
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install the decoder and the oracle
@@ -504,7 +505,7 @@ jobs:
   cdp-integration-test:
     name: CDP browser integration tests (Chrome, shard ${{ matrix.shard }} of 8)
     needs: cdp-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       # The packages come from the `cdp-build` job, not from a build in this shard.
       CDP_PREBUILT: "1"
@@ -522,7 +523,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Download the demo and fixture builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: cdp-builds
           path: .
@@ -545,7 +546,7 @@ jobs:
       # Uploaded even when a test failed, so that a failing run still tells how long the others took.
       - name: Keep the test timings
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cdp-timings-${{ matrix.shard }}
           path: cdp-timings-${{ matrix.shard }}.tsv
