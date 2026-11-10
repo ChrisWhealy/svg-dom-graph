@@ -431,6 +431,17 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     ///
     /// Returns `Err` if the engine could not be stepped, or replayed to the committed slice.
     pub fn prepare_ahead(&self, count: u64) -> Result<u64, String> {
+        self.inner.prepare_ahead(count).map(|checkpoints| checkpoints.len() as u64)
+    }
+
+    /// As [`prepare_ahead`](Self::prepare_ahead), and gives the engine's own hash of its state after each slice that it
+    /// worked out, in order. They are the hashes of the slices that the `next` calls then commit, taken from the engine
+    /// as it stepped.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the engine could not be stepped, or replayed to the committed slice.
+    pub fn prepare_ahead_with_checkpoints(&self, count: u64) -> Result<Vec<String>, String> {
         self.inner.prepare_ahead(count)
     }
 
@@ -701,7 +712,8 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
     /// Works out the next `count` slices after the committed one and keeps them, so that the `next` calls that follow
     /// draw and commit them without working them out. The engine is stepped here, and what a later `next` costs is then
     /// the render and the commit.
-    fn prepare_ahead(&self, count: u64) -> Result<u64, String> {
+    fn prepare_ahead(&self, count: u64) -> Result<Vec<String>, String> {
+        let mut checkpoints = Vec::new();
         let committed = self.state.borrow().committed_slice;
         {
             let mut st = self.state.borrow_mut();
@@ -717,9 +729,10 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         let mut made = 0;
         while made < count {
             let mut st = self.state.borrow_mut();
-            if st.engine.step().map_err(|e| e.message())?.is_none() {
+            let Some(record) = st.engine.step().map_err(|e| e.message())? else {
                 break;
-            }
+            };
+            checkpoints.push(record.checkpoint);
             made += 1;
             st.engine_at = committed + made;
             let (model, projection) = model_and_projection(&st.engine, &st.view);
@@ -731,7 +744,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
                 view,
             });
         }
-        Ok(made)
+        Ok(checkpoints)
     }
 
     /// Works out the slice after `committed`, from the engine, which is brought to `committed` first if it is not

@@ -353,8 +353,9 @@ pub fn build(config_json: &str) -> String {
 #[must_use]
 pub fn batch(count: u32) -> String {
     let result = with_sim(|sim| {
-        let made = sim.controller.prepare_ahead(u64::from(count))?;
-        if made < u64::from(count) {
+        let checkpoints = sim.controller.prepare_ahead_with_checkpoints(u64::from(count))?;
+        let made = checkpoints.len();
+        if made < count as usize {
             return Err(format!("the run ended after {made} of the {count} slices that a batch needs"));
         }
         let performance = web_sys::window()
@@ -374,6 +375,9 @@ pub fn batch(count: u32) -> String {
         Ok(serde_json::json!({
             "elapsed_ms": end - start,
             "outcomes": names,
+            // The engine's own hash after each slice of the batch, taken as it stepped and outside the interval, so
+            // that every slice is checked and not only the last.
+            "checkpoints": checkpoints,
             "engine_stepped_in_interval": engine_after != engine_before,
         }))
     });

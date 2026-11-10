@@ -114,6 +114,14 @@ try {
   // 2. A checkpoint that is wrong.
   const wrong = structuredClone(trace.expected)
   wrong.checkpoints[300] = '0'.repeat(64)
+  // A slice inside a batch and not the last of it: batches end at 300, and 299 is the one before.
+  const inside = structuredClone(trace.expected)
+  inside.checkpoints[299] = '0'.repeat(64)
+  const hidden = await run('performance', inside)
+  check(
+    hidden.status === 'invalid_incorrect' && hidden.checkpoints_failed.some(f => /after slice 299/.test(f.detail)) && hidden.stream.matches === false,
+    `Layer B performance with a wrong checkpoint inside a batch (slice 299) is invalid_incorrect and names it: ${hidden.status}`
+  )
   for (const mode of ['correctness', 'performance']) {
     const o = await run(mode, wrong)
     check(

@@ -127,4 +127,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S4: Ensure endurance gate exercises every required fault point before declaring success (`7432a97`)
 - DESS S4: Prevent real timer delays from introducing non-determinism (`8ff7ac4`)
 - DESS S4: Stop playback after failed timer request (`0ad5cc5`)
-- DESS S4: Avoid layer B performance from accepting an incomplete DOM draw (``)
+- DESS S5: Avoid layer B performance from accepting an incomplete DOM draw (`27e5f0f`)
+- DESS S5: `sim_batch()` returns actual checkpoints outside timed interval, for individual comparison against trace (``)

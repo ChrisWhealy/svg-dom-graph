@@ -287,7 +287,10 @@ export const runSimulationPerformance = async (h, manifest, trace, testing = {})
       // What the batch drew is read back from the page, outside the timed interval, and held to the projection that was committed. A draw that
       // skipped a write and still returned success would otherwise make the timing cheaper without failing anything.
       if (!state.page_is_projection)
-        fail('content', `the batch ending at slice ${cursor}: the page, read back from its elements, is not the projection that was committed`)
+        fail(
+          'content',
+          `the batch ending at slice ${cursor}: the page, read back from its elements, is not the projection that was committed`
+        )
       else pass()
       if (result.outcomes.some(o => o !== 'done'))
         fail('content', `batch ending at slice ${cursor}: ${result.outcomes.join(', ')}`)
@@ -302,9 +305,18 @@ export const runSimulationPerformance = async (h, manifest, trace, testing = {})
       const pops = slices.reduce((n, k) => n + trace.slice_pops[k - 1], 0)
       const stale = slices.reduce((n, k) => n + trace.slice_stale[k - 1], 0)
       poppedInBatches += pops
-      // The checkpoint of every slice that was committed in the batch, so that the digest of what ran is the digest of the trace's prefix.
-      for (const k of slices) executed.push(trace.checkpoints[k])
-      if (!good) executed[executed.length - 1] = state.engine_sha256
+      // The engine's own hash after each slice of the batch, and each is held to the independent engine's, so a slice inside a batch is seen
+      // and not only the last. The digest of what ran is of these, and never of the trace's own.
+      slices.forEach((k, i) => {
+        const actual = result.checkpoints?.[i]
+        if (actual !== trace.checkpoints[k])
+          fail(
+            'content',
+            `the batch ending at slice ${cursor}: the engine's hash after slice ${k} is not the independent engine's`
+          )
+        else pass()
+        executed.push(actual ?? '')
+      })
       if (timed) {
         const us = result.elapsed_ms * 1000
         microseconds.push(us)

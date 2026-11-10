@@ -1469,3 +1469,26 @@ fn preparing_ahead_at_the_end_of_a_run_makes_fewer_than_asked() {
     }
     assert_eq!(c.next(), Outcome::AtBoundary);
 }
+
+#[test]
+fn the_checkpoints_of_slices_prepared_ahead_are_the_engines_own_after_each_slice() {
+    let factory = generated(3);
+    let (c, _) = start(Rc::clone(&factory));
+    c.next();
+    let hashes = c.prepare_ahead_with_checkpoints(4).expect("prepared");
+    assert_eq!(hashes.len(), 4);
+    let mut engine = factory().expect("an engine");
+    engine.step().expect("a slice");
+    for hash in &hashes {
+        let record = engine.step().expect("a slice").expect("a slice that exists");
+        assert_eq!(
+            hash, &record.checkpoint,
+            "the hash after each slice, and not the last four times"
+        );
+    }
+    assert_eq!(
+        hashes.iter().collect::<std::collections::HashSet<_>>().len(),
+        4,
+        "and each is its own"
+    );
+}
