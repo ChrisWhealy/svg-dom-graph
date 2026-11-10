@@ -60,7 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Normalise `Some(0)` to `Some(1)` when specifying seek frames (`237b5cd`)
 - DESS S4: Ensure model checkpoint inspects the controller's actual engine state (`f0d3fe4`)
 - DESS S4: Enforce calculated aggregate `externref` loss (`76323ab`)
-- DESS S5: Complete Layer C's real-control correctness checks (``)
+- DESS S5: Complete Layer C's real-control correctness checks (`9b8c4c6`)
 
 ### Fixed
 
@@ -132,3 +132,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: `sim_batch()` returns actual checkpoints outside timed interval, for individual comparison against trace (`453f1be`)
 - DESS S5: Ensure that 100k trace test is not run in the browser (`ca10052`)
 - DESS S5: Ensure W6 maintains precision for large 64-bit seeds (`5fb1ef4`)
+- DESS S5: Ensure mutation-check corrrectly classifies a failed build (``)

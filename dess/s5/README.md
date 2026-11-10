@@ -129,6 +129,8 @@ It also checks that three repetitions are diagnostic and five are not, and that 
 
 `dess/s5/mutation-check.mjs` breaks the product in ten small ways, one at a time, in a copy of the tree, and the orchestrator has to fail each.
 The working tree is never touched, so nothing can be committed mutated.
+Each mutation is built on its own first, and one that does not build is reported as such and is never counted as caught.
+`--prove-build-failure` makes one edit that cannot compile, and passes only if it is reported as not built.
 
 ## What S5 does not show
 

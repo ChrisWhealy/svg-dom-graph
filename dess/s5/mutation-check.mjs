@@ -1,7 +1,7 @@
 // Shows that the W6 runners can fail on the product: the code that they measure is broken in small ways, one at a time, and the run has to
 // notice each. A clean run proves nothing until it is known to fail when the thing it checks is wrong.
 //
-//   node dess/s5/mutation-check.mjs [--out FILE]
+//   node dess/s5/mutation-check.mjs [--out FILE] [--prove-build-failure]
 //
 // The sources are copied to a tree of their own (`target/s5-mutation-tree`) and every mutation is made there, so the working tree is never
 // touched and nothing can be committed mutated. Each mutation is a single edit to a file of the copy, put back afterwards. After each, the
@@ -23,7 +23,8 @@ const EXECUTOR = 'perf-harness-wasm/src/service_perf.rs'
 const PAGE = 'perf/runner/page/service-sim.js'
 
 // [file, what is wrong, from, to, the mode that sees it, the layers that see it (b when absent)]
-const MUTATIONS = [
+const PROVE_BUILD_FAILURE = process.argv.includes('--prove-build-failure')
+const ALL_MUTATIONS = [
   [
     SURFACE,
     "the data node's setter is not called, though a call is counted",
@@ -125,6 +126,18 @@ if (copied.status !== 0) {
 // The schemas' dependencies are the same files, and are linked and not copied.
 fs.rmSync(path.join(tree, 'perf/schemas/node_modules'), { recursive: true, force: true })
 fs.symlinkSync(path.join(root, 'perf/schemas/node_modules'), path.join(tree, 'perf/schemas/node_modules'))
+// With `--prove-build-failure` the only edit is one that cannot compile, and the check passes only if it is reported as not built and not as caught.
+const MUTATIONS = PROVE_BUILD_FAILURE
+  ? [
+      [
+        EXECUTOR,
+        'a source that does not compile',
+        'pub fn state() -> String {',
+        'pub fn state() -> String { this does not compile',
+        'correctness'
+      ]
+    ]
+  : ALL_MUTATIONS
 const originals = new Map(
   [...new Set(MUTATIONS.map(([file]) => file))].map(file => [file, fs.readFileSync(path.join(tree, file), 'utf8')])
 )
@@ -148,6 +161,31 @@ const results = []
 try {
   for (const [file, name, from, to, mode, layers = 'b'] of MUTATIONS) {
     fs.writeFileSync(path.join(tree, file), originals.get(file).replace(from, to))
+    // The build is its own step, so that whether it completed is read from its own exit status and not from how a later run ended. A mutation
+    // that does not build is not a detection, and the orchestrator is not run on it.
+    const env = { ...process.env, CARGO_TARGET_DIR: path.join(tree, 'target') }
+    const compiled = spawnSync('cargo', ['build', '-q', '--release', '-p', 'perf-harness'], {
+      cwd: tree,
+      encoding: 'utf8',
+      env
+    })
+    const packaged =
+      compiled.status === 0
+        ? spawnSync('wasm-pack', ['build', 'perf-harness-wasm', '--target', 'web', '--release', '--out-dir', 'pkg'], {
+            cwd: tree,
+            encoding: 'utf8',
+            env
+          })
+        : compiled
+    const built = compiled.status === 0 && packaged.status === 0
+    if (!built) {
+      fs.writeFileSync(path.join(tree, file), originals.get(file))
+      const why = `${packaged.stderr || packaged.stdout}`.trim().split('\n').slice(-3).join(' | ').slice(0, 240)
+      results.push({ name, file, mode, caught: false, built: false, status: packaged.status, first: null })
+      console.log(`MISSED  ${name}  (it did not build)`)
+      console.log(`         ${why}`)
+      continue
+    }
     const ran = spawnSync(
       'node',
       [
@@ -159,6 +197,7 @@ try {
         layers,
         '--repetitions',
         '1',
+        '--no-build',
         '--out-dir',
         path.join(tree, 'target/perf-mutation')
       ],
@@ -167,19 +206,19 @@ try {
         encoding: 'utf8',
         maxBuffer: 1 << 28,
         timeout: 3_600_000,
-        env: { ...process.env, CARGO_TARGET_DIR: path.join(tree, 'target') }
+        env
       }
     )
     fs.writeFileSync(path.join(tree, file), originals.get(file))
     const text = `${ran.stdout}${ran.stderr}`
-    const built = !/building perf-harness|error\[E|could not compile/.test(text) || ran.status === 1
     const failed = text
       .split('\n')
       .filter(line => /^\s+(FAIL|content:|interaction:|dom_identity:)/.test(line))
       .map(line => line.trim().slice(0, 200))
-    const caught = ran.status === 1 && failed.length > 0
+    // Detected means that it built, and that the orchestrator then failed on a gate or a checkpoint, and said which.
+    const caught = built && ran.status === 1 && failed.length > 0
     results.push({ name, file, mode, caught, built, status: ran.status, first: failed[0] ?? null })
-    console.log(`${caught ? 'caught ' : 'MISSED '} ${name}${built ? '' : '  (it did not build)'}`)
+    console.log(`${caught ? 'caught ' : 'MISSED '} ${name}`)
     console.log(
       caught
         ? `         first failure: ${failed[0]}`
@@ -191,6 +230,16 @@ try {
 }
 // The working tree was never touched, so there is nothing to build again or to put back.
 
+if (PROVE_BUILD_FAILURE) {
+  const only = results[0]
+  const ok = results.length === 1 && only.built === false && only.caught === false
+  console.log(
+    ok
+      ? '\na mutation that does not build is reported as not built, and is not a detection'
+      : '\na mutation that does not build was taken for a detection'
+  )
+  process.exit(ok ? 0 : 1)
+}
 const missed = results.filter(r => !r.caught)
 console.log(
   missed.length
