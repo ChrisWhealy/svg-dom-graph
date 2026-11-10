@@ -155,7 +155,8 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
    */
   const drawFrom = (scenario, base, options = {}) => {
     const rows = []
-    const times = []
+    // The time of a recovery, by the fault point that the call that failed was classified as, so that each point has only its own.
+    const times = {}
     const reference = at(1, scenario, base)
     const twin = dryRun(1, { op: 'next' })
     const after = cp(1)
@@ -193,7 +194,7 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
         }
         // The recovery: a person asks for the repair, and then for the slice again, which has to reach what a clean run reaches.
         const recovery = timed(0, { op: 'repair' })
-        times.push(recovery.elapsed)
+        ;(times[point] ??= []).push(recovery.elapsed)
         const repaired = cp(0)
         if (recovery.result.outcome !== 'done') broken.push(`the repair reported ${recovery.result.outcome}`)
         if (repaired.page_sha256 !== before.page_sha256 || repaired.dirty)
@@ -239,13 +240,13 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
   /** The draw of the next slice, from each base, and the full redraw of a repair, each broken at every one of its DOM calls. */
   const drawWrites = (scenario, options = {}) => {
     const rows = []
-    const times = []
+    const times = {}
     let calls = 0
     let agrees = true
     for (const base of options.cycle ? [BASES[(options.cycle - 1) % BASES.length]] : BASES) {
       const swept = drawFrom(scenario, base, options)
       rows.push(...swept.rows)
-      times.push(...swept.times)
+      for (const [point, taken] of Object.entries(swept.times)) (times[point] ??= []).push(...taken)
       calls += swept.calls
       agrees = agrees && swept.agrees
     }
@@ -256,7 +257,9 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
       rows: [...rows, ...repaired.rows],
       calls: calls + repaired.calls,
       agrees: agrees && repaired.agrees,
-      times: { service_overlay_write: times, service_data_setter: times, service_control_aria: repaired.times }
+      // The repair that follows a failed repair is a different operation from the repair that follows a failed draw, so its times are
+      // reported under a name of their own, and are not added to the points that the failures of the repair's calls are classified as.
+      times: { ...times, full_repair: repaired.times }
     }
   }
 
@@ -775,7 +778,8 @@ export const runServiceRecovery = async (h, manifest, testing = {}) => {
             name: `recovery.${point}.time`,
             layer: 'B',
             status: 'unavailable',
-            reason: 'this point is broken by a situation, which has no single call to time'
+            reason:
+              'this point has no repair to time: it is a situation, or nothing was committed and so nothing needed one'
           }
     )
     outcome.metrics.push({
@@ -816,6 +820,17 @@ export const runServiceRecovery = async (h, manifest, testing = {}) => {
     R.build(2, scenario)
     window.__faults.disarm()
     h.service_teardown(2)
+  }
+  // The repair that follows a failed repair is timed under a name of its own, since it belongs to no single fault point.
+  for (const [name, times] of Object.entries(timesOf)) {
+    if (wanted.some(p => p.point === name) || times.length === 0) continue
+    outcome.samples[`recovery.service.${name}.time`] = times.map(t => t * 1000)
+    outcome.metrics.push(
+      metric(
+        `recovery.service.${name}.time`,
+        times.map(t => t * 1000)
+      )
+    )
   }
   const slotsLost = h.held_handles().undefinedSlots - slotsBefore
   const explained = rows.reduce((n, r) => n + (r.observed?.slot_explained ?? 0), 0)

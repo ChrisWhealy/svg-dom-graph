@@ -58,7 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - SPMV: Improve keyboard accessibility for large graph selections (`51b0617`)
 - DESS S3: Normalise `Some(0)` to `Some(1)` when specifying seek frames (`237b5cd`)
 - DESS S4: Ensure model checkpoint inspects the controller's actual engine state (`f0d3fe4`)
-- DESS S4: Enforce calculated aggregate `externref` loss (``)
+- DESS S4: Enforce calculated aggregate `externref` loss (`76323ab`)
 
 ### Fixed
 
@@ -122,3 +122,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Return `Outcome::Failed` rather than `Outcome::AtBoundary` when boundary repair fails (`8ce8c39`)
 - DESS S3: Prevent a superseded seek from retaining its retry target (`63dbda0`)
 - DESS S3: Handle mid-draw detachment during explicit repairs consistently (`9d7cd89`)
+- DESS S4: Attribute recovery timing samples to the correct fault points (``)
