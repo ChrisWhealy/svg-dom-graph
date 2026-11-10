@@ -10,6 +10,8 @@
 //! points with the library and compares them with the reference model's, which works them out independently from the
 //! same rule. So it checks the library's geometry as well as timing it.
 
+pub mod simulation;
+
 use crate::corruption::{self, DISPLACEMENT, Target};
 use crate::manifest::{Manifest, Mode, ViewPolicy, Workload};
 use crate::metrics::{Layer, mark_resolution_limited, timing, unavailable};

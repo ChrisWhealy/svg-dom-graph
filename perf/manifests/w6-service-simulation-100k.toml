@@ -1,0 +1,38 @@
+# W6 at about 100,000 pops, as a scaled run of the frozen generator revision: the same draws for more arrivals.
+#
+# This is pure streaming against the independent engine at scale, and the controller committing every slice of it. The design is explicit that
+# a sampled DOM is not a claim about 100,000 updates of a crate, so this asks for the correctness mode only, which checks every slice's hash
+# and the data node's setter at every displayed slice, and makes no timing claim.
+#
+schema_version = 1
+workload = "service_simulation"
+seed = 20261106
+prng = "splitmix64"
+
+[simulation]
+scenario = "mixed_outage"
+servers = 3
+queue_capacity = 12
+max_attempts = 2
+retry_deferral_cap = 4
+min_pops = 100000
+arrivals = 36000
+batch_slices = 4
+
+[execution]
+modes = ["correctness"]
+warmup_iterations = 10
+measurement_iterations = 60
+repetitions = 1
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+
+[limits]
+# Layer C's Play series needs a wall-clock budget: 40 one-tick cycles at 1 Hz are at least 40 seconds a repetition.
+wall_ms = 600000

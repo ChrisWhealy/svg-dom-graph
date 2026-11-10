@@ -232,6 +232,9 @@ fn every_shared_rejected_manifest_is_refused() -> Result<(), String> {
 const RECOVERY: &str = include_str!("../../../perf/manifests/w5-recovery-small.toml");
 const CONTRACTS: &str = include_str!("../../../perf/fault-contracts.json");
 const SERVICE: &str = include_str!("../../../perf/manifests/w5-service-recovery-small.toml");
+const SIMULATION: &str = include_str!("../../../perf/manifests/w6-service-simulation-smoke.toml");
+const SIMULATION_100K: &str = include_str!("../../../perf/manifests/w6-service-simulation-100k.toml");
+const SIMULATION_1K: &str = include_str!("../../../perf/manifests/w6-service-simulation-1k.toml");
 
 /// The expectations in a recovery manifest are taken from the library's documented behaviour, which
 /// `fault-contracts.json` writes down. So they must agree with it, for every fault point the manifest names.
@@ -405,6 +408,146 @@ fn a_bad_service_manifest_is_refused() -> Result<(), String> {
     refused(
         RECOVERY.replace("[graph]\nnodes = 12\nedges = 18\nmaximum_degree = 6\n", ""),
         "the graph target with no graph",
+    )?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The simulator workload (W6) has no graph, no checkpoint policy and a frozen generator, and its canonical form says
+/// so.
+#[test]
+fn the_simulator_workload_is_read_and_written_back_as_it_was() -> Result<(), String> {
+    let manifest = Manifest::from_toml(SIMULATION).map_err(|e| e.to_string())?;
+    if manifest.workload != Workload::ServiceSimulation || !manifest.has_no_graph() {
+        return Err("the manifest is not the simulator workload, or it has a graph".to_owned());
+    }
+    let simulation = manifest.simulation.clone().ok_or("no [simulation] table")?;
+    if (simulation.servers, simulation.queue_capacity, simulation.batch_slices) != (3, 12, 4) {
+        return Err("the simulation table was not read".to_owned());
+    }
+    let json = String::from_utf8(manifest.canonical_json()).map_err(|e| e.to_string())?;
+    if json.contains("\"graph\"") || json.contains("\"checkpoint\"") {
+        return Err(format!(
+            "a simulator manifest was written with a graph or a checkpoint policy: {json}"
+        ));
+    }
+    let again =
+        Manifest::from_json(serde_json::from_str(&json).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    if again != manifest {
+        return Err("a simulator manifest changed when it was written and read".to_owned());
+    }
+    // A graph workload is not touched: it still has a graph and writes no simulation table.
+    let graph = Manifest::from_toml(RECOVERY).map_err(|e| e.to_string())?;
+    let graph_json = String::from_utf8(graph.canonical_json()).map_err(|e| e.to_string())?;
+    if graph_json.contains("\"simulation\"") {
+        return Err("a graph manifest gained a simulation table, so every digest of one would change".to_owned());
+    }
+    Ok(())
+}
+
+#[test]
+fn a_bad_simulator_manifest_is_refused() -> Result<(), String> {
+    let refused = |text: String, why: &str| match Manifest::from_toml(&text) {
+        Ok(_) => Err(format!("{why} was accepted")),
+        Err(_) => Ok(()),
+    };
+    refused(
+        SIMULATION.replace("mixed_outage", "mixed_outrage"),
+        "a scenario with no frozen revision",
+    )?;
+    refused(
+        SIMULATION.replace("servers = 3", "servers = 4"),
+        "a parameter of another revision",
+    )?;
+    refused(
+        SIMULATION.replace("queue_capacity = 12", "queue_capacity = 13"),
+        "another queue capacity",
+    )?;
+    refused(
+        SIMULATION.replace("batch_slices = 4", "batch_slices = 3"),
+        "a batch of three slices",
+    )?;
+    refused(SIMULATION.replace("min_pops = 10000", "min_pops = 0"), "no pop minimum")?;
+    refused(
+        SIMULATION.replace("measurement_iterations = 60", "measurement_iterations = 61"),
+        "a measured window that would be wrapped",
+    )?;
+    refused(
+        SIMULATION.replace("warmup_iterations = 10", "warmup_iterations = 11"),
+        "a warm-up window that would be wrapped",
+    )?;
+    refused(
+        SIMULATION.replace("\"endurance\"]", "\"endurance\", \"recovery\"]"),
+        "the recovery mode, which is W5's",
+    )?;
+    refused(
+        SIMULATION.replace("[simulation]", "[graph]\nnodes = 4\n\n[simulation]"),
+        "a graph",
+    )?;
+    refused(
+        SIMULATION.replace("[execution]", "[checkpoint]\nview = \"unchanged\"\n\n[execution]"),
+        "a checkpoint policy",
+    )?;
+    refused(
+        SIMULATION.replace("batch_slices = 4", "batch_slices = 4\nspeed = 1"),
+        "a mistyped key",
+    )?;
+    refused(
+        SIMULATION.replace("service_simulation", "scene_construction"),
+        "a simulation table on a graph workload",
+    )?;
+    // The simulator workload needs its table.
+    let without: String = SIMULATION
+        .lines()
+        .filter(|line| {
+            ![
+                "scenario",
+                "servers",
+                "queue_capacity",
+                "max_attempts",
+                "retry_deferral_cap",
+                "min_pops",
+                "batch_slices",
+                "[simulation]",
+            ]
+            .iter()
+            .any(|key| line.starts_with(key))
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    refused(without, "the simulator workload with no table")?;
+    Ok(())
+}
+
+/// A scaled run of the frozen revision says how many arrivals it has, and a manifest that does not say writes nothing
+/// about it, so every digest of a manifest from before the key is what it was.
+#[test]
+fn scaled_simulator_manifests_say_their_arrivals_and_the_smoke_one_says_none() -> Result<(), String> {
+    let smoke = Manifest::from_toml(SIMULATION).map_err(|e| e.to_string())?;
+    let smoke_json = String::from_utf8(smoke.canonical_json()).map_err(|e| e.to_string())?;
+    if smoke_json.contains("arrivals") {
+        return Err(format!("the smoke manifest was written with an arrivals key: {smoke_json}"));
+    }
+    for (text, arrivals) in [(SIMULATION_100K, 36_000), (SIMULATION_1K, 360)] {
+        let manifest = Manifest::from_toml(text).map_err(|e| e.to_string())?;
+        if manifest.simulation.as_ref().and_then(|s| s.arrivals) != Some(arrivals) {
+            return Err(format!("the arrivals {arrivals} were not read"));
+        }
+        let json = String::from_utf8(manifest.canonical_json()).map_err(|e| e.to_string())?;
+        let again =
+            Manifest::from_json(serde_json::from_str(&json).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        if again != manifest {
+            return Err("a scaled manifest changed when it was written and read".to_owned());
+        }
+    }
+    let refused = |text: String, why: &str| match Manifest::from_toml(&text) {
+        Ok(_) => Err(format!("{why} was accepted")),
+        Err(_) => Ok(()),
+    };
+    refused(SIMULATION_100K.replace("arrivals = 36000", "arrivals = 10"), "too few arrivals")?;
+    refused(
+        SIMULATION_100K.replace("arrivals = 36000", "arrivals = 2000000"),
+        "too many arrivals",
     )?;
     Ok(())
 }

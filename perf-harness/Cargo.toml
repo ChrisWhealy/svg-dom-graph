@@ -14,7 +14,7 @@ publish = false
 # The Layer A runner times the library's own DOM-free geometry, so it needs the library, which the wasm build does not.
 default = ["schema", "layer-a"]
 schema = ["dep:jsonschema"]
-layer-a = ["dep:svg-dom-graph", "dep:svg-dom"]
+layer-a = ["dep:svg-dom-graph", "dep:svg-dom", "dep:service-sim-engine"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -24,3 +24,4 @@ toml = "1"
 jsonschema = { version = "0.60", default-features = false, optional = true }
 svg-dom-graph = { path = "..", optional = true }
 svg-dom = { version = "^0.2.17", optional = true }
+service-sim-engine = { path = "../service-sim-engine", optional = true }

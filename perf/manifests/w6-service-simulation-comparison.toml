@@ -1,0 +1,46 @@
+# W6, the discrete-event service simulator, run cleanly, as the comparison profile: five repetitions, which is the least that gives a statistical
+# verdict under the harness's rule. It is named apart from the per-commit smoke profile and is never added to it silently. Everything else is the
+# same as w6-service-simulation-smoke.toml, so the two have the same trace and the same windows, and differ in their manifest hash only by this.
+#
+# W6, the discrete-event service simulator, run cleanly: no fault is injected, and nothing here is broken on purpose (that is W5, with the
+# service target). Design: design-specs/discrete_event_service_simulator.pdf, section 8.
+#
+# The trace is the frozen generator revision mixed_outage/7 at this seed, and the figures of [simulation] are that revision's: another set
+# is a new revision, and the whole 500-seed panel is run again before any timing. The windows are fixed. Slices 1 to 256 are priming, 257
+# to 296 are the warm-up and 297 to 536 are measured. An observation is four consecutive nonempty slices, so 10 warm-up and 60 measured
+# observations fill the two windows exactly, and no window is wrapped, reused or shifted.
+#
+# Three repetitions are the per-commit smoke profile. Under the harness's rule of five repetitions for a statistical verdict, a
+# comparison of three is diagnostic and never a pass. This profile has five. There is no checkpoint policy: the simulator is checked at every slice, against an
+# independent engine's hash of its state.
+schema_version = 1
+workload = "service_simulation"
+seed = 20261106
+prng = "splitmix64"
+
+[simulation]
+scenario = "mixed_outage"
+servers = 3
+queue_capacity = 12
+max_attempts = 2
+retry_deferral_cap = 4
+min_pops = 10000
+batch_slices = 4
+
+[execution]
+modes = ["correctness", "performance", "endurance"]
+warmup_iterations = 10
+measurement_iterations = 60
+repetitions = 5
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+
+[limits]
+# Layer C's Play series needs a wall-clock budget: 40 one-tick cycles at 1 Hz are at least 40 seconds a repetition.
+wall_ms = 600000

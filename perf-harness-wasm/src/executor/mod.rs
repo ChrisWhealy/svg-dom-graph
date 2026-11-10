@@ -120,7 +120,7 @@ impl<'a> Run<'a> {
         // say.
         let total_cycles = if matches!(
             manifest.workload,
-            Workload::ConnectorRerouting | Workload::Interaction | Workload::Recovery
+            Workload::ConnectorRerouting | Workload::Interaction | Workload::Recovery | Workload::ServiceSimulation
         ) {
             1
         } else {

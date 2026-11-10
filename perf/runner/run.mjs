@@ -4,6 +4,7 @@
 //   node perf/runner/run.mjs <manifest.toml> [--mode correctness|performance|endurance|all] [--layers a,b,c]
 //                            [--repetitions N] [--out-dir DIR] [--no-build]
 //                            [--inject-slowdown-us N] [--inject-leak none|bytes|closure|library_watch]
+//                            [--play] [--inject-late-pause]
 //
 // Each repetition of Layer B is a separate Chrome process with its own profile, so repetitions do not share a page, a heap or
 // a JIT. Every result is checked against `perf/schemas/result.schema.json` before it is written, and a result that does not
@@ -18,7 +19,9 @@ import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from './lib/harness-page.mjs'
 import { edgesOf, runInteraction } from './layer-c/interaction.mjs'
 import { runRecoveryC } from './layer-c/recovery.mjs'
+import { runSimulationC, runSimulationCCorrectness } from './layer-c/service.mjs'
 import { oracleFor } from './service-oracle.mjs'
+import { buildTrace } from './service-trace.mjs'
 import { createHash } from 'node:crypto'
 
 const root = path.resolve(import.meta.dirname, '../..')
@@ -41,6 +44,8 @@ const parseArguments = argv => {
     else if (arg === '--no-build') options.build = false
     else if (arg === '--inject-slowdown-us') options.slowdownUs = Number(argv[++i])
     else if (arg === '--inject-leak') options.leak = argv[++i]
+    else if (arg === '--play') options.play = true
+    else if (arg === '--inject-late-pause') options.lateDuringPlay = true
     else if (arg.startsWith('--')) throw new Error(`unknown option ${arg}`)
     else options.manifest = arg
   }
@@ -77,17 +82,32 @@ const canonicalManifest = must(run(binary, ['canonical', manifestPath]), 'readin
 const service = JSON.parse(canonicalManifest).recovery?.target === 'service_simulation'
 const serviceOracle = service ? oracleFor(JSON.parse(canonicalManifest).recovery.scenario) : null
 const sha = text => createHash('sha256').update(text).digest('hex')
-if (!service)
+// Workload W6 is the simulator run cleanly. Its trace is worked out before anything is timed, by the independent engine, and its operation
+// stream is that engine's hash of the state at every slice: the whole chain for a correctness run, and the prefix that the windows consume for
+// a performance run, which does not execute the rest.
+const simulating = JSON.parse(canonicalManifest).workload === 'service_simulation'
+const simulationTrace = simulating
+  ? buildTrace(JSON.parse(canonicalManifest).simulation, JSON.parse(canonicalManifest).seed)
+  : null
+if (!service && !simulating)
   must(
     run(binary, ['generate', manifestPath, '--id', manifestId, '--out', reportPath]),
     'generating the workload report'
   )
-const report = service
+const report = simulating
   ? {
       manifest: { sha256: sha(canonicalManifest), canonical: JSON.parse(canonicalManifest) },
-      stream: { sha256: sha(serviceOracle.checkpoints.join('\n')), mutations_sha256: sha('') }
+      stream: {
+        sha256: simulationTrace.hashes.checkpoint_chain_sha256,
+        mutations_sha256: sha(simulationTrace.checkpoints.slice(0, 537).join('\n'))
+      }
     }
-  : readExact(fs.readFileSync(reportPath, 'utf8'))
+  : service
+    ? {
+        manifest: { sha256: sha(canonicalManifest), canonical: JSON.parse(canonicalManifest) },
+        stream: { sha256: sha(serviceOracle.checkpoints.join('\n')), mutations_sha256: sha('') }
+      }
+    : readExact(fs.readFileSync(reportPath, 'utf8'))
 const expected = JSON.stringify({ sha256: report.stream.sha256, mutations_sha256: report.stream.mutations_sha256 })
 const manifest = report.manifest.canonical
 
@@ -95,14 +115,14 @@ const manifest = report.manifest.canonical
 // refused for any other, and a layer that is asked for by name and cannot run says so and does not quietly do nothing.
 const interactive = manifest.workload === 'interaction'
 const recovery = manifest.workload === 'recovery'
-options.layers ??= service ? ['b'] : interactive || recovery ? ['a', 'b', 'c'] : ['a', 'b']
+options.layers ??= service ? ['b'] : interactive || recovery || simulating ? ['a', 'b', 'c'] : ['a', 'b']
 if (service && options.layers.some(layer => layer !== 'b')) {
   console.log(
     'skipping layers a and c: the service target is broken in the page, by its own executor, and has neither native work nor real input'
   )
   options.layers = ['b']
 }
-if (options.layers.includes('c') && !interactive && !recovery) {
+if (options.layers.includes('c') && !interactive && !recovery && !simulating) {
   console.log(
     `skipping layer C: ${manifest.workload} has no input to drive, and only the interaction and recovery workloads do`
   )
@@ -250,7 +270,8 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
       ? { raw_samples: path.relative(root, samplesFile) }
       : {}),
     ...(outcome.findings?.length ? { findings: outcome.findings } : {}),
-    ...(outcome.cases?.length ? { cases: path.relative(root, casesFile) } : {})
+    ...(outcome.cases?.length ? { cases: path.relative(root, casesFile) } : {}),
+    ...(outcome.simulation ? { simulation: outcome.simulation } : {})
   }
   // The seed is validated as the number it is. Only the file keeps its exact text.
   const asData = JSON.parse(JSON.stringify(document))
@@ -263,7 +284,105 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
   runs.push({ layer, mode, repetition, runId, outcome })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Workload W6. The trace was worked out before anything runs, and a trace that may not be timed is refused here: every layer and mode that
+// was asked for gets a result that says so, with every figure that was worked out, and no time series. A refusal is not a pass.
+const simulationField = simulating
+  ? {
+      generator_revision: simulationTrace.qualification.generator_revision,
+      seed: manifest.seed,
+      qualification: simulationTrace.qualification,
+      counts: simulationTrace.counts,
+      hashes: simulationTrace.hashes
+    }
+  : null
+const simulationTracePath = path.join(outDir, 'service-trace.json')
+if (simulating) fs.writeFileSync(simulationTracePath, JSON.stringify(simulationTrace.expected))
+/** The smallest step that this process's clock makes, for a result that timed nothing and still has to say what its clock was. */
+const nodeResolutionUs = () => {
+  let smallest = Infinity
+  let last = performance.now()
+  for (let probe = 0; probe < 200000; probe++) {
+    const at = performance.now()
+    const step = (at - last) * 1000
+    if (step > 0 && step < smallest) smallest = step
+    last = at
+  }
+  return Number.isFinite(smallest) ? smallest : 1
+}
+
+const runSimulation = async (mode, repetition) => {
+  if (options.slowdownUs > 0 || (options.leak && options.leak !== 'none'))
+    throw new Error('an injected candidate is for the graph workloads: the simulator has none')
+  const attach = outcome => ({ ...outcome, simulation: simulationField })
+  // Only a timing needs a trace that qualifies. A trace that is too short or too uneven for a measurement is still a trace that the engine and
+  // the controller can be checked against, so correctness and endurance run on it, with the qualification recorded in their results.
+  if (!simulationTrace.qualification.qualified && mode === 'performance') {
+    // One result for each mode, and no layer ran: the refusal is decided here, from the independent engine's trace, before any browser or
+    // native runner is started, so it is a native result and says so. A mode that was asked for cannot be taken for having passed.
+    keep(
+      'A',
+      mode,
+      repetition,
+      attach({
+        status: 'refused',
+        error: `the trace of seed ${manifest.seed} is refused before any timing, and no layer was run: ${simulationTrace.qualification.reasons.join('; ')}`,
+        metrics: [],
+        gates: [],
+        samples: {},
+        checkpoints_passed: 0,
+        checkpoints_failed: [],
+        stream: null,
+        timer_resolution_us: nodeResolutionUs()
+      }),
+      null
+    )
+    return
+  }
+  if (options.layers.includes('a') && (mode === 'correctness' || mode === 'performance')) {
+    const file = path.join(outDir, `layer-a-${mode}-${repetition}.outcome.json`)
+    must(
+      run(binary, ['native', manifestPath, '--mode', mode, '--trace', simulationTracePath, '--out', file]),
+      `the native ${mode} run`
+    )
+    keep('A', mode, repetition, attach(JSON.parse(fs.readFileSync(file, 'utf8'))), null)
+    fs.rmSync(file)
+  }
+  if (options.layers.includes('b')) {
+    const page = await openHarnessPage()
+    try {
+      const outcome = JSON.parse(
+        await page.evaluate(
+          `window.perfHarness.sim_run(${JSON.stringify(mode)}, ${JSON.stringify(canonicalManifest)}, ${JSON.stringify(JSON.stringify(simulationTrace.expected))})`
+        )
+      )
+      if (allocatorVerified === false) withholdAllocatorFigures(outcome)
+      keep('B', mode, repetition, attach(outcome), page.crossOriginIsolated)
+    } finally {
+      await page.close()
+    }
+  }
+  if (options.layers.includes('c') && mode === 'correctness') {
+    const outcome = await runSimulationCCorrectness({ manifest, trace: simulationTrace.expected })
+    keep('C', mode, repetition, attach(outcome), outcome.crossOriginIsolated ?? null)
+  }
+  if (options.layers.includes('c') && mode === 'performance') {
+    const outcome = await runSimulationC({
+      binary,
+      manifest,
+      trace: simulationTrace.expected,
+      series: options.play ? ['next', 'play'] : ['next'],
+      injectLatePause: options.lateDuringPlay === true
+    })
+    keep('C', mode, repetition, attach(outcome), outcome.crossOriginIsolated ?? null)
+  }
+}
+
 for (const mode of modes) {
+  if (simulating) {
+    for (let repetition = 0; repetition < repetitionsFor(mode); repetition++) await runSimulation(mode, repetition)
+    continue
+  }
   if (mode === 'recovery' && !recovery) {
     console.log(`skipping recovery: ${manifest.workload} has no fault points, and only the recovery workload does`)
     continue

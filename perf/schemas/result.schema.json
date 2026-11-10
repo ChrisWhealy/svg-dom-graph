@@ -452,10 +452,20 @@
       "items": {
         "type": "object",
         "properties": {
-          "point": { "type": "string", "minLength": 1 },
-          "contract": { "const": "undocumented" },
-          "summary": { "type": "string", "minLength": 1 },
-          "details": { "type": "object" }
+          "point": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contract": {
+            "const": "undocumented"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object"
+          }
         },
         "required": ["point", "contract", "summary", "details"],
         "additionalProperties": false
@@ -508,6 +518,247 @@
         "required": ["name", "status", "detail"],
         "additionalProperties": false
       }
+    },
+    "simulation": {
+      "type": "object",
+      "description": "What workload W6 ran, and whether it was allowed to be timed: the generator's revision and seed, the activity and stability figures of the trace's windows, the counts of the whole trace (a pop is a popped heap event, stale ones included), and the three hashes that stay separate. A refused trace has all of it and no time series, since a refusal is a record and not a pass.",
+      "properties": {
+        "generator_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "qualification": {
+          "type": "object",
+          "properties": {
+            "qualified": {
+              "type": "boolean"
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Why the trace was refused. Empty if it qualified."
+            },
+            "metrics": {
+              "type": ["object", "null"],
+              "description": "The six figures that the bounds apply to, null if the measured window does not exist.",
+              "properties": {
+                "occupancyMean": {
+                  "type": "number"
+                },
+                "waitingNonemptyFraction": {
+                  "type": "number"
+                },
+                "popsPerSlice": {
+                  "type": "number"
+                },
+                "busyFraction": {
+                  "type": "number"
+                },
+                "halfOccupancyDifference": {
+                  "type": "number"
+                },
+                "halfPopsDifference": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "occupancyMean",
+                "waitingNonemptyFraction",
+                "popsPerSlice",
+                "busyFraction",
+                "halfOccupancyDifference",
+                "halfPopsDifference"
+              ],
+              "additionalProperties": false
+            },
+            "occupancy_histogram": {
+              "type": ["array", "null"],
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "How many slices of the measured window ended with each waiting count, from 0 to the queue capacity."
+            },
+            "measured_window": {
+              "type": ["object", "null"],
+              "properties": {
+                "slices": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "occupancy_mean": {
+                  "type": "number"
+                },
+                "waiting_nonempty_fraction": {
+                  "type": "number"
+                },
+                "pops_per_slice": {
+                  "type": "number"
+                },
+                "busy_fraction": {
+                  "type": "number"
+                }
+              },
+              "required": ["slices", "occupancy_mean", "waiting_nonempty_fraction", "pops_per_slice", "busy_fraction"],
+              "additionalProperties": false
+            },
+            "interactive_window": {
+              "type": ["object", "null"],
+              "properties": {
+                "slices": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "occupancy_mean": {
+                  "type": "number"
+                },
+                "waiting_nonempty_fraction": {
+                  "type": "number"
+                },
+                "pops_per_slice": {
+                  "type": "number"
+                },
+                "busy_fraction": {
+                  "type": "number"
+                }
+              },
+              "required": ["slices", "occupancy_mean", "waiting_nonempty_fraction", "pops_per_slice", "busy_fraction"],
+              "additionalProperties": false
+            },
+            "minimums": {
+              "type": "object",
+              "properties": {
+                "slices": {
+                  "type": "object",
+                  "properties": {
+                    "required": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "actual": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "met": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["required", "actual", "met"],
+                  "additionalProperties": false
+                },
+                "pops": {
+                  "type": "object",
+                  "properties": {
+                    "required": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "actual": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "met": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["required", "actual", "met"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["slices", "pops"],
+              "additionalProperties": false
+            },
+            "bounds": {
+              "type": "object"
+            },
+            "generator_revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seed": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "generator_revision",
+            "seed",
+            "qualified",
+            "reasons",
+            "metrics",
+            "occupancy_histogram",
+            "measured_window",
+            "interactive_window",
+            "minimums",
+            "bounds"
+          ],
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "arrivals": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pops": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_pops": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "noop_pops": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "slices": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_fraction": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "pops_per_slice": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["arrivals", "pops", "stale_pops", "noop_pops", "slices", "stale_fraction", "pops_per_slice"],
+          "additionalProperties": false
+        },
+        "hashes": {
+          "type": "object",
+          "properties": {
+            "input_stream_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "event_pop_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "checkpoint_chain_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": ["input_stream_sha256", "event_pop_sha256", "checkpoint_chain_sha256"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["generator_revision", "seed", "qualification", "counts", "hashes"],
+      "additionalProperties": false
     }
   },
   "required": [

@@ -176,12 +176,14 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut id = None;
     let mut out = None;
     let mut mode = None;
+    let mut trace = None;
     let mut rest = rest.iter();
     while let Some(arg) = rest.next() {
         match arg.as_str() {
             "--id" => id = Some(rest.next().ok_or("--id needs a name")?.clone()),
             "--out" => out = Some(rest.next().ok_or("--out needs a file")?.clone()),
             "--mode" => mode = Some(rest.next().ok_or("--mode needs a name")?.clone()),
+            "--trace" => trace = Some(rest.next().ok_or("--trace needs a file")?.clone()),
             other => path = Some(other.to_string()),
         }
     }
@@ -218,7 +220,19 @@ fn run(args: &[String]) -> Result<(), String> {
                 "performance" => Mode::Performance,
                 other => return Err(format!("the native runner has no mode {other}")),
             };
-            let outcome = perf_harness::layer_a::run(&manifest, mode).map_err(|e| e.to_string())?;
+            let outcome = if manifest.workload == perf_harness::manifest::Workload::ServiceSimulation {
+                // The independent engine's trace is worked out by the orchestrator, which writes it to a file. This
+                // runner times the pure Rust engine and compares what it executes with that trace, and has no way to
+                // work out its own expectation.
+                let file = trace.ok_or("the simulator workload needs --trace FILE, the independent engine's trace")?;
+                let text = std::fs::read_to_string(&file).map_err(|e| format!("{file}: {e}"))?;
+                let expected = perf_harness::layer_a::simulation::Expected::from_json(
+                    &serde_json::from_str(&text).map_err(|e| e.to_string())?,
+                )?;
+                perf_harness::layer_a::simulation::run(&manifest, mode, &expected)?
+            } else {
+                perf_harness::layer_a::run(&manifest, mode).map_err(|e| e.to_string())?
+            };
             let json = serde_json::to_string_pretty(&outcome).map_err(|e| e.to_string())?;
             match out {
                 Some(file) => std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}")),

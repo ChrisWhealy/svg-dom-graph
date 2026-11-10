@@ -18,6 +18,7 @@ use crate::projection::{View, project};
 use crate::scheduler::Scheduler;
 use service_sim_engine::{Engine, Error, Model};
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 
 pub use crate::projection::Projection;
@@ -126,6 +127,8 @@ struct State {
     engine: Engine,
     engine_at: u64,
     staged: Option<Staged>,
+    /// Slices worked out in advance by [`Controller::prepare_ahead`], oldest first, each for the view it was made for.
+    ahead: VecDeque<Staged>,
     committed_slice: u64,
     committed_model: Model,
     committed: Projection,
@@ -185,6 +188,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
             engine,
             engine_at: 0,
             staged: None,
+            ahead: VecDeque::new(),
             committed_slice: 0,
             committed_model,
             committed,
@@ -416,6 +420,20 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.stop_and_invalidate();
     }
 
+    /// Works out the next `count` slices after the committed one, and keeps them, so that the `next` calls that follow
+    /// draw and commit them and do not step the engine or build a projection. It exists so that a measurement of `next`
+    /// can be the render and the commit alone. It changes no committed state, and a slice that is kept is used only if
+    /// it is still the next one for the view that is committed then.
+    ///
+    /// Returns how many slices were worked out, which is fewer than `count` at the end of the run.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the engine could not be stepped, or replayed to the committed slice.
+    pub fn prepare_ahead(&self, count: u64) -> Result<u64, String> {
+        self.inner.prepare_ahead(count)
+    }
+
     /// Ends the controller for good. What was scheduled is taken back, and a late callback does nothing.
     pub fn dispose(&self) {
         {
@@ -633,6 +651,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             let mut st = self.state.borrow_mut();
             st.staged.take().filter(|s| s.slice == target)
         };
+        let staged = staged.or_else(|| self.take_ahead(target));
         let staged = match staged {
             Some(s) => s,
             None => match self.stage_after(committed) {
@@ -660,6 +679,59 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             self.state.borrow_mut().staged = Some(copy);
         }
         outcome
+    }
+
+    /// The slice `target` if it was worked out in advance for the view that is committed now, and `None` otherwise. A
+    /// slice that was worked out for another view, or that the cursor has passed, is dropped with everything after it,
+    /// since it would not be what stepping to it gives.
+    fn take_ahead(&self, target: u64) -> Option<Staged> {
+        let mut st = self.state.borrow_mut();
+        while st.ahead.front().is_some_and(|s| s.slice < target) {
+            st.ahead.pop_front();
+        }
+        match st.ahead.front() {
+            Some(s) if s.slice == target && s.view == st.view => st.ahead.pop_front(),
+            _ => {
+                st.ahead.clear();
+                None
+            },
+        }
+    }
+
+    /// Works out the next `count` slices after the committed one and keeps them, so that the `next` calls that follow
+    /// draw and commit them without working them out. The engine is stepped here, and what a later `next` costs is then
+    /// the render and the commit.
+    fn prepare_ahead(&self, count: u64) -> Result<u64, String> {
+        let committed = self.state.borrow().committed_slice;
+        {
+            let mut st = self.state.borrow_mut();
+            st.ahead.clear();
+            st.staged = None;
+        }
+        if self.state.borrow().engine_at != committed {
+            let engine = self.replay(committed)?;
+            let mut st = self.state.borrow_mut();
+            st.engine = engine;
+            st.engine_at = committed;
+        }
+        let mut made = 0;
+        while made < count {
+            let mut st = self.state.borrow_mut();
+            if st.engine.step().map_err(|e| e.message())?.is_none() {
+                break;
+            }
+            made += 1;
+            st.engine_at = committed + made;
+            let (model, projection) = model_and_projection(&st.engine, &st.view);
+            let view = st.view;
+            st.ahead.push_back(Staged {
+                slice: committed + made,
+                model,
+                projection,
+                view,
+            });
+        }
+        Ok(made)
     }
 
     /// Works out the slice after `committed`, from the engine, which is brought to `committed` first if it is not
@@ -1004,6 +1076,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         st.engine = engine;
         st.engine_at = 0;
         st.staged = None;
+        st.ahead.clear();
         st.committed_slice = 0;
         st.committed_model = model;
         st.committed = projection;

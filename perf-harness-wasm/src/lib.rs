@@ -32,6 +32,9 @@ pub mod recovery;
 #[cfg(target_arch = "wasm32")]
 pub mod service_recovery;
 
+#[cfg(target_arch = "wasm32")]
+pub mod service_perf;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 mod exports {
@@ -382,6 +385,48 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Workload W6. See `service_perf`.
+    #[wasm_bindgen]
+    pub fn sim_build(config_json: &str) -> String {
+        crate::service_perf::build(config_json)
+    }
+
+    /// One timed batch of `next` calls, the slices having been worked out first.
+    #[wasm_bindgen]
+    pub fn sim_batch(count: u32) -> String {
+        crate::service_perf::batch(count)
+    }
+
+    /// `count` untimed calls of `next`.
+    #[wasm_bindgen]
+    pub fn sim_step(count: u32) -> String {
+        crate::service_perf::step(count)
+    }
+
+    /// A full redraw of the committed slice.
+    #[wasm_bindgen]
+    pub fn sim_repair() -> String {
+        crate::service_perf::repair()
+    }
+
+    /// The playback speed, in milliseconds a slice.
+    #[wasm_bindgen]
+    pub fn sim_set_speed(ms: u32) -> String {
+        crate::service_perf::set_speed(ms)
+    }
+
+    /// What a check outside a timed interval reads.
+    #[wasm_bindgen]
+    pub fn sim_state() -> String {
+        crate::service_perf::state()
+    }
+
+    /// Ends the controller and removes the page.
+    #[wasm_bindgen]
+    pub fn sim_teardown() -> String {
+        crate::service_perf::teardown()
+    }
+
     // The service-simulation target of the recovery workload. See `service_recovery`.
 
     /// Builds a controller on a surface on a slot, for the scenario of `config_json`, and says what it made.

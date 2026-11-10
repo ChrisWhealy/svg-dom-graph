@@ -57,6 +57,10 @@ pub struct RunOutcome {
     pub timer_resolution_us: f64,
     /// Findings worth keeping that are not failures, such as a provisional rule that held.
     pub notes: Vec<String>,
+    /// One entry for each timed observation or case, kept beside the result and not in it. Empty for a run that has
+    /// none.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub cases: Vec<Value>,
 }
 
 impl RunOutcome {
@@ -74,6 +78,7 @@ impl RunOutcome {
             gates: Vec::new(),
             timer_resolution_us: 0.0,
             notes: Vec::new(),
+            cases: Vec::new(),
         }
     }
 

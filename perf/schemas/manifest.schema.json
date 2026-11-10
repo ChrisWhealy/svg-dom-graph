@@ -9,7 +9,14 @@
       "const": 1
     },
     "workload": {
-      "enum": ["scene_construction", "connector_rerouting", "scene_lifecycle", "interaction", "recovery"]
+      "enum": [
+        "scene_construction",
+        "connector_rerouting",
+        "scene_lifecycle",
+        "interaction",
+        "recovery",
+        "service_simulation"
+      ]
     },
     "seed": {
       "type": "integer",
@@ -194,7 +201,9 @@
                   "service_teardown_late_tick"
                 ]
               },
-              "expect": { "enum": ["nothing_committed", "partly_committed", "undocumented"] }
+              "expect": {
+                "enum": ["nothing_committed", "partly_committed", "undocumented"]
+              }
             },
             "required": ["point", "expect"],
             "additionalProperties": false
@@ -207,7 +216,11 @@
         {
           "if": {
             "required": ["target"],
-            "properties": { "target": { "const": "service_simulation" } }
+            "properties": {
+              "target": {
+                "const": "service_simulation"
+              }
+            }
           },
           "then": {
             "required": ["scenario"],
@@ -235,7 +248,9 @@
             }
           },
           "else": {
-            "not": { "required": ["scenario"] },
+            "not": {
+              "required": ["scenario"]
+            },
             "properties": {
               "points": {
                 "items": {
@@ -281,24 +296,99 @@
       },
       "required": ["wall_ms"],
       "additionalProperties": false
+    },
+    "simulation": {
+      "type": "object",
+      "description": "Workload W6, the discrete-event service simulator run with no fault injected. Every figure but min_pops and batch_slices is a parameter of the frozen generator revision (mixed_outage/7), so another set is refused by the reader and not by this schema: changing one is a new revision, and the whole seed panel is run again. An observation is batch_slices consecutive nonempty timestamp slices, and the trace windows are fixed: slices 1-256 are priming, 257-296 warm-up and 297-536 measured.",
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The generator. Only mixed_outage has a frozen revision."
+        },
+        "servers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "queue_capacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retry_deferral_cap": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_pops": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The fewest actual heap pops, stale ones included, that the trace has to hold. It is independent of the 536-slice minimum, which never follows from it."
+        },
+        "batch_slices": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Slices in one observation of Layer A or B. The reader requires 4."
+        },
+        "arrivals": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000000,
+          "description": "How many arrivals the generator makes, for a scaled run of the frozen revision. Absent means the revision's own 4,000. The draws of an arrival do not depend on how many there are, so a scaled trace is the same run for longer."
+        }
+      },
+      "required": [
+        "scenario",
+        "servers",
+        "queue_capacity",
+        "max_attempts",
+        "retry_deferral_cap",
+        "min_pops",
+        "batch_slices"
+      ],
+      "additionalProperties": false
     }
   },
   "required": ["schema_version", "workload", "seed", "prng", "execution", "measurement", "limits"],
   "additionalProperties": false,
   "allOf": [
     {
-      "description": "Every workload has a graph, except the recovery workload aimed at the service simulator, which has none.",
+      "description": "Every workload has a graph, except the simulator, which has none: the recovery workload aimed at it, and workload W6.",
       "if": {
-        "required": ["recovery"],
-        "properties": {
-          "recovery": {
-            "required": ["target"],
-            "properties": { "target": { "const": "service_simulation" } }
+        "anyOf": [
+          {
+            "required": ["recovery"],
+            "properties": {
+              "recovery": {
+                "required": ["target"],
+                "properties": {
+                  "target": {
+                    "const": "service_simulation"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "workload": {
+                "const": "service_simulation"
+              }
+            },
+            "required": ["workload"]
           }
+        ]
+      },
+      "then": {
+        "not": {
+          "required": ["graph"]
         }
       },
-      "then": { "not": { "required": ["graph"] } },
-      "else": { "required": ["graph"] }
+      "else": {
+        "required": ["graph"]
+      }
     },
     {
       "if": {
@@ -336,17 +426,31 @@
     },
     {
       "if": {
-        "properties": {
-          "execution": {
+        "allOf": [
+          {
             "properties": {
-              "modes": {
-                "contains": {
-                  "const": "correctness"
+              "execution": {
+                "properties": {
+                  "modes": {
+                    "contains": {
+                      "const": "correctness"
+                    }
+                  }
                 }
               }
             }
+          },
+          {
+            "not": {
+              "properties": {
+                "workload": {
+                  "const": "service_simulation"
+                }
+              },
+              "required": ["workload"]
+            }
           }
-        }
+        ]
       },
       "then": {
         "required": ["checkpoint"],
@@ -370,6 +474,50 @@
           "graph": {
             "required": ["nodes", "edges"]
           }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "workload": {
+            "const": "service_simulation"
+          }
+        }
+      },
+      "then": {
+        "required": ["simulation"]
+      },
+      "else": {
+        "not": {
+          "required": ["simulation"]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "workload": {
+            "const": "service_simulation"
+          }
+        },
+        "required": ["workload"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": ["checkpoint"]
+            },
+            {
+              "properties": {
+                "measurement": {
+                  "required": ["checkpoint_every"]
+                }
+              },
+              "required": ["measurement"]
+            }
+          ]
         }
       }
     }

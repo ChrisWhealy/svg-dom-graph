@@ -1,0 +1,54 @@
+# The profile that is too slow for every commit: the simulator's Layer C Play series (design revision 6, section 8.3).
+#
+# Play costs at least 40 seconds of timer delay a repetition, since 40 one-tick cycles at 1 Hz cannot be shortened without risking the
+# extra-tick race, and three repetitions are at least 120 seconds before the browser's own costs. Per-commit smoke keeps the three
+# repetitions of A, B and Next. This job runs Play with them, and records the real measured duration of the job so that the budget can be
+# verified and Play moved to every commit if it is affordable. A Play series that did not run is reported as not run, and is never a pass.
+name: perf-nightly
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  w6-play:
+    name: W6 Layer C Play (nightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-latest
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Play and Next, three repetitions, with the time that they take
+        run: |
+          started=$(date +%s)
+          node perf/runner/run.mjs perf/manifests/w6-service-simulation-smoke.toml --mode performance --layers c --play --out-dir target/perf-nightly
+          finished=$(date +%s)
+          echo "W6 Layer C, Next and Play, three repetitions: $((finished - started)) seconds" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-nightly-${{ github.sha }}
+          path: target/perf-nightly
+          retention-days: 90

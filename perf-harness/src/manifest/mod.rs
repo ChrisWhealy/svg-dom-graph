@@ -27,6 +27,8 @@ pub enum Workload {
     Interaction,
     /// W5: build a scene once and break it on purpose, one fault point at a time. See [`Recovery`].
     Recovery,
+    /// W6: run the discrete-event service simulator on a fixed trace, with no fault injected. See [`Simulation`].
+    ServiceSimulation,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -90,6 +92,91 @@ pub struct Interaction {
     pub steps: u32,
     /// How far the pointer moves at each step at most, in pixels.
     pub step_pixels: u32,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The generator that workload W6 runs, and how its observations are batched. Every figure is a parameter of the frozen
+/// generator revision `mixed_outage/7`, so a manifest that names another is refusing the revision and not choosing a
+/// setting: changing a figure is a new revision, and the whole seed panel is run again
+/// (`dess/s0/docs/generator-and-qualification.md`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Simulation {
+    /// The generator's name. Only `mixed_outage` exists.
+    pub scenario: String,
+    pub servers: u32,
+    pub queue_capacity: u32,
+    pub max_attempts: u32,
+    pub retry_deferral_cap: u32,
+    /// The fewest actual heap pops that the trace has to hold, stale ones included. It is independent of the slice
+    /// minimum.
+    pub min_pops: u64,
+    /// How many consecutive nonempty slices one observation of Layer A or B covers.
+    pub batch_slices: u32,
+    /// How many arrivals the generator makes, when the trace is a scaled run of the frozen revision. Absent means the
+    /// revision's own 4,000, and is not written back, so every manifest that has none keeps its canonical form. The
+    /// draws of an arrival do not depend on how many there are, so a scaled trace is the same run for longer, and
+    /// scaling is not a new revision.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrivals: Option<u64>,
+}
+
+impl Simulation {
+    /// The scenarios that have a frozen revision, with the parameters that revision fixes: servers, queue capacity,
+    /// attempts, deferral cap.
+    pub const FROZEN: [(&'static str, [u32; 4]); 1] = [("mixed_outage", [3, 12, 2, 4])];
+    /// The slices of the fixed trace windows: priming, warm-up and measured.
+    pub const WINDOW_SLICES: [u32; 3] = [256, 40, 240];
+    /// What a trace has to hold before any timing, so that the windows are never wrapped, reused or shifted.
+    pub const MIN_SLICES: u32 = 536;
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    fn check(&self, execution: &Execution) -> Result<(), ManifestError> {
+        let refuse = |message: String| Err(ManifestError::Semantic(message));
+        let Some((_, frozen)) = Self::FROZEN.iter().find(|(name, _)| *name == self.scenario) else {
+            return refuse(format!(
+                "simulation.scenario {:?} has no frozen generator revision: only mixed_outage has",
+                self.scenario
+            ));
+        };
+        let given = [self.servers, self.queue_capacity, self.max_attempts, self.retry_deferral_cap];
+        if &given != frozen {
+            return refuse(format!(
+                "simulation has servers, queue_capacity, max_attempts and retry_deferral_cap {given:?}, and the frozen revision of {} has {frozen:?}: another set is a new revision",
+                self.scenario
+            ));
+        }
+        if self.min_pops < 1 {
+            return refuse("simulation.min_pops must be at least 1".to_string());
+        }
+        if self.arrivals.is_some_and(|n| !(100..=1_000_000).contains(&n)) {
+            return refuse("simulation.arrivals must be from 100 to 1,000,000 when it is given".to_string());
+        }
+        if self.batch_slices != 4 {
+            return refuse(
+                "simulation.batch_slices must be 4: an observation is four consecutive nonempty slices".to_string(),
+            );
+        }
+        // The windows are fixed, and an observation is a whole batch of them. More iterations than a window holds would
+        // wrap, reuse or shift it.
+        let [_, warmup_slices, measured_slices] = Self::WINDOW_SLICES;
+        if u64::from(execution.warmup_iterations) * u64::from(self.batch_slices) > u64::from(warmup_slices) {
+            return refuse(format!(
+                "execution.warmup_iterations of {} four-slice batches need more than the {warmup_slices} slices of the warm-up window",
+                execution.warmup_iterations
+            ));
+        }
+        if u64::from(execution.measurement_iterations) * u64::from(self.batch_slices) > u64::from(measured_slices) {
+            return refuse(format!(
+                "execution.measurement_iterations of {} four-slice batches need more than the {measured_slices} slices of the measured window",
+                execution.measurement_iterations
+            ));
+        }
+        if execution.modes.contains(&Mode::Recovery) {
+            return refuse("the recovery mode of the simulator is workload W5's, with the service target".to_string());
+        }
+        Ok(())
+    }
 }
 
 impl Recovery {
@@ -355,8 +442,8 @@ pub struct Manifest {
     pub workload: Workload,
     pub seed: u64,
     pub prng: PrngName,
-    /// The graph of the workload. The recovery workload with the service target has none, and then this is the empty graph that
-    /// [`Graph::absent`] gives, which is not written back.
+    /// The graph of the workload. The recovery workload with the service target, and the simulator workload, have none,
+    /// and then this is the empty graph that [`Graph::absent`] gives, which is not written back.
     #[serde(default = "Graph::absent", skip_serializing_if = "Graph::is_absent")]
     pub graph: Graph,
     pub execution: Execution,
@@ -367,6 +454,8 @@ pub struct Manifest {
     pub interaction: Option<Interaction>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recovery: Option<Recovery>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub simulation: Option<Simulation>,
     pub limits: Limits,
 }
 
@@ -441,6 +530,14 @@ impl Manifest {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Whether this manifest has no graph: the simulator is not a graph, whether it is run cleanly or broken on
+    /// purpose.
+    #[must_use]
+    pub fn has_no_graph(&self) -> bool {
+        self.is_service_recovery() || self.workload == Workload::ServiceSimulation
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many cycles or moves one run makes: the warm-up and the measured iterations together.
     pub fn total_iterations(&self) -> u64 {
         u64::from(self.execution.warmup_iterations) + u64::from(self.execution.measurement_iterations)
@@ -483,11 +580,13 @@ impl Manifest {
         if self.schema_version != 1 {
             return refuse("schema_version must be 1");
         }
-        if self.graph.nodes == 0 && !self.is_service_recovery() {
+        if self.graph.nodes == 0 && !self.has_no_graph() {
             return refuse("graph.nodes must be at least 1");
         }
-        if self.graph.nodes > 0 && self.is_service_recovery() {
-            return refuse("the service target of the recovery workload has no [graph]");
+        if self.graph.nodes > 0 && self.has_no_graph() {
+            return refuse(
+                "the simulator, which the service target of the recovery workload and workload W6 both are, has no [graph]",
+            );
         }
         if self.execution.modes.is_empty() {
             return refuse("execution.modes must name at least one mode");
@@ -503,7 +602,10 @@ impl Manifest {
         if self.measurement.checkpoint_every == Some(0) || self.limits.dom_nodes == Some(0) {
             return refuse("checkpoint_every and dom_nodes must be at least 1 when they are given");
         }
+        // The simulator's correctness is the engine's own hash of its state at every slice, so it has no checkpoint
+        // policy to choose.
         if self.execution.modes.contains(&Mode::Correctness)
+            && self.workload != Workload::ServiceSimulation
             && (self.checkpoint.is_none() || self.measurement.checkpoint_every.is_none())
         {
             return refuse("the correctness mode needs a [checkpoint] policy and measurement.checkpoint_every");
@@ -525,6 +627,21 @@ impl Manifest {
                 return refuse("only the recovery workload takes a [recovery] table");
             },
             (Some(recovery), _) => recovery.check()?,
+            (None, _) => {},
+        }
+        match (&self.simulation, self.workload) {
+            (None, Workload::ServiceSimulation) => return refuse("workload W6 needs a [simulation] table"),
+            (Some(_), workload) if workload != Workload::ServiceSimulation => {
+                return refuse("only the service_simulation workload takes a [simulation] table");
+            },
+            (Some(simulation), _) => {
+                simulation.check(&self.execution)?;
+                if self.checkpoint.is_some() || self.measurement.checkpoint_every.is_some() {
+                    return refuse(
+                        "the simulator workload takes no [checkpoint] policy and no checkpoint_every: it is checked at every slice",
+                    );
+                }
+            },
             (None, _) => {},
         }
         if self.workload == Workload::Recovery

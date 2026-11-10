@@ -188,6 +188,11 @@ jobs:
           cargo build --release -p perf-harness
           node perf/lib/test-regression.mjs
 
+      # Workload W6's trace is worked out by the independent engine before anything is timed. The manifest seed has to qualify with the figures
+      # that S0 froze, a seed that S0 refused has to be refused with its reason, and a trace with too few pops has to be refused whatever its slices.
+      - name: The simulator workload's trace qualifies and refuses as it should
+        run: node perf/runner/test-service-trace.mjs
+
       # The discrete-event service simulator's stage S0 prototype, which needs no browser. It reproduces the design's known answers,
       # and the seed-qualification gate that froze the generator's parameters, so a change to either cannot pass unnoticed.
       - name: Simulator prototype gives the design's known answers and qualifies its seeds
@@ -250,7 +255,7 @@ jobs:
   # is labelled diagnostic and gives no verdict. The statistical verdicts block a change only from a baseline of 10 runs on one
   # runner class (section 8.1), and perf-smoke is not given `--enforce-statistical` until there is one.
   perf-smoke:
-    name: perf smoke (W1 to W4 · baseline comparison report)
+    name: perf smoke (W1 to W4 and W6 · baseline comparison report)
     runs-on: ubuntu-latest
     env:
       PERF_RUNNER_CLASS: github-ubuntu-latest
@@ -299,6 +304,12 @@ jobs:
       # The proof that the harness would notice: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
       - name: The harness catches an injected regression and an injected leak
         run: node perf/runner/selftest-regression.mjs
+
+      # Workload W6's runners are shown to refuse, reject and fail where they should: a refused seed, a wrong checkpoint, a controller that
+      # reads layout, a shifted window, three repetitions being diagnostic and five not, and a late Pause being an extra tick. The Play series
+      # costs 40 seconds a repetition and is on the nightly profile, so only the late-Pause protocol check, which is about 20 seconds, runs here.
+      - name: The simulator workload's runners refuse, reject and fail where they should
+        run: node dess/s5/selftest.mjs
 
       # Historical runs are kept as artifacts and never committed. A baseline is committed only by the promotion command.
       - name: Keep the results

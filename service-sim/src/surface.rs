@@ -92,6 +92,8 @@ pub struct Surface {
     slots: Vec<SlotEl>,
     /// What the page holds, if that is known. `None` after a failed draw and before the first.
     drawn: Option<Projection>,
+    /// How many times the data node's setter returned without an error, over the life of the surface.
+    setter_calls: u64,
     #[cfg(feature = "fault-hook")]
     hook: Option<Box<dyn FnMut(FaultPoint)>>,
 }
@@ -268,6 +270,7 @@ impl Surface {
             keys,
             slots,
             drawn: None,
+            setter_calls: 0,
             #[cfg(feature = "fault-hook")]
             hook: None,
         })
@@ -386,6 +389,7 @@ impl Surface {
         self.scene
             .set_data_values(self.data_node, NodeValues::U64(projection.data.to_vec()))
             .map_err(|e| DrawError::Write(e.to_string()))?;
+        self.setter_calls += 1;
         #[cfg(feature = "fault-hook")]
         self.fire(FaultPoint::Setter);
         self.require_connected()?;
@@ -397,6 +401,13 @@ impl Surface {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How many times the data node's setter has returned without an error, which is once for each draw that reached
+    /// it.
+    #[must_use]
+    pub fn setter_calls(&self) -> u64 {
+        self.setter_calls
+    }
+
     /// What the page holds, read back from the elements in the form of [`Projection::canonical`]. No model reads this:
     /// it is what a projection is compared with.
     ///

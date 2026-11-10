@@ -1,0 +1,38 @@
+# W6 at about 1,000 pops, as a scaled run of the frozen generator revision: the same draws for fewer arrivals.
+#
+# A trace of this length cannot be timed, since it has fewer than 536 slices and fewer than 10,000 pops, and the design says that it is not enough
+# to qualify for smoke. It is for the engine and the oracle, and for the controller to be checked against them, so only the correctness mode is
+# asked for. Performance on it would be refused before any timing, with the figures that show why.
+#
+schema_version = 1
+workload = "service_simulation"
+seed = 20261106
+prng = "splitmix64"
+
+[simulation]
+scenario = "mixed_outage"
+servers = 3
+queue_capacity = 12
+max_attempts = 2
+retry_deferral_cap = 4
+min_pops = 1000
+arrivals = 360
+batch_slices = 4
+
+[execution]
+modes = ["correctness"]
+warmup_iterations = 10
+measurement_iterations = 60
+repetitions = 1
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+
+[limits]
+# Layer C's Play series needs a wall-clock budget: 40 one-tick cycles at 1 Hz are at least 40 seconds a repetition.
+wall_ms = 600000

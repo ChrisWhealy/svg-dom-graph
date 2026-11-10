@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sparse Matrix Vector Product (SPMV): Test scale and resource limits (`fdf53ff`)
 - DESS S3: Manual clock, epochs/tokens, synchronous hidden predicate, pre/post-draw host checks, forced mid-draw detach. Reflow comments (`0647f47`)
 - DESS S4: Audit/repair required data setter, service-specific W5 executor, JS oracle checkpoints, source-cited contracts (`d9f1e9a`)
+- DESS S5: W6 A/B four-slice obs; C real Next/Play; 3-repeat diagnostic smoke test; 1k/10k/100k pops; mandatory setter (``)
 
 ### Changed
 
@@ -125,4 +126,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S4: Attribute recovery timing samples to the correct fault points (`6dce998`)
 - DESS S4: Ensure endurance gate exercises every required fault point before declaring success (`7432a97`)
 - DESS S4: Prevent real timer delays from introducing non-determinism (`8ff7ac4`)
-- DESS S4: Stop playback after failed timer request (``)
+- DESS S4: Stop playback after failed timer request (`0ad5cc5`)

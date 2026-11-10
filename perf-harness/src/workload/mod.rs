@@ -234,6 +234,12 @@ pub fn generate(manifest: &Manifest, visit: Visit<'_>) -> Result<(), WorkloadErr
         Workload::SceneLifecycle => cycles(manifest, &mut emitter, true),
         Workload::Interaction | Workload::Recovery => interaction(manifest, &mut emitter),
         Workload::ConnectorRerouting => rerouting(manifest, &mut emitter),
+        // The simulator's operations are its generated arrivals, which the independent reference and the engine produce from the seed, so
+        // this operation stream, which is the graph workloads' own, does not exist for it.
+        Workload::ServiceSimulation => Err(WorkloadError::Plan(
+            "the service_simulation workload has no graph operation stream: its trace is the simulator's own"
+                .to_string(),
+        )),
     }
 }
 

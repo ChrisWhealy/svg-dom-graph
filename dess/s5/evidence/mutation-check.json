@@ -1,0 +1,67 @@
+{
+  "mutations": [
+    {
+      "name": "the data node's setter is not called, though a call is counted",
+      "file": "service-sim/src/surface.rs",
+      "mode": "correctness",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "a commit moves the cursor one slice too far",
+      "file": "service-sim/src/controller/mod.rs",
+      "mode": "correctness",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "the slices prepared ahead are one engine step late",
+      "file": "service-sim/src/controller/mod.rs",
+      "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "the controller reads layout whatever it was given",
+      "file": "service-sim/src/host.rs",
+      "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL simulation.no_layout_is_read_in_a_timed_interval: fail, the controller under test reads layout to decide whether it may draw, so a timed batch would include it"
+    },
+    {
+      "name": "the four slices of a batch are worked out inside the timed interval",
+      "file": "perf-harness-wasm/src/service_perf.rs",
+      "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL simulation.engine_is_not_stepped_in_a_timed_interval: fail, the engine was stepped inside the timed interval of 70 batches, so those timings hold engine work"
+    },
+    {
+      "name": "the priming window is one slice short, so every window shifts",
+      "file": "perf/runner/page/service-sim.js",
+      "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL simulation.windows_are_not_wrapped: fail, 10 warm-up and 60 measured batches of 4 slices: the measured ones began at slice 296 and ended at 535, and the fixed windows have them begin at 297 and e"
+    },
+    {
+      "name": "a slot is never written, though it is counted as drawn",
+      "file": "service-sim/src/surface.rs",
+      "mode": "correctness",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
+    }
+  ]
+}

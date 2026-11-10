@@ -585,5 +585,40 @@ for (const [name, cases] of Object.entries(rejected)) {
   refuses('a mistyped key of the recovery table', edit(service, [{ set: ['recovery', 'tarjet'], value: 'graph' }]))
 }
 
+// Workload W6 is the simulator run cleanly. It has no graph and no checkpoint policy, and a [simulation] table that is its own, and a
+// manifest of any other workload is told from it by the workload key.
+{
+  const read = name =>
+    JSON.parse(JSON.stringify(parseToml(fs.readFileSync(new URL(`../manifests/${name}`, import.meta.url), 'utf8'))))
+  const simulation = read('w6-service-simulation-smoke.toml')
+  const check = validators.manifest
+  report(check(simulation), `valid simulator manifest${check.errors ? ' ' + ajv.errorsText(check.errors) : ''}`)
+  const refuses = (label, doc) => report(!check(doc), `manifest rejects ${label}`)
+  const edit = (base, ops) => {
+    const doc = clone(base)
+    applyOps(doc, ops)
+    return doc
+  }
+  refuses('the simulator workload with no table', edit(simulation, [{ delete: ['simulation'] }]))
+  refuses(
+    'a simulation table on another workload',
+    edit(simulation, [{ set: ['workload'], value: 'scene_construction' }])
+  )
+  refuses('a graph with the simulator workload', edit(simulation, [{ set: ['graph'], value: { nodes: 4 } }]))
+  refuses(
+    'a checkpoint policy with the simulator workload',
+    edit(simulation, [{ set: ['checkpoint'], value: { view: 'unchanged' } }])
+  )
+  refuses('a mistyped key of the simulation table', edit(simulation, [{ set: ['simulation', 'batches'], value: 4 }]))
+  refuses('a simulation table with no queue capacity', edit(simulation, [{ delete: ['simulation', 'queue_capacity'] }]))
+  refuses('a zero pop minimum', edit(simulation, [{ set: ['simulation', 'min_pops'], value: 0 }]))
+  refuses('too few arrivals', edit(simulation, [{ set: ['simulation', 'arrivals'], value: 10 }]))
+  refuses('too many arrivals', edit(simulation, [{ set: ['simulation', 'arrivals'], value: 2000000 }]))
+  report(
+    check(edit(simulation, [{ set: ['simulation', 'arrivals'], value: 36000 }])),
+    'valid scaled simulator manifest'
+  )
+}
+
 console.log(failures ? `\n${failures} failed` : '\nall passed')
 process.exit(failures ? 1 : 0)

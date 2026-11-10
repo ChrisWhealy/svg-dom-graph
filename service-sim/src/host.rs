@@ -210,6 +210,10 @@ pub struct PageHost {
     /// Whether a write of the control failed, so that its attributes may not say what `playing` says. A full draw
     /// writes them again.
     controls_stale: bool,
+    /// A flag that stands for the document being visible and the host being rendered, when the caller keeps it up to
+    /// date and asks that the test should rely on it. The test then costs a flag and `isConnected`, and reads no
+    /// layout.
+    cached_activation: Option<Rc<Cell<bool>>>,
 }
 
 impl PageHost {
@@ -225,7 +229,19 @@ impl PageHost {
             play_button: None,
             playing: false,
             controls_stale: false,
+            cached_activation: None,
         }
+    }
+
+    /// Makes the test of whether the host may be drawn on rely on `active` and on `isConnected`, and never ask the
+    /// browser whether the document is hidden or the host rendered. Those two reads are the layout-reading predicate
+    /// that a timed draw must not make (design section 8.3), and the caller that keeps `active` up to date, as a
+    /// gallery hint does, makes them outside the draw. Without this the test is the full one, as it is for a person's
+    /// page.
+    #[must_use]
+    pub fn with_cached_activation(mut self, active: Rc<Cell<bool>>) -> Self {
+        self.cached_activation = Some(active);
+        self
     }
 
     /// Names the elements that say things to a person: the live region, the place a failure is reported, and the Play
@@ -266,6 +282,14 @@ impl PageHost {
         self.controls_stale
     }
 
+    /// Whether the test of whether the host may be drawn on reads layout: asks the browser whether the document is
+    /// hidden and whether the host is rendered. It does unless the host was given a cached activation flag, and a timed
+    /// draw must not.
+    #[must_use]
+    pub fn reads_layout(&self) -> bool {
+        self.cached_activation.is_none()
+    }
+
     /// Marks the host as gone for good.
     pub fn dispose(&mut self) {
         self.disposed = true;
@@ -299,6 +323,8 @@ impl Host for PageHost {
             Presence::Disposed
         } else if !self.host.is_connected() {
             Presence::Detached
+        } else if let Some(active) = &self.cached_activation {
+            if active.get() { Presence::Live } else { Presence::Hidden }
         } else if web_sys::window().and_then(|w| w.document()).is_none_or(|d| d.hidden()) || !self.rendered() {
             Presence::Hidden
         } else {

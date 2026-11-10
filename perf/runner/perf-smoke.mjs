@@ -1,4 +1,4 @@
-// The profile that runs on every commit (design section 8): W1 to W3, and the interaction workload for Layer C, at small size.
+// The profile that runs on every commit (design section 8): W1 to W3, the interaction workload for Layer C and the simulator's W6, at small size.
 //
 //   node perf/runner/perf-smoke.mjs [--out-dir DIR] [--manifests a,b] [--repetitions N] [--no-build] [--enforce-statistical]
 //
@@ -32,11 +32,20 @@ const SMOKE = [
   'w1-scene-construction-smoke',
   'w2-connector-rerouting-smoke',
   'w3-scene-lifecycle-smoke',
-  'w4-interaction-small'
+  'w4-interaction-small',
+  // The simulator, run cleanly: A and B with 10 warm-up and 60 measured four-slice observations, and C with real Next. Three repetitions are
+  // diagnostic and never a statistical pass. Play costs 40 seconds a repetition and is on the nightly profile (perf-nightly.yml).
+  'w6-service-simulation-smoke'
 ]
 
 const parse = argv => {
-  const options = { outDir: path.join(root, 'target/perf-smoke'), manifests: SMOKE, repetitions: null, build: true, enforce: false }
+  const options = {
+    outDir: path.join(root, 'target/perf-smoke'),
+    manifests: SMOKE,
+    repetitions: null,
+    build: true,
+    enforce: false
+  }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--out-dir') options.outDir = path.resolve(argv[++i])
@@ -87,7 +96,9 @@ for (const [index, id] of options.manifests.entries()) {
   for (const layer of layersIn(outDir)) {
     const files = resultFiles(outDir).filter(f => {
       const doc = JSON.parse(fs.readFileSync(f, 'utf8'))
-      return doc.mode === 'performance' && (doc.metrics.some(m => m.layer === layer) || doc.run_id.includes(`-${layer}-`))
+      return (
+        doc.mode === 'performance' && (doc.metrics.some(m => m.layer === layer) || doc.run_id.includes(`-${layer}-`))
+      )
     })
     const key = environmentKey(files[0])
     const baseline = baselineDirFor(id, layer, key)
@@ -99,12 +110,19 @@ for (const [index, id] of options.manifests.entries()) {
     }
     const out = path.join(outDir, `comparison-${layer}.json`)
     try {
-      const report = compareCollections({ baselineDir: baseline, candidateDirs: [outDir], layer, mode: 'performance', out })
+      const report = compareCollections({
+        baselineDir: baseline,
+        candidateDirs: [outDir],
+        layer,
+        mode: 'performance',
+        out
+      })
       const lines = summarise(report, `${id}, layer ${layer}`)
       console.log(lines.join('\n').replaceAll('**', '').replaceAll('`', ''))
       summary.push(...lines)
       compared.push({ id, layer, out: path.relative(root, out), gating: report.gating.statistical_gates })
-      if (options.enforce && report.gating.statistical_gates === 'blocking' && regressions(report).length > 0) statisticalFailures++
+      if (options.enforce && report.gating.statistical_gates === 'blocking' && regressions(report).length > 0)
+        statisticalFailures++
     } catch (error) {
       // A comparison that cannot be made is not a slow commit. It is said, and it does not fail the run.
       const note = `Layer ${layer}: the comparison could not be made: ${error.message.split('\n')[0]}`
@@ -124,5 +142,6 @@ fs.writeFileSync(path.join(options.outDir, 'perf-smoke-summary.md'), summary.joi
 fs.writeFileSync(path.join(options.outDir, 'perf-smoke-comparisons.json'), JSON.stringify(compared, null, 2) + '\n')
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n')
 console.log(`\n${verdict}`)
-if (!options.enforce && statisticalFailures === 0) console.log(`(statistical verdicts report only until a baseline has ${RUNS_TO_BLOCK} runs)`)
+if (!options.enforce && statisticalFailures === 0)
+  console.log(`(statistical verdicts report only until a baseline has ${RUNS_TO_BLOCK} runs)`)
 process.exit(deterministicFailures || statisticalFailures ? 1 : 0)
