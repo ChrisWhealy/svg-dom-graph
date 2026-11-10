@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w3-scene-lifecycle-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-10T15:34:14.521Z",
+    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "workload_hash": "e5d1d9d0e839dbfd07f79491c48bdee8d65f8dd79d24c0cbdb7745c28acac685",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-156.0.8078.79-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "4f0e2034d019a49b8758c18488829a3d15c3f6d0c2f7365e07ddc2da3d222310",
+  "reason": "First baseline on github-ubuntu-24.04",
+  "runs": [
+    "w3-scene-lifecycle-smoke-B-performance-r0-20261110T141812",
+    "w3-scene-lifecycle-smoke-B-performance-r1-20261110T141906",
+    "w3-scene-lifecycle-smoke-B-performance-r2-20261110T141959"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

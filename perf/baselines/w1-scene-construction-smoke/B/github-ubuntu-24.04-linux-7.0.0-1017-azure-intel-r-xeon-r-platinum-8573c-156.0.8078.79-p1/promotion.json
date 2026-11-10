@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w1-scene-construction-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-10T15:34:14.338Z",
+    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "workload_hash": "914d601622905233ee6fa11ce4cd516918e242d2c9b3f925a4e93819f40656d1",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-156.0.8078.79-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "c0ea23a2b71935d73c299b33b69ada5d0b2de87f7d9173641a2c3a136d0b0470",
+  "reason": "First baseline on github-ubuntu-24.04",
+  "runs": [
+    "w1-scene-construction-smoke-B-performance-r0-20261110T141342",
+    "w1-scene-construction-smoke-B-performance-r1-20261110T141343",
+    "w1-scene-construction-smoke-B-performance-r2-20261110T141436"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

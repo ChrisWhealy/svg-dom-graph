@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w6-service-simulation-smoke",
+  "layer": "C",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-10T15:34:14.775Z",
+    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "workload_hash": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-156.0.8078.79-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "9ba2a95b93ebd1ea4ee5af7374c8363fb6bf55e6eaba227a061bb6516e5dc7d3",
+  "reason": "First baseline on github-ubuntu-24.04",
+  "runs": [
+    "w6-service-simulation-smoke-C-performance-r0-20261110T143051",
+    "w6-service-simulation-smoke-C-performance-r1-20261110T143152",
+    "w6-service-simulation-smoke-C-performance-r2-20261110T143201"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

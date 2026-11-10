@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w2-connector-rerouting-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-10T15:34:14.460Z",
+    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "workload_hash": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-156.0.8078.79-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61",
+  "reason": "First baseline on github-ubuntu-24.04",
+  "runs": [
+    "w2-connector-rerouting-smoke-B-performance-r0-20261110T141623",
+    "w2-connector-rerouting-smoke-B-performance-r1-20261110T141717",
+    "w2-connector-rerouting-smoke-B-performance-r2-20261110T141717"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}
