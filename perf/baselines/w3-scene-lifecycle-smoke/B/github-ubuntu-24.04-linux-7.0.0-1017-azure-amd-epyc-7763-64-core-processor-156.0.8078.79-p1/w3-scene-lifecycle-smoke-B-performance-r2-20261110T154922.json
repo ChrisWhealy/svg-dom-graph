@@ -1,0 +1,400 @@
+{
+  "schema_version": 1,
+  "run_id": "w3-scene-lifecycle-smoke-B-performance-r2-20261110T154922",
+  "started_at": "2026-11-10T15:49:22.448Z",
+  "repetition": 2,
+  "sequence_position": 4,
+  "environment": {
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "156.0.8078.79",
+    "os": "Linux 7.0.0-1017-azure",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "memory_bytes": 16760344576,
+    "runner_class": "github-ubuntu-24.04",
+    "timer_resolution_us": 4.999999888241291,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.0",
+    "crate_version": "0.2.49",
+    "git_sha": "f4990cb115ecfb8348c074b5e1106506c2412c2c",
+    "git_dirty": false,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w3-scene-lifecycle-smoke",
+    "sha256": "e5d1d9d0e839dbfd07f79491c48bdee8d65f8dd79d24c0cbdb7745c28acac685",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "4f0e2034d019a49b8758c18488829a3d15c3f6d0c2f7365e07ddc2da3d222310",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "scene_lifecycle",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 20,
+        "maximum_degree": 8
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 5,
+        "measurement_iterations": 40,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 3
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 60000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "construction.create_scene",
+      "outliers_flagged": 4,
+      "resolution_limited": true,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 784.999999916181,
+        "min": 30.000000027939677,
+        "p50": 50.00000004656613
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 19.99999990221113,
+        "mean": 90.62499999417923,
+        "stddev": 141.73914057268775,
+        "tukey_high": 89.99999979278073,
+        "tukey_low": 10.000000183936208
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "construction.nodes",
+      "outliers_flagged": 1,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 3979.9999999813735,
+        "min": 1140.0000000139698,
+        "p50": 1760.0000000093132
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 665.0000000372529,
+        "mean": 1806.6250000003492,
+        "stddev": 530.6326503476422,
+        "tukey_high": 2997.5000000558794,
+        "tukey_low": 337.49999990686774
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "construction.edges",
+      "outliers_flagged": 3,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 2059.999999939464,
+        "min": 364.9999999906868,
+        "p50": 669.9999999254942
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 285.0000001490116,
+        "mean": 740.875000008964,
+        "stddev": 376.4797939532441,
+        "tukey_high": 1232.5000002747402,
+        "tukey_low": 92.49999967869371
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "construction.total",
+      "outliers_flagged": 4,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 5005.000000121072,
+        "min": 1590.000000083819,
+        "p50": 2474.9999998603016
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 660.0000000325963,
+        "mean": 2638.1250000034925,
+        "stddev": 832.3704854128849,
+        "tukey_high": 3790.0000000954606,
+        "tukey_low": 1149.9999999650754
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "teardown.drop_scene",
+      "outliers_flagged": 0,
+      "resolution_limited": true,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 15.000000013969839,
+        "min": 0,
+        "p50": 5.000000004656613
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 5.000000004656613,
+        "mean": 7.500000006984919,
+        "stddev": 3.5805743735318343,
+        "tukey_high": 17.500000016298145,
+        "tukey_low": -2.5000000023283064
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "teardown.remove_host",
+      "outliers_flagged": 2,
+      "resolution_limited": true,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 55.00000005122274,
+        "min": 15.000000013969839,
+        "p50": 29.999999911524355
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 10.000000009313226,
+        "mean": 27.749999990919605,
+        "stddev": 8.911962578432078,
+        "tukey_high": 45.000000041909516,
+        "tukey_low": 5.000000004656613
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now over synchronous Scene calls",
+      "name": "teardown.total",
+      "outliers_flagged": 2,
+      "resolution_limited": true,
+      "samples": 40,
+      "status": "measured",
+      "summary": {
+        "max": 65.00000006053597,
+        "min": 15.000000013969839,
+        "p50": 35.00000003259629
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 15.000000013969839,
+        "mean": 35.249999997904524,
+        "stddev": 10.312427162050591,
+        "tukey_high": 62.50000005820766,
+        "tukey_low": 2.5000000023283064
+      }
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.baseline",
+      "status": "measured",
+      "unit": "count",
+      "value": 6
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.after_build",
+      "status": "measured",
+      "unit": "count",
+      "value": 79
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 6
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.delta_after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.baseline",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.after_build",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.delta_after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_bytes.baseline",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 74403
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_bytes.after_build",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 100851
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_bytes.after_teardown",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 74467
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_bytes.delta_after_teardown",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 64
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_allocations.baseline",
+      "status": "measured",
+      "unit": "count",
+      "value": 22
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_allocations.after_build",
+      "status": "measured",
+      "unit": "count",
+      "value": 205
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_allocations.after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 23
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "resource.live_allocations.delta_after_teardown",
+      "status": "measured",
+      "unit": "count",
+      "value": 1
+    },
+    {
+      "kind": "capacity",
+      "layer": "B",
+      "mechanism": "WebAssembly.Memory.buffer.byteLength",
+      "name": "wasm.linear_memory_high_water",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 1310720
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the counting allocator",
+      "name": "wasm.allocator_peak_live_bytes",
+      "status": "measured",
+      "unit": "bytes",
+      "value": 113609
+    }
+  ],
+  "checkpoints_passed": 2,
+  "checkpoints_failed": [],
+  "raw_samples": "target/perf-smoke/w3-scene-lifecycle-smoke/w3-scene-lifecycle-smoke-B-performance-r2-20261110T154922.samples.ndjson"
+}

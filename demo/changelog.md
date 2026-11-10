@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: W6 A/B four-slice obs; C real Next/Play; 3-repeat diagnostic smoke test; 1k/10k/100k pops; mandatory setter (`49c4358`)
 - `perf/runner/promote-from-run.mjs` script to download CI workload data to `perf/baselines` for a given run id (`f4990cb`)
 - Promote initial CI workload data to `perf/baselines` (`7ba9852`)
+- Promote second and third CI workload data to `perf/baselines` (``)
 
 ### Changed
 
@@ -65,7 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: Complete Layer C's real-control correctness checks (`9b8c4c6`)
 - DESS S5: Adjust W4 interaction runner to count `frames_unattributed` and continue. Only fails if count > 15 (`03b698a`)
 - DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (`685cac3`)
-- Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (``)
+- Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
 
 ### Fixed
 

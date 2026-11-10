@@ -4,18 +4,18 @@
   "layer": "B",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-10T15:34:14.711Z",
-    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "promoted_at": "2026-11-10T16:29:48.871Z",
+    "commit": "7ba9852b420f677fe44ee36fd1a3e8984d956f42",
     "workload_hash": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-156.0.8078.79-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "cce8d6847dc1919a9c7202334ece6ab36079e225b9a8275f651f28651d17afbb",
-  "reason": "First baseline on github-ubuntu-24.04",
+  "reason": "Third baseline on github-ubuntu-24.04",
   "runs": [
-    "w6-service-simulation-smoke-B-performance-r0-20261110T142859",
-    "w6-service-simulation-smoke-B-performance-r1-20261110T143052",
-    "w6-service-simulation-smoke-B-performance-r2-20261110T143153"
+    "w6-service-simulation-smoke-B-performance-r0-20261110T160227",
+    "w6-service-simulation-smoke-B-performance-r1-20261110T160328",
+    "w6-service-simulation-smoke-B-performance-r2-20261110T160336"
   ],
   "comparison_method": {
     "statistic": "ratio of repetition medians",
@@ -23,6 +23,9 @@
     "ratio_tolerance": 0.1,
     "confidence": 0.95
   },
-  "previous": null,
+  "previous": {
+    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
+    "promoted_at": "2026-11-10T15:34:14.711Z"
+  },
   "accepted_regression": null
 }
