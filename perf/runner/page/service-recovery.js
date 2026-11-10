@@ -495,6 +495,38 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
       point('service_timer_request', 1, { refused: refused.outcome }, broken)
     }
 
+    // service_timer_request, again, for the two other ways that a timer is asked for: the timer that replaces one when the speed changes during
+    // playback, and the timer that follows a slice that playback committed. Both have to leave the same state as a refused first timer:
+    // playback stopped, no timer waiting, and the display and the model as the last slice left them. The timers are held, so the tick is
+    // run by the test and no interval is waited for.
+    for (const path of ['a new speed', 'the next slice']) {
+      const before = at(0, scenario, SLICE)
+      window.__timers.hold(true)
+      act(0, { op: 'set_speed', ms: 100 })
+      act(0, { op: 'play' })
+      const queued = window.__timers.pending()
+      const broken = []
+      if (queued.length !== 1) broken.push(`${queued.length} timers were queued by Play, and one was expected`)
+      window.__timers.refuseNext()
+      let outcome = null
+      let expectSlice = before.committed_slice
+      if (path === 'a new speed') outcome = act(0, { op: 'set_speed', ms: 50 }).outcome
+      else {
+        window.__timers.fire(queued[0].id)
+        expectSlice = before.committed_slice + 1
+      }
+      window.__timers.clear()
+      const mid = cp(0)
+      if (outcome !== null && outcome !== 'failed') broken.push(`the change of speed reported ${outcome} and not failed`)
+      if (mid.playing) broken.push('playback was left marked as running without a timer')
+      if (mid.waiting_tasks !== 0) broken.push(`${mid.waiting_tasks} timers are waiting, and none should be`)
+      if (mid.committed_slice !== expectSlice) broken.push(`the committed slice is ${mid.committed_slice} and not ${expectSlice}`)
+      if (mid.control_pressed !== 'false') broken.push('the Play control still shows that playback is running')
+      if (!/not|could|refused/.test(mid.announcement ?? '')) broken.push('the failure was not reported to a person')
+      if (agreesWithOracle(mid) === false) broken.push('the model differs from the oracle')
+      point('service_timer_request', path === 'a new speed' ? 2 : 3, { path }, broken)
+    }
+
     // service_frame_request: the browser refuses the frame that a seek asks for.
     {
       const before = at(0, scenario, SLICE)

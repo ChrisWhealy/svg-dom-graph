@@ -505,6 +505,7 @@ fn a_timer_that_cannot_be_scheduled_stops_playback_and_keeps_the_display() {
     c.scheduler().fail_next_timers(1);
     assert_eq!(c.play(), Outcome::Failed);
     assert!(!c.is_playing());
+    assert_eq!(c.scheduler().pending(), 0, "and no timer waits");
     assert_eq!(log.borrow().reports.len(), 1);
     // Play, and let the second timer fail after a slice was committed.
     c.set_speed(10);
@@ -513,7 +514,38 @@ fn a_timer_that_cannot_be_scheduled_stops_playback_and_keeps_the_display() {
     c.scheduler().advance_by(10);
     assert_eq!(c.committed_slice(), 1, "the slice that was drawn stays");
     assert!(!c.is_playing(), "and playback stopped, as there was no timer for the next");
+    assert_eq!(c.scheduler().pending(), 0, "and no timer waits");
     assert_eq!(page(&log), Some(c.committed().canonical()));
+}
+
+#[test]
+fn a_timer_that_cannot_be_scheduled_for_a_new_speed_stops_playback_and_leaves_no_timer() {
+    let (c, log) = start(e0());
+    c.set_speed(100);
+    assert_eq!(c.play(), Outcome::Done);
+    assert_eq!(c.scheduler().pending(), 1);
+    let epoch = c.epoch();
+    c.scheduler().fail_next_timers(1);
+    assert_eq!(c.set_speed(50), Outcome::Failed);
+    assert!(!c.is_playing(), "playback is not left marked as running without a timer");
+    assert_eq!(
+        c.scheduler().pending(),
+        0,
+        "the timer that was taken back is not replaced, and none waits"
+    );
+    assert!(c.epoch() > epoch, "a callback that was already on its way is stale");
+    assert_eq!(c.committed_slice(), 0);
+    assert_eq!(log.borrow().reports.len(), 1);
+    assert_eq!(
+        log.borrow().playing.last(),
+        Some(&false),
+        "and the host was told that it stopped"
+    );
+    // Nothing runs on its own afterwards, and Play starts it again.
+    c.scheduler().advance_by(1000);
+    assert_eq!(c.committed_slice(), 0);
+    assert_eq!(c.play(), Outcome::Done);
+    assert!(c.is_playing());
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

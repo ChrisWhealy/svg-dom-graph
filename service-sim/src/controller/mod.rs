@@ -743,6 +743,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
             },
             Err(problem) => {
                 // The last committed display stays, and playback stops.
+                self.stop_playing();
                 self.report_once(&problem);
                 Outcome::Failed
             },
