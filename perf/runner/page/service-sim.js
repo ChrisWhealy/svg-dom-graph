@@ -102,7 +102,7 @@ export const runSimulationCorrectness = async (h, manifest, trace) => {
   const { fail, pass, engineAt } = makeChecks(outcome, trace)
   const slices = trace.counters.slices
   const built = parse(
-    h.sim_build(JSON.stringify({ seed: manifest.seed, arrivals: manifest.simulation.arrivals, product: true }))
+    h.sim_build(JSON.stringify({ seed: manifest.seed_text, arrivals: manifest.simulation.arrivals, product: true }))
   )
   if (!built.ok) {
     outcome.status = 'error'
@@ -237,7 +237,11 @@ export const runSimulationPerformance = async (h, manifest, trace, testing = {})
   // `testing.product` builds the fixture as a person's page has it, whose test of visibility reads layout, to show that the gate on that bites.
   const built = parse(
     h.sim_build(
-      JSON.stringify({ seed: manifest.seed, arrivals: manifest.simulation.arrivals, product: testing.product === true })
+      JSON.stringify({
+        seed: manifest.seed_text,
+        arrivals: manifest.simulation.arrivals,
+        product: testing.product === true
+      })
     )
   )
   if (!built.ok) {
@@ -419,7 +423,7 @@ export const runSimulationEndurance = async (h, manifest, trace) => {
   const cycleEnds = []
   for (let cycle = 1; cycle <= total; cycle++) {
     const built = parse(
-      h.sim_build(JSON.stringify({ seed: manifest.seed, arrivals: manifest.simulation.arrivals, product: true }))
+      h.sim_build(JSON.stringify({ seed: manifest.seed_text, arrivals: manifest.simulation.arrivals, product: true }))
     )
     if (!built.ok) {
       outcome.status = 'error'

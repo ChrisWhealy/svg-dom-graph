@@ -111,5 +111,20 @@ check(
   'and a scaled run is a different input stream, and a longer one'
 )
 
+// A seed over 2**53 is not rounded: its decimal text reaches the independent engine as a BigInt, and the seed next to it is another run.
+const big = buildTrace(simulation, '9007199254740993')
+const rounded = buildTrace(simulation, '9007199254740992')
+check(
+  big.hashes.input_stream_sha256 !== rounded.hashes.input_stream_sha256 &&
+    big.hashes.checkpoint_chain_sha256 !== rounded.hashes.checkpoint_chain_sha256,
+  'the seed 9007199254740993 is not run as 9007199254740992, which is what a number would make of it'
+)
+check(
+  buildTrace(simulation, 18446744073709551557n).counts.pops > 0 &&
+    buildTrace(simulation, '18446744073709551557').hashes.event_pop_sha256 ===
+      buildTrace(simulation, 18446744073709551557n).hashes.event_pop_sha256,
+  'and a seed near 2**64 is the same run as a text and as a BigInt'
+)
+
 console.log(failures ? `\n${failures} failed` : '\nthe trace of W6 qualifies and refuses as it should')
 process.exit(failures ? 1 : 0)

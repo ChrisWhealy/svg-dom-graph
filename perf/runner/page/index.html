@@ -35,7 +35,10 @@
     window.perfHarness.sim_run = async (mode, manifestJson, traceJson, testingJson = '{}') => {
       const run = { correctness: runSimulationCorrectness, performance: runSimulationPerformance, endurance: runSimulationEndurance }[mode]
       if (!run) throw new Error(`workload W6 has no mode ${mode} in Layer B`)
-      return JSON.stringify(await run(window.perfHarness, JSON.parse(manifestJson), JSON.parse(traceJson), JSON.parse(testingJson)))
+      const manifest = JSON.parse(manifestJson)
+      // A seed over 2**53 is rounded by a number, so its text is taken from the canonical manifest as it was written, and is what the wasm is given.
+      manifest.seed_text = /"seed":(\d+)/.exec(manifestJson)[1]
+      return JSON.stringify(await run(window.perfHarness, manifest, JSON.parse(traceJson), JSON.parse(testingJson)))
     }
     window.perfHarness.recovery_run = (manifestJson, testing = '{}') => JSON.stringify(runRecovery(window.perfHarness, JSON.parse(manifestJson), JSON.parse(testing)))
   </script>

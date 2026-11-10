@@ -102,6 +102,49 @@ const check = (ok, text) => {
   fs.rmSync(work, { recursive: true, force: true })
 }
 
+// A seed over 2**53 is the same seed in the independent engine and in the native one, and in the page. Layer A holds every checkpoint of the
+// Rust engine to the independent engine's, so a seed that one of them rounded would fail it, and Layer B does the same through the wasm.
+{
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dess-s5-seed-'))
+  for (const seed of ['9007199254740993', '18446744073709551557']) {
+    const file = path.join(work, `w6-${seed}.toml`)
+    fs.writeFileSync(file, fs.readFileSync(manifestPath, 'utf8').replace('seed = 20261106', `seed = ${seed}`))
+    const out = path.join(work, `out-${seed}`)
+    const ran = spawnSync(
+      'node',
+      [
+        path.join(root, 'perf/runner/run.mjs'),
+        file,
+        '--mode',
+        'correctness',
+        '--layers',
+        'a,b',
+        '--out-dir',
+        out,
+        '--no-build'
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 1 << 28
+      }
+    )
+    const files = fs.existsSync(out)
+      ? fs.readdirSync(out).filter(f => f.endsWith('.json') && !f.endsWith('.cases.json') && f.startsWith('w6-'))
+      : []
+    const texts = files.map(f => fs.readFileSync(path.join(out, f), 'utf8'))
+    check(
+      ran.status === 0 &&
+        texts.length === 2 &&
+        texts.every(
+          t => t.includes(`"seed": ${seed}`) && !t.includes(`"seed": ${Number(seed)}`.replace(/e\+?\d+$/, ''))
+        ),
+      `seed ${seed}: the Rust engine and the page both agree with the independent engine on every slice, and the result keeps the exact seed`
+    )
+  }
+  fs.rmSync(work, { recursive: true, force: true })
+}
+
 // A manifest that names its layers is held to them. The 100,000-pop one is for Layer A alone, so no browser is started for it, and a layer
 // that is asked for by name and is not named is refused.
 {

@@ -57,7 +57,9 @@ const histogram = (slices, capacity) => {
 export const buildTrace = (simulation, seed) => {
   // A scaled run is the frozen revision with more or fewer arrivals. The draws of an arrival do not depend on how many there are.
   const params = simulation.arrivals ? { ...MIXED_OUTAGE_7, arrivals: simulation.arrivals } : MIXED_OUTAGE_7
-  const trace = run({ configId: params.revision, seed, config: params, params })
+  // The seed arrives as its decimal text, and is a BigInt here, at the independent engine's boundary, so that one over 2**53 is not rounded.
+  const exact = BigInt(seed)
+  const trace = run({ configId: params.revision, seed: exact, config: params, params })
   const capacity = params.queueCapacity
   const slices = trace.slices
   const counters = trace.counters

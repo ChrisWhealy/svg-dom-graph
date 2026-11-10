@@ -59,7 +59,7 @@ const unavailable = (name, reason) => ({ name, layer: 'C', status: 'unavailable'
  * One repetition. `trace` is the independent engine's trace (`expected` of service-trace.mjs), `series` is a list of `next` and `play`, and
  * `injectLatePause` delays the Pause of one Play cycle past the interval, which has to be rejected for the extra tick and for nothing else.
  */
-export const runSimulationC = async ({ binary, manifest, trace, series = ['next'], injectLatePause = false }) => {
+export const runSimulationC = async ({ binary, manifest, seed, trace, series = ['next'], injectLatePause = false }) => {
   const outcome = {
     status: 'ok',
     metrics: [],
@@ -133,7 +133,7 @@ export const runSimulationC = async ({ binary, manifest, trace, series = ['next'
 
     // Next.
     if (series.includes('next')) {
-      let s = await controls('reset', manifest.seed, PRIMING, manifest.simulation.arrivals)
+      let s = await controls('reset', seed, PRIMING, manifest.simulation.arrivals)
       held(s, PRIMING, 'the start of the Next series')
       for (let i = 0; i < WARMUP; i++) {
         await click('perf-sim-next')
@@ -174,7 +174,7 @@ export const runSimulationC = async ({ binary, manifest, trace, series = ['next'
     // Play: one tick a cycle, at the slowest speed.
     let rejected = null
     if (playWanted) {
-      await controls('reset', manifest.seed, PRIMING, manifest.simulation.arrivals)
+      await controls('reset', seed, PRIMING, manifest.simulation.arrivals)
       await controls('setSpeed', INTERVAL_MS)
       const cycle = async late => {
         const before = await state()
@@ -357,7 +357,7 @@ export const runSimulationC = async ({ binary, manifest, trace, series = ['next'
  * Play commits one slice at 1 Hz and a real Pause stops it with nothing pending, and a real Seek reaches the slice that its control chose.
  * The browser's own accessibility tree has to expose the controls by name, with the Play control's pressed state.
  */
-export const runSimulationCCorrectness = async ({ manifest, trace }) => {
+export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
   const outcome = {
     status: 'ok',
     metrics: [],
@@ -393,7 +393,7 @@ export const runSimulationCCorrectness = async ({ manifest, trace }) => {
   const heldAt = []
   try {
     await controls('install')
-    let s = await controls('reset', manifest.seed, 0, manifest.simulation.arrivals)
+    let s = await controls('reset', seed, 0, manifest.simulation.arrivals)
     heldAt.push([0, s.engine_sha256])
     // The controls are in the browser's accessibility tree, by name.
     await page.send('Accessibility.enable')

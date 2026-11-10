@@ -88,9 +88,10 @@ const sha = text => createHash('sha256').update(text).digest('hex')
 // stream is that engine's hash of the state at every slice: the whole chain for a correctness run, and the prefix that the windows consume for
 // a performance run, which does not execute the rest.
 const simulating = JSON.parse(canonicalManifest).workload === 'service_simulation'
-const simulationTrace = simulating
-  ? buildTrace(JSON.parse(canonicalManifest).simulation, JSON.parse(canonicalManifest).seed)
-  : null
+// A seed can be larger than 2**53, and then a number loses it. Its decimal text is kept as it is in the canonical manifest, and is turned into a
+// BigInt only at the independent engine's boundary, so the oracle and the native engine run the same seed.
+const seedText = /"seed":(\d+)/.exec(canonicalManifest)?.[1]
+const simulationTrace = simulating ? buildTrace(JSON.parse(canonicalManifest).simulation, seedText) : null
 if (!service && !simulating)
   must(
     run(binary, ['generate', manifestPath, '--id', manifestId, '--out', reportPath]),
@@ -98,7 +99,7 @@ if (!service && !simulating)
   )
 const report = simulating
   ? {
-      manifest: { sha256: sha(canonicalManifest), canonical: JSON.parse(canonicalManifest) },
+      manifest: { sha256: sha(canonicalManifest), canonical: readExact(canonicalManifest) },
       stream: {
         sha256: simulationTrace.hashes.checkpoint_chain_sha256,
         mutations_sha256: sha(simulationTrace.checkpoints.slice(0, 537).join('\n'))
@@ -303,8 +304,9 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
 const simulationField = simulating
   ? {
       generator_revision: simulationTrace.qualification.generator_revision,
-      seed: manifest.seed,
-      qualification: simulationTrace.qualification,
+      // The exact text of the seed, which a number would round. The file keeps it as it is, and the schema reads it as the number it is.
+      seed: JSON.rawJSON(seedText),
+      qualification: { ...simulationTrace.qualification, seed: JSON.rawJSON(seedText) },
       counts: simulationTrace.counts,
       hashes: simulationTrace.hashes
     }
@@ -339,7 +341,7 @@ const runSimulation = async (mode, repetition) => {
       repetition,
       attach({
         status: 'refused',
-        error: `the trace of seed ${manifest.seed} is refused before any timing, and no layer was run: ${simulationTrace.qualification.reasons.join('; ')}`,
+        error: `the trace of seed ${seedText} is refused before any timing, and no layer was run: ${simulationTrace.qualification.reasons.join('; ')}`,
         metrics: [],
         gates: [],
         samples: {},
@@ -376,13 +378,14 @@ const runSimulation = async (mode, repetition) => {
     }
   }
   if (options.layers.includes('c') && mode === 'correctness') {
-    const outcome = await runSimulationCCorrectness({ manifest, trace: simulationTrace.expected })
+    const outcome = await runSimulationCCorrectness({ manifest, seed: seedText, trace: simulationTrace.expected })
     keep('C', mode, repetition, attach(outcome), outcome.crossOriginIsolated ?? null)
   }
   if (options.layers.includes('c') && mode === 'performance') {
     const outcome = await runSimulationC({
       binary,
       manifest,
+      seed: seedText,
       trace: simulationTrace.expected,
       series: options.play ? ['next', 'play'] : ['next'],
       injectLatePause: options.lateDuringPlay === true

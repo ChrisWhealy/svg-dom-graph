@@ -148,6 +148,8 @@ fn with_sim<T>(work: impl FnOnce(&mut Sim) -> Result<T, String>) -> Result<T, St
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[derive(Deserialize)]
 struct Config {
+    /// A string, since a number from JavaScript rounds a seed over 2**53. A number is accepted for the small ones.
+    #[serde(deserialize_with = "seed_from_text_or_number")]
     seed: u64,
     /// The arrivals of a scaled run of the frozen revision, when the trace is one.
     #[serde(default)]
@@ -164,6 +166,19 @@ struct Page {
     next: web_sys::Element,
     play: web_sys::Element,
     seek: web_sys::Element,
+}
+
+fn seed_from_text_or_number<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Seed {
+        Text(String),
+        Number(u64),
+    }
+    match Seed::deserialize(deserializer)? {
+        Seed::Text(text) => text.parse().map_err(serde::de::Error::custom),
+        Seed::Number(number) => Ok(number),
+    }
 }
 
 fn make_page(document: &web_sys::Document) -> Result<Page, String> {
