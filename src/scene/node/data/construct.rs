@@ -51,6 +51,10 @@ impl Scene {
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Unlike
     /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always sized
     /// to fit `content`.
+    ///
+    /// Returns a wrapped [`Error::Svg`] if a DOM write fails while the node is drawn. Drawing a node is a transaction:
+    /// every element it made is removed again, the graph's model is only changed after the node is attached, and the
+    /// scene is exactly as it was, so calling this again draws the node.
     pub fn add_data_node_with(
         &self,
         top_left: Point,

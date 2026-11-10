@@ -203,6 +203,7 @@ pub(super) fn draw_content_box(
                 hex_marks,
                 toolbar_slot: frame.toolbar_slot,
                 pictures: cells.pictures,
+                texts_stale: false,
             },
             cell_stroke_width: match (content.is_single_value(), content.hex_dump()) {
                 (true, _) => "1.5",

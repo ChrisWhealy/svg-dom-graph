@@ -29,6 +29,9 @@ pub mod persistent;
 #[cfg(target_arch = "wasm32")]
 pub mod recovery;
 
+#[cfg(target_arch = "wasm32")]
+pub mod service_recovery;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 mod exports {
@@ -376,6 +379,69 @@ mod exports {
     #[wasm_bindgen]
     pub fn recovery_forget() {
         crate::recovery::forget();
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // The service-simulation target of the recovery workload. See `service_recovery`.
+
+    /// Builds a controller on a surface on a slot, for the scenario of `config_json`, and says what it made.
+    #[wasm_bindgen]
+    pub fn service_build(config_json: &str, slot: u32) -> String {
+        crate::service_recovery::build(config_json, slot)
+    }
+
+    /// Does one thing to the controller on a slot, and says what came of it.
+    #[wasm_bindgen]
+    pub fn service_act(slot: u32, op_json: &str) -> String {
+        crate::service_recovery::act(slot, op_json)
+    }
+
+    /// The logical state and the page of the controller on a slot.
+    #[wasm_bindgen]
+    pub fn service_checkpoint(slot: u32) -> String {
+        crate::service_recovery::checkpoint(slot)
+    }
+
+    /// Sets, or clears, the hook that is called at each point of a draw. With a count the host leaves after that many calls.
+    #[wasm_bindgen]
+    pub fn service_hook(slot: u32, detach_after: Option<usize>, clear: bool) -> String {
+        crate::service_recovery::hook(slot, detach_after, clear)
+    }
+
+    /// How many times the hook of a slot was called.
+    #[wasm_bindgen]
+    pub fn service_hook_calls(slot: u32) -> String {
+        crate::service_recovery::hook_calls(slot)
+    }
+
+    /// Puts the host of a slot back in the document, where a sweep took it out.
+    #[wasm_bindgen]
+    pub fn service_attach(slot: u32) -> String {
+        crate::service_recovery::attach(slot)
+    }
+
+    /// Shows or hides the panel that holds the host of a slot, as the gallery does.
+    #[wasm_bindgen]
+    pub fn service_show_panel(slot: u32, shown: bool) -> String {
+        crate::service_recovery::show_panel(slot, shown)
+    }
+
+    /// The element and closure counts of a slot.
+    #[wasm_bindgen]
+    pub fn service_counts(slot: u32) -> String {
+        crate::service_recovery::counts(slot)
+    }
+
+    /// Disposes the controller on a slot and removes its page.
+    #[wasm_bindgen]
+    pub fn service_teardown(slot: u32) -> String {
+        crate::service_recovery::teardown(slot)
+    }
+
+    /// Drops every service fixture.
+    #[wasm_bindgen]
+    pub fn service_forget() {
+        crate::service_recovery::forget();
     }
 
     /// Starts following every block that is allocated from now on. A diagnostic, for finding what a leak is made of.

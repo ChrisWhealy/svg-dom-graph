@@ -137,6 +137,10 @@ impl Surface {
     /// # Errors
     ///
     /// Returns `Err` if the `<svg>` is missing, an element could not be made, or the scene did not draw what was asked.
+    ///
+    /// A failure at any DOM call returns the error and makes no surface, so nothing is committed: no `Surface` exists
+    /// to draw on. The caller removes the host `<svg>`, which is the only place that a half-built scene could be left,
+    /// and builds again on a fresh one.
     pub fn build(svg_id: &str, servers: usize) -> Result<Self, String> {
         let document = web_sys::window().and_then(|w| w.document()).ok_or("there is no document")?;
         let host = document

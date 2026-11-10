@@ -51,35 +51,39 @@ impl Scene {
     /// costing anything.
     ///
     /// `values` must be the same type, and the same number of values, as the node was drawn with. An `I16` node cannot
-    /// be given `U16` or `F32` values, nor an `F32` node `F64` ones. The grid
-    /// then keeps exactly the size, shape and position it already has, and so does every connector attached to it. The
-    /// node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn with. So
-    /// a [`crate::model::content::DataFormat::Decimal`] integer with more digits than any value shown when the node was
-    /// drawn will overflow its cell. So will a float that needs more characters under its format: more integer digits, a
-    /// longer exponent, a minus sign, or `-inf`. [`crate::model::content::DataFormat::Hexadecimal`] and
+    /// be given `U16` or `F32` values, nor an `F32` node `F64` ones. The grid then keeps exactly the size, shape and
+    /// position it already has, and so does every connector attached to it. The node's own selection, secondary cells
+    /// and colours are untouched. Each cell keeps the width it was drawn with. So a
+    /// [`crate::model::content::DataFormat::Decimal`] integer with more digits than any value shown when the node was
+    /// drawn will overflow its cell. So will a float that needs more characters under its format: more integer digits,
+    /// a longer exponent, a minus sign, or `-inf`. [`crate::model::content::DataFormat::Hexadecimal`] and
     /// [`crate::model::content::DataFormat::Binary`] values never change width.
     ///
-    /// For a node drawn via [`add_data_node`](Self::add_data_node) or [`add_named_data_node`](Self::add_named_data_node)
-    /// and their `_with` variants. A single-value node is replaced too. Its own accessible name and tooltip quote the
-    /// value, so those are rewritten as well, keeping every relationship and selection clause after it. An operator
-    /// node's own result is replaced the same way. The library never evaluates an operator, so the caller works out
-    /// the new result just as it did when it added the node. Nothing downstream of the node is changed: a node that
-    /// takes this one as an operand keeps the result it was given.
+    /// For a node drawn via [`add_data_node`](Self::add_data_node) or
+    /// [`add_named_data_node`](Self::add_named_data_node) and their `_with` variants. A single-value node is replaced
+    /// too. Its own accessible name and tooltip quote the value, so those are rewritten as well, keeping every
+    /// relationship and selection clause after it. An operator node's own result is replaced the same way. The library
+    /// never evaluates an operator, so the caller works out the new result just as it did when it added the node.
+    /// Nothing downstream of the node is changed: a node that takes this one as an operand keeps the result it was
+    /// given.
     ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node or an operator node, or if `values`
-    /// has a different type or a different number of values. Checked before changing anything.
+    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node or an operator node, or if `values` has a
+    /// different type or a different number of values. Checked before changing anything.
     ///
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
-    /// already rewritten. The node's own values stay as they were then, so calling this again with the same `values`
-    /// rewrites every cell that differs from them, including those already written, and repairs the node.
+    /// already rewritten. The node's own values stay as they were then, and the node is marked as not known to match
+    /// them. The next call, whatever `values` it asks for, writes every cell, changed or not, and clears the mark when
+    /// it has written them all. So calling this again with the same `values` finishes the change, and calling it with
+    /// the values the node held before puts the node back, in one call. A node that has not failed is written only
+    /// where a value changed, as before.
     ///
     /// The small picture at the front of a polar or rectangular complex number is written after the values are
-    /// committed, so a failure there leaves the new values in the node. A picture that was not written is remembered, and
-    /// the next call writes it, whatever `values` it is given, even the values the node holds now.
+    /// committed, so a failure there leaves the new values in the node. A picture that was not written is remembered,
+    /// and the next call writes it, whatever `values` it is given, even the values the node holds now.
     pub fn set_data_values(&self, id: NodeId, values: NodeValues) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
 
@@ -116,7 +120,10 @@ impl Scene {
         };
         let mut changed_cells = Vec::new();
         let mut old_text = String::new();
-        if single_value && content.differs_from(&values) {
+        // A node whose cells are not known to match its values is written in every cell, whatever changed, and then the
+        // old text that a single value's name quotes is the model's, which the last failed call put back.
+        let force = handles.decor.texts_stale;
+        if single_value && (force || content.differs_from(&values)) {
             content.single_cell_string_into(&mut old_text);
             // The accessible name quotes what is said, and a mark is said as the word, and an empty text as "empty".
             // Every other value is said as it is written, so its text is kept as it is and nothing is allocated.
@@ -133,36 +140,49 @@ impl Scene {
         // retrying with the same values rewrites every cell again, those already written included.
         let mut scratch = String::new();
         let mut name_scratch = String::new();
-        let accepted = content.try_replace_values(values, &mut scratch, |i, text| -> Result<(), svg_dom::Error> {
-            let Some(cell) = handles.cell_texts.get(i) else { return Ok(()) };
-            // A matrix is two rows, so it is rebuilt in place, centred where its cell's text is. An exponent is rebuilt in
-            // place too. Any other text is set whole.
-            let centre_x = grid
-                .and_then(|grid| grid.cell_rect(i))
-                .map(|rect| rect.origin.x + (rect.size.width + picture_room) / 2.0);
-            write_cell_text(cell, text, text_style, centre_x)?;
-            if picture_kind.is_some() {
-                changed_cells.push(i);
-            }
-            // A mark's colour follows its shape, and its accessible name says the word and not the mark. No other text
-            // ever changes colour, so only a mark is given a fill, and every other cell is written no more than before.
-            if icon {
-                cell.set_fill(crate::scene::DataNodeContent::ink_for(icon, text))?;
-            }
-            let text = crate::scene::DataNodeContent::spoken_for(icon, text);
-            if single_value {
-                // A single value's text has no name of its own: the node's own accessible name quotes the value
-                // instead, and is part of the same write.
-                handles.replace_label_value(type_name, &old_text, text)
-            } else {
-                // A grid's cell is named by its row and column, matching what `draw_content_box` gave it.
-                cell_name_into(labelling, i, cols, text, &mut name_scratch);
-                cell.set_attr("aria-label", &name_scratch)
-            }
-        })?;
+        // From here every cell that is written may leave the node torn, and the model commits only after the last one.
+        // So the node is marked before the first write, and cleared only when every cell has been written. A call that
+        // fails part way leaves it marked, and the next call, whatever values it asks for, writes every cell.
+        handles.decor.texts_stale = true;
+        let accepted = content.try_replace_values_forcing(
+            values,
+            &mut scratch,
+            force,
+            |i, text| -> Result<(), svg_dom::Error> {
+                let Some(cell) = handles.cell_texts.get(i) else { return Ok(()) };
+                // A matrix is two rows, so it is rebuilt in place, centred where its cell's text is. An exponent is
+                // rebuilt in place too. Any other text is set whole.
+                let centre_x = grid
+                    .and_then(|grid| grid.cell_rect(i))
+                    .map(|rect| rect.origin.x + (rect.size.width + picture_room) / 2.0);
+                write_cell_text(cell, text, text_style, centre_x)?;
+                if picture_kind.is_some() {
+                    changed_cells.push(i);
+                }
+                // A mark's colour follows its shape, and its accessible name says the word and not the mark. No other
+                // text ever changes colour, so only a mark is given a fill, and every other cell is written no more
+                // than before.
+                if icon {
+                    cell.set_fill(crate::scene::DataNodeContent::ink_for(icon, text))?;
+                }
+                let text = crate::scene::DataNodeContent::spoken_for(icon, text);
+                if single_value {
+                    // A single value's text has no name of its own: the node's own accessible name quotes the value
+                    // instead, and is part of the same write.
+                    handles.replace_label_value(type_name, &old_text, text)
+                } else {
+                    // A grid's cell is named by its row and column, matching what `draw_content_box` gave it.
+                    cell_name_into(labelling, i, cols, text, &mut name_scratch);
+                    cell.set_attr("aria-label", &name_scratch)
+                }
+            },
+        )?;
         if !accepted {
+            // Nothing was written, so the node is as it was.
+            handles.decor.texts_stale = force;
             return Err(Error::IncompatibleNodeValues(id));
         }
+        handles.decor.texts_stale = false;
         // The pictures are rewritten once the numbers are committed, from the numbers the node holds now. The model has
         // committed them by now, so a picture that fails to be written would look up to date to a retry, which sees
         // nothing changed. So every picture that is to be written is marked stale first, and is marked clean only when it

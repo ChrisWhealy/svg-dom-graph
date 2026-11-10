@@ -11,7 +11,7 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 
     `NodeOptions::with_fill` gives a plain node a fill of its own.
     That tells a heading row of a table made of plain nodes apart from the rows below it.
-   A data node's fill says what type it holds, so it is not changed by this.
+    A data node's fill says what type it holds, so it is not changed by this.
 
 - `add_data_node`/`add_data_node_with` draw a node whose content is a grid of `DataNodeContent` values instead of a plain label, self-sizing to fit.
 
@@ -20,7 +20,7 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 - `add_named_data_node`/`add_named_data_node_with` wrap a data node in a further outer box labelled with a caller-given `name`.
 
    A value then reads as a variable, not just a bare type — `"B: u64 = ..."` rather than `"u64 = ..."`.
-  `name` must not be empty or hold only whitespace.
+   `name` must not be empty or hold only whitespace.
 
   A `DataNodeContent` holds the values, in one of nineteen types:
 
@@ -63,6 +63,9 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
   The caller works out the new result, as it did when it added the node.
   Nothing downstream of that node changes, so a node that takes it as an operand keeps the result it was given.
   This is what lets a stepping demo update a diagram in place instead of drawing it again.
+  A call that fails part way leaves some cells rewritten and the model holding its old values.
+  The node is then marked, and the next call writes every cell, even one that asks for the values the model holds, and clears the mark.
+  So one call with the last committed values puts a torn node back.
 
 - `add_unary_operator_node`/`_with`, `add_binary_operator_node`/`_with`, and `add_arithmetic_operator_node`/`_with` each draw a node labelled with the operation name that produced the value it displays.
   `NodeOptions::with_input_side` forces both input connectors of a two-input operator node onto one side of it.
@@ -71,8 +74,7 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
   An elbow into such a node turns on a channel 20 units in front of it, and not half way from its operand.
   So an elbow stays in the gap before the node, clear of any node that stands between.
 
-   ***IMPORTANT***<br>
-   The displayed value is **never** computed by this crate — it must be calculated and supplied by the caller!
+   ***IMPORTANT***<br> The displayed value is **never** computed by this crate — it must be calculated and supplied by the caller!
 
    Each operator node also auto-wires its own incoming operand edge(s).
    See `UnaryOperator`, `BinaryOperator`, and `ArithmeticOperator`.

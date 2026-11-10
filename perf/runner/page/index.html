@@ -6,11 +6,12 @@
 </head>
 <body>
   <script type="module">
-    import init, { run_workload, run_candidate, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance, selftest_corruption, recovery_build, recovery_intend, recovery_act, recovery_snapshot, recovery_predicted, recovery_differences, recovery_node_rect, recovery_counts, recovery_teardown, recovery_drop_scene, recovery_forget, describe_metric, resource_reading, endurance_verdict, leak_bytes, reserve_handles, tracking_start, tracking_stop_and_dump } from "./pkg/perf_harness_wasm.js"
+    import init, { run_workload, run_candidate, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance, selftest_corruption, recovery_build, recovery_intend, recovery_act, recovery_snapshot, recovery_predicted, recovery_differences, recovery_node_rect, recovery_counts, recovery_teardown, recovery_drop_scene, recovery_forget, service_build, service_act, service_checkpoint, service_hook, service_hook_calls, service_attach, service_show_panel, service_counts, service_teardown, service_forget, describe_metric, resource_reading, endurance_verdict, leak_bytes, reserve_handles, tracking_start, tracking_stop_and_dump } from "./pkg/perf_harness_wasm.js"
     import { runRecovery, runEndurance } from "./recovery.js"
+    import { runServiceRecovery, runServiceEndurance } from "./service-recovery.js"
     const wasm = await init()
     // The runner drives these from outside, through the DevTools Protocol.
-    window.perfHarness = { run_workload, run_candidate, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance, selftest_corruption, recovery_build, recovery_intend, recovery_act, recovery_snapshot, recovery_predicted, recovery_differences, recovery_node_rect, recovery_counts, recovery_teardown, recovery_drop_scene, recovery_forget, describe_metric, resource_reading, endurance_verdict, leak_bytes, reserve_handles, tracking_start, tracking_stop_and_dump }
+    window.perfHarness = { run_workload, run_candidate, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance, selftest_corruption, recovery_build, recovery_intend, recovery_act, recovery_snapshot, recovery_predicted, recovery_differences, recovery_node_rect, recovery_counts, recovery_teardown, recovery_drop_scene, recovery_forget, service_build, service_act, service_checkpoint, service_hook, service_hook_calls, service_attach, service_show_panel, service_counts, service_teardown, service_forget, describe_metric, resource_reading, endurance_verdict, leak_bytes, reserve_handles, tracking_start, tracking_stop_and_dump }
     // How many JavaScript objects the wasm module is holding on to, by wasm-bindgen's table of externrefs. Its length is the high-water
     // mark and the count of occupied slots is what is held now. The table is the slab whose doubling shows in the live bytes.
     window.perfHarness.held_handles = () => {
@@ -27,6 +28,8 @@
       return { held, undefinedSlots, capacity: table.length }
     }
     window.perfHarness.recovery_endurance = (manifestJson, testing = '{}') => JSON.stringify(runEndurance(window.perfHarness, JSON.parse(manifestJson), JSON.parse(testing)))
+    window.perfHarness.service_recovery_run = async (manifestJson, testing = '{}') => JSON.stringify(await runServiceRecovery(window.perfHarness, JSON.parse(manifestJson), JSON.parse(testing)))
+    window.perfHarness.service_recovery_endurance = async (manifestJson, testing = '{}') => JSON.stringify(await runServiceEndurance(window.perfHarness, JSON.parse(manifestJson), JSON.parse(testing)))
     window.perfHarness.recovery_run = (manifestJson, testing = '{}') => JSON.stringify(runRecovery(window.perfHarness, JSON.parse(manifestJson), JSON.parse(testing)))
   </script>
 </body>

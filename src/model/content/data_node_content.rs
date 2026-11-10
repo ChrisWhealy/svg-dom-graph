@@ -216,22 +216,38 @@ impl DataNodeContent {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces this content's own values with `values`, keeping its format, layout and byte order. `update(index,
-    /// formatted)` is called for each cell whose value changed, in order, and for no other. A cell that holds the same
-    /// value as before is not even formatted, and nothing is called at all if no value changed.
+    /// formatted)` is called for each cell whose value changed, in order, and for no other, unless `force` is set, when
+    /// it is called for every cell. A cell that holds the same value as before is not even formatted, and nothing is
+    /// called at all if no value changed.
     ///
     /// The new values are committed only after every `update` has succeeded. If one returns an error, that error is
-    /// returned and this content still holds its old values. A caller that retries with the same `values` therefore sees
-    /// every cell that was not yet confirmed as changed again, including those it had already written.
+    /// returned and this content still holds its old values. A caller that retries with the same `values` therefore
+    /// sees every cell that was not yet confirmed as changed again, including those it had already written.
     ///
-    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned integer or float, of the same bit width if they are bit values, and holds the
-    /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
-    /// content also needs printable ASCII, and counts as one cell, whole. [`DataFormat::Text`] content needs strings with
-    /// no control character in them. A cell's width is not changed to fit a longer string. See
-    /// [`with_cell_width_hint`](Self::with_cell_width_hint).
+    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned
+    /// integer or float, of the same bit width if they are bit values, and holds the same number of values. So the grid
+    /// keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`] content also needs printable ASCII,
+    /// and counts as one cell, whole. [`DataFormat::Text`] content needs strings with no control character in them. A
+    /// cell's width is not changed to fit a longer string. See [`with_cell_width_hint`](Self::with_cell_width_hint).
+    #[cfg(test)]
     pub(crate) fn try_replace_values<E>(
         &mut self,
         values: NodeValues,
         scratch: &mut String,
+        update: impl FnMut(usize, &str) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        self.try_replace_values_forcing(values, scratch, false, update)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// As [`try_replace_values`](Self::try_replace_values), and with `force` every cell is called back, changed or not.
+    /// A node whose cells are not known to match its values needs that, since a call that asked for the values it holds
+    /// would otherwise change nothing and leave the cells that an earlier, failed call had already rewritten.
+    pub(crate) fn try_replace_values_forcing<E>(
+        &mut self,
+        values: NodeValues,
+        scratch: &mut String,
+        force: bool,
         mut update: impl FnMut(usize, &str) -> Result<(), E>,
     ) -> Result<bool, E> {
         if !self.values.same_kind(&values) || self.values.len() != values.len() {
@@ -252,13 +268,13 @@ impl DataNodeContent {
             // shown, cannot differ. A line is formatted only if its 16 bytes changed.
             let per_line = hex_dump_format::BYTES_PER_LINE;
             for (index, (old, new_chunk)) in self.bytes().chunks(per_line).zip(new.chunks(per_line)).enumerate() {
-                if old != new_chunk {
+                if force || old != new_chunk {
                     hex_dump_format::format_line(new, format, index, scratch);
                     update(index, scratch)?;
                 }
             }
         } else if self.is_plain_text() {
-            if values != self.values && self.len() == 1 {
+            if (force || values != self.values) && self.len() == 1 {
                 scratch.clear();
                 if let NodeValues::U8(v) = &values {
                     scratch.extend(v.iter().map(|&b| char::from(b)));
@@ -266,7 +282,8 @@ impl DataNodeContent {
                 update(0, scratch)?;
             }
         } else {
-            values.try_for_each_changed_cell_string(&self.values, self.format, self.byte_order, scratch, update)?;
+            values
+                .try_for_each_cell_string_forcing(&self.values, self.format, self.byte_order, scratch, force, update)?;
         }
         self.values = values;
         Ok(true)

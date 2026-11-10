@@ -63,18 +63,19 @@ pub(super) fn for_each_formatted<T: Cell>(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Calls `f(index, formatted)` for every value of `values` that differs from the value at the same index of `old`, and
-/// formats no other. `old` holds the same number of values. Stops at, and returns, the first error `f` gives. See
-/// [`NodeValues::try_for_each_changed_cell_string`].
+/// formats no other. With `force` it calls it for every value, changed or not. `old` holds the same number of values.
+/// Stops at, and returns, the first error `f` gives. See [`NodeValues::try_for_each_changed_cell_string`].
 pub(super) fn try_for_each_changed<T: Cell, E>(
     values: &[T],
     old: &[T],
     format: DataFormat,
     byte_order: ByteOrder,
     scratch: &mut String,
+    force: bool,
     mut f: impl FnMut(usize, &str) -> Result<(), E>,
 ) -> Result<(), E> {
     for (i, (&x, &was)) in values.iter().zip(old).enumerate() {
-        if !x.same_as(was) {
+        if force || !x.same_as(was) {
             x.format_into(format, byte_order, scratch);
             f(i, scratch)?;
         }

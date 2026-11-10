@@ -360,6 +360,12 @@ pub(crate) struct DataDecor {
     /// The picture at the front of each cell of a polar or rectangular complex number, in cell order. Empty for any other
     /// node.
     pub(crate) pictures: Vec<CellPicture>,
+    /// `true` if the cells' texts are not known to match the node's values: a `Scene::set_data_values` was begun and
+    /// did not finish. The model keeps the old values until every cell is written, so a later call that asks for those
+    /// same values sees nothing changed, and would leave the cells that were already rewritten as they are. This is
+    /// what makes the next call write every cell, changed or not, and it is cleared only when a call has written them
+    /// all.
+    pub(crate) texts_stale: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -95,6 +95,29 @@ pub struct Interaction {
 impl Recovery {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn check(&self) -> Result<(), ManifestError> {
+        let refuse = |message: String| Err(ManifestError::Semantic(message));
+        match (self.target, &self.scenario) {
+            (RecoveryTarget::ServiceSimulation, None) => {
+                return refuse("recovery.target = \"service_simulation\" needs recovery.scenario".to_string());
+            },
+            (RecoveryTarget::ServiceSimulation, Some(name)) if name.is_empty() => {
+                return refuse("recovery.scenario must not be empty".to_string());
+            },
+            (RecoveryTarget::Graph, Some(_)) => {
+                return refuse("recovery.scenario is for the service target only".to_string());
+            },
+            _ => {},
+        }
+        for entry in &self.points {
+            if entry.point.target() != self.target {
+                return refuse(format!(
+                    "recovery.points names {:?}, which belongs to the {:?} target and not the {:?} one",
+                    entry.point,
+                    entry.point.target(),
+                    self.target
+                ));
+            }
+        }
         if self.points.is_empty() {
             return Err(ManifestError::Semantic(
                 "recovery.points must name at least one fault point".to_string(),
@@ -160,6 +183,70 @@ pub enum FaultPoint {
     Teardown,
     MidDragTeardown,
     RemovedHost,
+    // The points of the service-simulation target. Each is valid only for that target, and the graph points only for the graph target.
+    ServiceDataNodeConstruction,
+    ServiceDataSetter,
+    ServiceOverlayWrite,
+    ServiceControlAria,
+    ServiceTimerRequest,
+    ServiceFrameRequest,
+    ServiceGalleryHidden,
+    ServiceDetachedBeforeDraw,
+    ServiceDetachedDuringDraw,
+    ServiceTeardownLateTick,
+}
+
+impl Graph {
+    /// The graph of a manifest that has none.
+    fn absent() -> Self {
+        Self {
+            nodes: 0,
+            edges: None,
+            maximum_degree: None,
+        }
+    }
+
+    fn is_absent(&self) -> bool {
+        self.nodes == 0 && self.edges.is_none() && self.maximum_degree.is_none()
+    }
+}
+
+impl FaultPoint {
+    /// The target that this point belongs to.
+    #[must_use]
+    pub fn target(self) -> RecoveryTarget {
+        match self {
+            Self::ServiceDataNodeConstruction
+            | Self::ServiceDataSetter
+            | Self::ServiceOverlayWrite
+            | Self::ServiceControlAria
+            | Self::ServiceTimerRequest
+            | Self::ServiceFrameRequest
+            | Self::ServiceGalleryHidden
+            | Self::ServiceDetachedBeforeDraw
+            | Self::ServiceDetachedDuringDraw
+            | Self::ServiceTeardownLateTick => RecoveryTarget::ServiceSimulation,
+            _ => RecoveryTarget::Graph,
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What the recovery workload breaks. A manifest that does not say breaks the graph scene, as every manifest before this key did.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RecoveryTarget {
+    /// The scene of the manifest's `[graph]`, with its own twin executor and reference model.
+    #[default]
+    Graph,
+    /// The discrete-event service simulator's controller and surface, with an executor of its own. It has no graph and no connector.
+    ServiceSimulation,
+}
+
+impl RecoveryTarget {
+    fn is_graph(&self) -> bool {
+        *self == Self::Graph
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -191,6 +278,13 @@ pub struct FaultExpectation {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Recovery {
+    /// What is broken. Absent, and not written back, means the graph, so every manifest that exists keeps its canonical form.
+    #[serde(default, skip_serializing_if = "RecoveryTarget::is_graph")]
+    pub target: RecoveryTarget,
+    /// The scenario of the simulator that is broken: a fixture or the trace of a seed. Required for the service target, and refused for
+    /// the graph one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scenario: Option<String>,
     pub points: Vec<FaultExpectation>,
 }
 
@@ -198,6 +292,7 @@ pub struct Recovery {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Graph {
+    /// At least 1 for every workload that has a graph.
     pub nodes: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub edges: Option<u32>,
@@ -260,6 +355,9 @@ pub struct Manifest {
     pub workload: Workload,
     pub seed: u64,
     pub prng: PrngName,
+    /// The graph of the workload. The recovery workload with the service target has none, and then this is the empty graph that
+    /// [`Graph::absent`] gives, which is not written back.
+    #[serde(default = "Graph::absent", skip_serializing_if = "Graph::is_absent")]
     pub graph: Graph,
     pub execution: Execution,
     pub measurement: Measurement,
@@ -334,6 +432,15 @@ impl Manifest {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Whether this is the recovery workload aimed at the service simulator, which has no graph.
+    #[must_use]
+    pub fn is_service_recovery(&self) -> bool {
+        self.recovery
+            .as_ref()
+            .is_some_and(|r| r.target == RecoveryTarget::ServiceSimulation)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many cycles or moves one run makes: the warm-up and the measured iterations together.
     pub fn total_iterations(&self) -> u64 {
         u64::from(self.execution.warmup_iterations) + u64::from(self.execution.measurement_iterations)
@@ -376,8 +483,11 @@ impl Manifest {
         if self.schema_version != 1 {
             return refuse("schema_version must be 1");
         }
-        if self.graph.nodes == 0 {
+        if self.graph.nodes == 0 && !self.is_service_recovery() {
             return refuse("graph.nodes must be at least 1");
+        }
+        if self.graph.nodes > 0 && self.is_service_recovery() {
+            return refuse("the service target of the recovery workload has no [graph]");
         }
         if self.execution.modes.is_empty() {
             return refuse("execution.modes must name at least one mode");
@@ -417,7 +527,10 @@ impl Manifest {
             (Some(recovery), _) => recovery.check()?,
             (None, _) => {},
         }
-        if self.workload == Workload::Recovery && self.graph.edges.is_none_or(|edges| edges == 0) {
+        if self.workload == Workload::Recovery
+            && !self.is_service_recovery()
+            && self.graph.edges.is_none_or(|edges| edges == 0)
+        {
             return refuse("the recovery workload needs graph.edges, since a connector has to exist to be broken");
         }
         Ok(())

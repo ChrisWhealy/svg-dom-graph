@@ -58,11 +58,10 @@ The setter is usable as the mandatory sustained-library path, with this recorded
 Until it is fixed, the controller's repair of a torn data node is two calls: the failed call again, and then the committed values.
 The second call can fail too, so the repair stays one bounded attempt as the design says.
 
-The fix belongs to stage S4, where the design reserves the audit and repair of the setter.
-Mark every cell of a failing call stale, so that any later call rewrites it.
-The test `one_call_with_the_committed_values_should_put_a_torn_node_back` states the wanted behaviour.
-It is ignored, with the reason as its message, and it fails today.
-When the fix lands, remove the `ignore` and the two-call test becomes redundant.
+The fix belonged to stage S4, where the design reserves the audit and repair of the setter, and S4 made it: see `dess/s4/README.md`.
+A call that fails marks the node, and the next call writes every cell.
+The test `one_call_with_the_committed_values_should_put_a_torn_node_back` states the wanted behaviour, and it is no longer ignored.
+The two-call repair that this page describes above is therefore no longer needed.
 
 ## What the sweep does not cover
 

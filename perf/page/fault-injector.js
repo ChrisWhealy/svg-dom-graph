@@ -37,14 +37,15 @@
     if (!recording && !armed) return
     const call = describe(method, target, args)
     if (recording) calls.push(call)
-    if (armed && armed.fired === null) {
+    if (armed) {
       armed.counted++
-      if (armed.counted === armed.index) {
-        armed.fired = call
-        throw new DOMException(`an injected failure of call ${armed.index}, ${method}`, 'InvalidStateError')
+      // The call that is armed fails, and with `times` more than one so do the calls straight after it, which is how a recovery that
+      // itself meets a failure is tested. Only the first call that failed is reported.
+      if (armed.counted >= armed.index && armed.counted < armed.index + armed.times) {
+        if (armed.fired === null) armed.fired = call
+        armed.all.push(call)
+        throw new DOMException(`an injected failure of call ${armed.counted}, ${method}`, 'InvalidStateError')
       }
-    } else if (armed) {
-      armed.counted++
     }
   }
 
@@ -136,6 +137,26 @@
     }
   }
 
+  // Timers, which a page can be made to refuse, as a browser that will not give one would.
+  //   __timers.refuseNext()   the next setTimeout throws
+  const nativeSetTimeout = window.setTimeout.bind(window)
+  let refuseTimer = 0
+  window.setTimeout = (callback, ...rest) => {
+    if (refuseTimer > 0) {
+      refuseTimer--
+      throw new DOMException('an injected refusal of a timer', 'InvalidStateError')
+    }
+    return nativeSetTimeout(callback, ...rest)
+  }
+  window.__timers = {
+    refuseNext: () => {
+      refuseTimer = 1
+    },
+    clear: () => {
+      refuseTimer = 0
+    }
+  }
+
   window.__faults = {
     record: on => {
       recording = on
@@ -146,15 +167,15 @@
       calls = []
       return taken
     },
-    arm: index => {
-      armed = { index, counted: 0, fired: null }
+    arm: (index, times = 1) => {
+      armed = { index, times, counted: 0, fired: null, all: [] }
     },
     // Gives how many calls were counted while armed, and the one that failed, or null if fewer than `index` were made.
     suppressRemoval: on => {
       suppressRemoval = on
     },
     disarm: () => {
-      const result = armed ? { counted: armed.counted, fired: armed.fired } : null
+      const result = armed ? { counted: armed.counted, fired: armed.fired, all: armed.all } : null
       armed = null
       return result
     }

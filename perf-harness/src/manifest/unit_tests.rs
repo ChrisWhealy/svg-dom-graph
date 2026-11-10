@@ -231,6 +231,7 @@ fn every_shared_rejected_manifest_is_refused() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const RECOVERY: &str = include_str!("../../../perf/manifests/w5-recovery-small.toml");
 const CONTRACTS: &str = include_str!("../../../perf/fault-contracts.json");
+const SERVICE: &str = include_str!("../../../perf/manifests/w5-service-recovery-small.toml");
 
 /// The expectations in a recovery manifest are taken from the library's documented behaviour, which
 /// `fault-contracts.json` writes down. So they must agree with it, for every fault point the manifest names.
@@ -239,7 +240,15 @@ fn the_recovery_manifest_expects_what_the_contracts_say() -> Result<(), String> 
     let manifest = Manifest::from_toml(RECOVERY).map_err(|e| e.to_string())?;
     let recovery = manifest.recovery.ok_or("no recovery table")?;
     let contracts: serde_json::Value = serde_json::from_str(CONTRACTS).map_err(|e| e.to_string())?;
-    let points = contracts["points"].as_array().ok_or("no points")?;
+    // The contracts of the graph target, which is the one that a manifest names when it names no other. Those of the
+    // service target have a manifest of their own, below.
+    let points: Vec<serde_json::Value> = contracts["points"]
+        .as_array()
+        .ok_or("no points")?
+        .iter()
+        .filter(|point| point.get("target").is_none_or(|t| t == "graph"))
+        .cloned()
+        .collect();
     for entry in &recovery.points {
         let id = serde_json::to_value(entry.point).map_err(|e| e.to_string())?;
         let contract = points
@@ -288,6 +297,114 @@ fn a_bad_recovery_table_is_refused() -> Result<(), String> {
     refused(
         RECOVERY.replace("workload = \"recovery\"", "workload = \"scene_lifecycle\""),
         "a recovery table on another workload",
+    )?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The recovery workload aimed at the simulator has no graph, and its expectations are the contracts of the service
+/// target.
+#[test]
+fn the_service_recovery_manifest_is_read_and_expects_what_the_service_contracts_say() -> Result<(), String> {
+    let manifest = Manifest::from_toml(SERVICE).map_err(|e| e.to_string())?;
+    if !manifest.is_service_recovery() {
+        return Err("the manifest is not the service target".to_owned());
+    }
+    let recovery = manifest.recovery.ok_or("no recovery table")?;
+    if recovery.scenario.as_deref() != Some("E0") {
+        return Err("the scenario was not read".to_owned());
+    }
+    let contracts: serde_json::Value = serde_json::from_str(CONTRACTS).map_err(|e| e.to_string())?;
+    let service: Vec<&serde_json::Value> = contracts["points"]
+        .as_array()
+        .ok_or("no points")?
+        .iter()
+        .filter(|point| point["target"] == "service_simulation")
+        .collect();
+    if service.len() != recovery.points.len() {
+        return Err(format!(
+            "{} service points in the manifest, {} in the contracts",
+            recovery.points.len(),
+            service.len()
+        ));
+    }
+    for entry in &recovery.points {
+        let id = serde_json::to_value(entry.point).map_err(|e| e.to_string())?;
+        let contract = service
+            .iter()
+            .find(|p| p["id"] == id)
+            .ok_or_else(|| format!("{id} has no service contract"))?;
+        let expected = serde_json::to_value(entry.expect).map_err(|e| e.to_string())?;
+        if contract["contract"] != expected {
+            return Err(format!(
+                "{id}: the manifest expects {expected}, the contracts say {}",
+                contract["contract"]
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// A manifest of the service target is written back as it was read: it names its target, and it has no graph to write.
+#[test]
+fn a_service_manifest_round_trips_and_a_graph_manifest_does_not_gain_a_target() -> Result<(), String> {
+    let service = Manifest::from_toml(SERVICE).map_err(|e| e.to_string())?;
+    let json = String::from_utf8(service.canonical_json()).map_err(|e| e.to_string())?;
+    if json.contains("\"graph\"") || !json.contains("\"target\":\"service_simulation\"") {
+        return Err(format!("the canonical form of a service manifest is wrong: {json}"));
+    }
+    let again =
+        Manifest::from_json(serde_json::from_str(&json).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    if again != service {
+        return Err("a service manifest changed when it was written and read".to_owned());
+    }
+    let graph = Manifest::from_toml(RECOVERY).map_err(|e| e.to_string())?;
+    let graph_json = String::from_utf8(graph.canonical_json()).map_err(|e| e.to_string())?;
+    if graph_json.contains("\"target\"") || graph_json.contains("\"scenario\"") {
+        return Err(
+            "a graph manifest gained a target or a scenario in its canonical form, so every digest of one would change"
+                .to_owned(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn a_bad_service_manifest_is_refused() -> Result<(), String> {
+    let refused = |text: String, why: &str| match Manifest::from_toml(&text) {
+        Ok(_) => Err(format!("{why} was accepted")),
+        Err(_) => Ok(()),
+    };
+    refused(SERVICE.replace("service_simulation", "service_simulator"), "a mistyped target")?;
+    refused(
+        SERVICE.replace("scenario = \"E0\"\n", ""),
+        "the service target with no scenario",
+    )?;
+    refused(SERVICE.replace("scenario = \"E0\"", "scenario = \"\""), "an empty scenario")?;
+    refused(
+        SERVICE.replace("service_overlay_write", "node_construction"),
+        "a graph point on the service target",
+    )?;
+    refused(
+        RECOVERY.replace("[recovery]", "[recovery]\nscenario = \"E0\""),
+        "a scenario on the graph target",
+    )?;
+    refused(
+        RECOVERY.replace("node_construction", "service_overlay_write"),
+        "a service point on the graph target",
+    )?;
+    refused(
+        SERVICE.replace("[execution]", "[graph]\nnodes = 12\nedges = 18\n\n[execution]"),
+        "a graph with the service target",
+    )?;
+    refused(
+        SERVICE.replace("[recovery]", "[recovery]\ntarjet = \"graph\""),
+        "a mistyped key",
+    )?;
+    // A graph manifest still needs its graph.
+    refused(
+        RECOVERY.replace("[graph]\nnodes = 12\nedges = 18\nmaximum_degree = 6\n", ""),
+        "the graph target with no graph",
     )?;
     Ok(())
 }

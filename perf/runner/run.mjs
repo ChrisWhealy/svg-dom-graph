@@ -18,6 +18,8 @@ import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from './lib/harness-page.mjs'
 import { edgesOf, runInteraction } from './layer-c/interaction.mjs'
 import { runRecoveryC } from './layer-c/recovery.mjs'
+import { oracleFor } from './service-oracle.mjs'
+import { createHash } from 'node:crypto'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const requireFromSchemas = createRequire(path.join(root, 'perf/schemas/package.json'))
@@ -69,9 +71,23 @@ if (options.build) must(run('cargo', ['build', '-q', '--release', '-p', 'perf-ha
 const binary = path.join(root, 'target/release/perf-harness')
 
 const reportPath = path.join(outDir, 'workload-report.json')
-must(run(binary, ['generate', manifestPath, '--id', manifestId, '--out', reportPath]), 'generating the workload report')
-const report = readExact(fs.readFileSync(reportPath, 'utf8'))
 const canonicalManifest = must(run(binary, ['canonical', manifestPath]), 'reading the manifest').stdout.trim()
+// The recovery workload aimed at the service simulator has no graph and no operation stream to generate. Its stream is the independent
+// oracle's hash of the simulator's state at every slice of the scenario, which is what its executor compares the controller with.
+const service = JSON.parse(canonicalManifest).recovery?.target === 'service_simulation'
+const serviceOracle = service ? oracleFor(JSON.parse(canonicalManifest).recovery.scenario) : null
+const sha = text => createHash('sha256').update(text).digest('hex')
+if (!service)
+  must(
+    run(binary, ['generate', manifestPath, '--id', manifestId, '--out', reportPath]),
+    'generating the workload report'
+  )
+const report = service
+  ? {
+      manifest: { sha256: sha(canonicalManifest), canonical: JSON.parse(canonicalManifest) },
+      stream: { sha256: sha(serviceOracle.checkpoints.join('\n')), mutations_sha256: sha('') }
+    }
+  : readExact(fs.readFileSync(reportPath, 'utf8'))
 const expected = JSON.stringify({ sha256: report.stream.sha256, mutations_sha256: report.stream.mutations_sha256 })
 const manifest = report.manifest.canonical
 
@@ -79,7 +95,13 @@ const manifest = report.manifest.canonical
 // refused for any other, and a layer that is asked for by name and cannot run says so and does not quietly do nothing.
 const interactive = manifest.workload === 'interaction'
 const recovery = manifest.workload === 'recovery'
-options.layers ??= interactive || recovery ? ['a', 'b', 'c'] : ['a', 'b']
+options.layers ??= service ? ['b'] : interactive || recovery ? ['a', 'b', 'c'] : ['a', 'b']
+if (service && options.layers.some(layer => layer !== 'b')) {
+  console.log(
+    'skipping layers a and c: the service target is broken in the page, by its own executor, and has neither native work nor real input'
+  )
+  options.layers = ['b']
+}
 if (options.layers.includes('c') && !interactive && !recovery) {
   console.log(
     `skipping layer C: ${manifest.workload} has no input to drive, and only the interaction and recovery workloads do`
@@ -184,7 +206,8 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
   // This is a layer that has nothing to time in this workload, such as Layer B for the interaction workload, whose timings are
   // taken with real input in Layer C. It is said, and it is not a result.
   if (mode === 'performance' && outcome.status === 'ok' && Object.keys(outcome.samples ?? {}).length === 0) {
-    if (repetition === 0) console.log(`layer ${layer} timed nothing in performance mode of ${manifest.workload}, so no result is kept`)
+    if (repetition === 0)
+      console.log(`layer ${layer} timed nothing in performance mode of ${manifest.workload}, so no result is kept`)
     return
   }
   const runId = `${manifestId}-${layer}-${mode}-r${repetition}-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}`
@@ -256,6 +279,36 @@ for (const mode of modes) {
       must(run(binary, ['native', manifestPath, '--mode', mode, '--out', file]), `the native ${mode} run`)
       keep('A', mode, repetition, JSON.parse(fs.readFileSync(file, 'utf8')), null)
       fs.rmSync(file)
+    }
+    if (service) {
+      // Correctness and performance of the simulator are workload W6's, and this target is only broken on purpose: its correctness is
+      // the gate that its recovery run makes, that the controller's committed slice is the oracle's.
+      if (mode !== 'recovery' && mode !== 'endurance') {
+        if (repetition === 0)
+          console.log(`skipping ${mode}: the service target is broken on purpose, in recovery and endurance`)
+        continue
+      }
+      const page = await openHarnessPage({ faults: true })
+      try {
+        const call = mode === 'recovery' ? 'service_recovery_run' : 'service_recovery_endurance'
+        const outcome = JSON.parse(
+          await page.evaluate(
+            `window.perfHarness.${call}(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(JSON.stringify({ oracle: serviceOracle }))})`
+          )
+        )
+        outcome.stream = {
+          scope: 'full',
+          operations: serviceOracle.slices,
+          sha256: report.stream.sha256,
+          expected_sha256: null,
+          matches: null
+        }
+        if (allocatorVerified === false) withholdAllocatorFigures(outcome)
+        keep('B', mode, repetition, outcome, page.crossOriginIsolated)
+      } finally {
+        await page.close()
+      }
+      continue
     }
     if (mode === 'endurance' && recovery) {
       if (options.layers.includes('b')) {

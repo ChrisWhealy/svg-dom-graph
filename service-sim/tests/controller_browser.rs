@@ -496,3 +496,90 @@ async fn the_lifecycle_listeners_are_removed_when_they_are_dropped() -> Result<(
     c.pause();
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A page with a Play control, so that a write of its attributes can be made to fail.
+fn page_with_control(id: &str) -> Result<(Page, web_sys::Element), String> {
+    let (container, svg) = host_in(None, id)?;
+    let surface = Surface::build(id, e0_scenario().config.servers)?;
+    let button = document().create_element("button").map_err(|e| format!("{e:?}"))?;
+    container.append_child(&button).map_err(|e| format!("{e:?}"))?;
+    let host = PageHost::new(surface, svg).with_voices(None, None, Some(button.clone()));
+    let c = Controller::new(host, BrowserScheduler::new(), e0(), View::default()).map_err(|e| e.to_string())?;
+    Ok((c, button))
+}
+
+fn refuse_attributes(element: &web_sys::Element, on: bool) {
+    let script = if on {
+        "this.setAttribute = () => { throw new DOMException('a refused write', 'InvalidStateError') }"
+    } else {
+        "delete this.setAttribute"
+    };
+    js_sys::Function::new_no_args(script).call0(element).expect("a script");
+}
+
+/// A write of the Play control that fails leaves it half written and the cursor where it was. A repair writes its content and ARIA again from
+/// what the controller says, and it does not start or stop playback.
+#[wasm_bindgen_test]
+async fn a_control_write_that_fails_is_put_right_by_a_repair_and_a_repair_never_starts_playback() -> Result<(), String>
+{
+    let (c, button) = page_with_control("ct-control")?;
+    c.set_speed(5_000);
+    check(
+        button.get_attribute("aria-pressed").as_deref() == Some("false"),
+        "the control starts as not pressed",
+    )?;
+    refuse_attributes(&button, true);
+    check(c.play() == Outcome::Done, "play is not undone by the control")?;
+    check(c.with_host(|h| h.controls_stale()), "the failed write is remembered")?;
+    check(
+        button.get_attribute("aria-pressed").as_deref() == Some("false"),
+        "the control still says not pressed",
+    )?;
+    refuse_attributes(&button, false);
+    let slice = c.committed_slice();
+    check(c.repair() == Outcome::Done, "the repair is made")?;
+    check(!c.with_host(|h| h.controls_stale()), "and the control is no longer stale")?;
+    check(
+        button.get_attribute("aria-pressed").as_deref() == Some("true")
+            && button.text_content().as_deref() == Some("Pause"),
+        "the control says what the controller says",
+    )?;
+    check(
+        c.is_playing() && c.committed_slice() == slice,
+        "a repair neither started nor stopped playback, and the cursor did not move",
+    )?;
+    c.pause();
+    // And with playback stopped, a repair does not start it.
+    check(
+        c.repair() == Outcome::Done && !c.is_playing(),
+        "a repair does not start playback",
+    )?;
+    check(
+        button.get_attribute("aria-pressed").as_deref() == Some("false"),
+        "and the control says so",
+    )?;
+    Ok(())
+}
+
+/// A task that was taken back and is kept, so that the browser still calls it, finds the controller stale and does nothing.
+#[wasm_bindgen_test]
+async fn a_cancelled_callback_that_the_page_still_runs_is_inert() -> Result<(), String> {
+    let (c, _, _) = page_in(None, "ct-kept")?;
+    c.scheduler().keep_cancelled(true);
+    c.set_speed(40);
+    c.play();
+    c.pause();
+    check(c.scheduler().waiting() == 0, "the timer is taken back, so nothing is waiting")?;
+    check(
+        c.scheduler().live_closures() == 1,
+        "but it is kept, and so its closure is alive",
+    )?;
+    sleep(200).await;
+    check(
+        c.committed_slice() == 0,
+        "the callback that was already on its way did not commit a slice",
+    )?;
+    check(c.scheduler().live_closures() == 0, "and once it ran its closure was released")?;
+    Ok(())
+}

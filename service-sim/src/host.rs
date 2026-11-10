@@ -53,6 +53,9 @@ struct Entry {
     browser_id: i32,
     /// Held so that the function the browser calls stays alive, and dropped when the entry is.
     closure: Tracked,
+    /// Taken back by a scheduler that keeps what it takes back, so that the browser still calls it. Only a test asks
+    /// for that.
+    cancelled: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -71,6 +74,10 @@ pub struct BrowserScheduler {
     tasks: Rc<RefCell<Tasks>>,
     /// How many closures are alive, which a test reads.
     alive: Rc<Cell<usize>>,
+    /// Whether a task that is taken back is kept and still called, as a callback that was already on its way to the
+    /// page's queue would be. It is for a test of the controller's guard against a late callback, and a clean run never
+    /// sets it.
+    keep_cancelled: Rc<Cell<bool>>,
 }
 
 impl BrowserScheduler {
@@ -88,7 +95,13 @@ impl BrowserScheduler {
     /// How many tasks are waiting for the browser to call them.
     #[must_use]
     pub fn waiting(&self) -> usize {
-        self.tasks.borrow().live.len()
+        self.tasks.borrow().live.values().filter(|e| !e.cancelled).count()
+    }
+
+    /// Makes the scheduler keep a task that is taken back, so that the browser still calls it. The controller has to
+    /// find it stale, and this is how a test makes it call one.
+    pub fn keep_cancelled(&self, on: bool) {
+        self.keep_cancelled.set(on);
     }
 
     fn release_finished_later(&self) {
@@ -136,12 +149,19 @@ impl BrowserScheduler {
                 kind,
                 browser_id,
                 closure: Tracked::new(closure, &self.alive),
+                cancelled: false,
             },
         );
         Ok(handle)
     }
 
     fn take_back(&self, handle: u64) {
+        if self.keep_cancelled.get() {
+            if let Some(entry) = self.tasks.borrow_mut().live.get_mut(&handle) {
+                entry.cancelled = true;
+            }
+            return;
+        }
         let entry = self.tasks.borrow_mut().live.remove(&handle);
         if let (Some(entry), Some(window)) = (entry, web_sys::window()) {
             match entry.kind {
@@ -185,6 +205,11 @@ pub struct PageHost {
     status: Option<web_sys::Element>,
     problems: Option<web_sys::Element>,
     play_button: Option<web_sys::Element>,
+    /// What the control says now, as the controller last said it, so that a repair can write it again.
+    playing: bool,
+    /// Whether a write of the control failed, so that its attributes may not say what `playing` says. A full draw
+    /// writes them again.
+    controls_stale: bool,
 }
 
 impl PageHost {
@@ -198,6 +223,8 @@ impl PageHost {
             status: None,
             problems: None,
             play_button: None,
+            playing: false,
+            controls_stale: false,
         }
     }
 
@@ -213,6 +240,30 @@ impl PageHost {
         self.problems = problems;
         self.play_button = play_button;
         self
+    }
+
+    /// Writes the play control's ARIA state and label from `playing`. A failure leaves it marked stale, and the next
+    /// success clears that.
+    fn sync_controls(&mut self) -> Result<(), String> {
+        let Some(button) = &self.play_button else {
+            return Ok(());
+        };
+        let playing = self.playing;
+        let written = button
+            .set_attribute("aria-pressed", if playing { "true" } else { "false" })
+            .map_err(|e| format!("could not write the control: {e:?}"));
+        if written.is_ok() {
+            button.set_text_content(Some(if playing { "Pause" } else { "Play" }));
+        }
+        self.controls_stale = written.is_err();
+        written
+    }
+
+    /// Whether the play control may not say what the controller says, because a write of it failed and no repair has
+    /// put it right.
+    #[must_use]
+    pub fn controls_stale(&self) -> bool {
+        self.controls_stale
     }
 
     /// Marks the host as gone for good.
@@ -262,10 +313,17 @@ impl Host for PageHost {
             self.surface.draw(projection)
         };
         match result {
-            Ok(_) => Ok(()),
-            Err(DrawError::Detached) => Err(DrawFailure::Detached),
-            Err(other) => Err(DrawFailure::Failed(other.to_string())),
+            Ok(_) => {},
+            Err(DrawError::Detached) => return Err(DrawFailure::Detached),
+            Err(other) => return Err(DrawFailure::Failed(other.to_string())),
         }
+        // A full draw is a repair, and it writes the control's content and ARIA again, from what the controller last
+        // said, so that a control that a failed write left half written is made right. It never changes whether
+        // playback is going.
+        if full || self.controls_stale {
+            self.sync_controls().map_err(DrawFailure::Failed)?;
+        }
+        Ok(())
     }
 
     fn announce(&mut self, text: &str) {
@@ -284,11 +342,11 @@ impl Host for PageHost {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn playing_changed(&mut self, playing: bool) {
-        if let Some(button) = &self.play_button {
-            button
-                .set_attribute("aria-pressed", if playing { "true" } else { "false" })
-                .ok();
-            button.set_text_content(Some(if playing { "Pause" } else { "Play" }));
+        self.playing = playing;
+        // A write that fails leaves the control half written, and the page says so by what a repair puts right and not
+        // by an error: the cursor is where it was, and playback is as the controller says it is.
+        if self.sync_controls().is_err() {
+            self.controls_stale = true;
         }
     }
 }
@@ -353,26 +411,31 @@ impl PageLifecycle {
     ///
     /// # Errors
     ///
-    /// Returns `Err` if there is no window or a listener could not be added.
+    /// Returns `Err` if there is no window or a listener could not be added, and then no listener of its own is left on
+    /// the page.
     pub fn install(changed: impl Fn() + 'static, left: impl Fn() + 'static) -> Result<Self, String> {
         let window = web_sys::window().ok_or("there is no window")?;
         let document = window.document().ok_or("there is no document")?;
         let changed = Closure::<dyn FnMut()>::new(changed);
         let left = Closure::<dyn FnMut()>::new(left);
+        // The value is made before any listener is added, so that a failure part way drops it, and its drop takes off
+        // the ones that were added. Otherwise a listener would stay on the page, and would call a closure that had
+        // gone.
+        let lifecycle = Self {
+            document,
+            window,
+            changed,
+            left,
+        };
         let add = |target: &web_sys::EventTarget, event: &str, f: &Closure<dyn FnMut()>| {
             target
                 .add_event_listener_with_callback(event, f.as_ref().unchecked_ref())
                 .map_err(|e| format!("could not listen for {event}: {e:?}"))
         };
-        add(&document, "visibilitychange", &changed)?;
-        add(&window, "pageshow", &changed)?;
-        add(&window, "pagehide", &left)?;
-        Ok(Self {
-            document,
-            window,
-            changed,
-            left,
-        })
+        add(&lifecycle.document, "visibilitychange", &lifecycle.changed)?;
+        add(&lifecycle.window, "pageshow", &lifecycle.changed)?;
+        add(&lifecycle.window, "pagehide", &lifecycle.left)?;
+        Ok(lifecycle)
     }
 }
 

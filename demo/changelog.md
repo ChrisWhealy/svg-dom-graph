@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S2: Long-lived fixed Scene, overlay, reserved data node; exact incremental projection; class compatibility test (`1c599ba`)
 - Sparse Matrix Vector Product (SPMV): Test scale and resource limits (`fdf53ff`)
 - DESS S3: Manual clock, epochs/tokens, synchronous hidden predicate, pre/post-draw host checks, forced mid-draw detach. Reflow comments (`0647f47`)
+- DESS S4: Audit/repair required data setter, service-specific W5 executor, JS oracle checkpoints, source-cited contracts (``)
 
 ### Changed
 
@@ -118,4 +119,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Add lifecycle listeners to directly observe document visibility transitions (`606eb4d`)
 - DESS S3: Return `Outcome::Failed` rather than `Outcome::AtBoundary` when boundary repair fails (`8ce8c39`)
 - DESS S3: Prevent a superseded seek from retaining its retry target (`63dbda0`)
-- DESS S3: Handle mid-draw detachment during explicit repairs consistently (``)
+- DESS S3: Handle mid-draw detachment during explicit repairs consistently (`9d7cd89`)

@@ -98,9 +98,10 @@ use widest::*;
 ///
 /// A `NodeValues` holds exactly one variant. So every value in a given [`super::DataNodeContent`] shares the same
 /// type, whether an unsigned or signed integer of one width, or a float of one. A node can display `[u32, u32, u32,
-/// u32]`, never `[u8, u16, u32, u64]`, and never `[i32, u32]` or `[f32, f64]`. This is a deliberate scope
-/// decision, not a limitation to lift later. The intended abstraction here is "display an array/vector of homogeneous
-/// numeric values" — a memory dump, a register bank, a typed buffer — not a general, per-cell-typed data inspector.
+/// u32]`, never `[u8, u16, u32, u64]`, and never `[i32, u32]` or `[f32, f64]`. This is a deliberate scope decision, not
+/// a limitation to be lifted later. The intended abstraction here is "display an array/vector of homogeneous numeric
+/// values" — a memory dump, a register bank, a typed buffer — not a general, per-cell-typed data inspector.
+///
 /// Every value in one node sharing the same `type_colour` follows directly from that: colour identifies the node's own
 /// type, not each individual cell's.
 ///
@@ -345,8 +346,10 @@ impl NodeValues {
     /// Calls `f(index, formatted)` for every value of `self` that differs from the value at the same index of `old`,
     /// reusing `scratch` for the text. A value that has not changed is neither formatted nor reported.
     ///
-    /// `old` must be the same type and hold the same number of values. If it is not, `f` is never called.
-    /// Stops at, and returns, the first error `f` gives.
+    /// With `force`, every value is formatted and reported, changed or not, which is what a node whose cells are not
+    /// known to match its values needs. `old` must be the same type and hold the same number of values. If it is not,
+    /// `f` is never called. Stops at, and returns, the first error `f` gives.
+    #[cfg(test)]
     pub(super) fn try_for_each_changed_cell_string<E>(
         &self,
         old: &Self,
@@ -355,29 +358,48 @@ impl NodeValues {
         scratch: &mut String,
         f: impl FnMut(usize, &str) -> Result<(), E>,
     ) -> Result<(), E> {
+        self.try_for_each_cell_string_forcing(old, format, byte_order, scratch, false, f)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// As [`try_for_each_changed_cell_string`](Self::try_for_each_changed_cell_string), and with `force` every value is
+    /// formatted and reported, changed or not.
+    pub(super) fn try_for_each_cell_string_forcing<E>(
+        &self,
+        old: &Self,
+        format: DataFormat,
+        byte_order: ByteOrder,
+        scratch: &mut String,
+        force: bool,
+        f: impl FnMut(usize, &str) -> Result<(), E>,
+    ) -> Result<(), E> {
         match (self, old) {
-            (Self::U8(v), Self::U8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::U16(v), Self::U16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::U32(v), Self::U32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::U64(v), Self::U64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::U128(v), Self::U128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Usize(v), Self::Usize(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::I8(v), Self::I8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::I16(v), Self::I16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::I32(v), Self::I32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::I64(v), Self::I64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::I128(v), Self::I128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Isize(v), Self::Isize(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::F32(v), Self::F32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Uuid(v), Self::Uuid(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Bool(v), Self::Bool(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Complex32(v), Self::Complex32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
-            (Self::Complex64(v), Self::Complex64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::U8(v), Self::U8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::U16(v), Self::U16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::U32(v), Self::U32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::U64(v), Self::U64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::U128(v), Self::U128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::Usize(v), Self::Usize(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::I8(v), Self::I8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::I16(v), Self::I16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::I32(v), Self::I32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::I64(v), Self::I64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::I128(v), Self::I128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::Isize(v), Self::Isize(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::F32(v), Self::F32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::Uuid(v), Self::Uuid(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::Bool(v), Self::Bool(o)) => try_for_each_changed(v, o, format, byte_order, scratch, force, f),
+            (Self::Complex32(v), Self::Complex32(o)) => {
+                try_for_each_changed(v, o, format, byte_order, scratch, force, f)
+            },
+            (Self::Complex64(v), Self::Complex64(o)) => {
+                try_for_each_changed(v, o, format, byte_order, scratch, force, f)
+            },
             (Self::Bits(v), Self::Bits(o)) if v.width() == o.width() => {
                 let mut f = f;
                 for (i, (&value, &was)) in v.values().iter().zip(o.values()).enumerate() {
-                    if value != was {
+                    if force || value != was {
                         format_bits_into(value, v.width(), format, scratch);
                         f(i, scratch)?;
                     }
@@ -387,7 +409,7 @@ impl NodeValues {
             (Self::Text(v), Self::Text(o)) => {
                 let mut f = f;
                 for (i, (text, was)) in v.iter().zip(o).enumerate() {
-                    if text != was {
+                    if force || text != was {
                         scratch.clear();
                         scratch.push_str(text);
                         f(i, scratch)?;

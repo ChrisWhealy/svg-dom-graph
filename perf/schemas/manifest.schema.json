@@ -155,6 +155,15 @@
       "type": "object",
       "description": "The fault points of the recovery workload, each with what it is expected to leave behind, taken from the library's documented behaviour (perf/fault-contracts.json). undocumented means that nothing documents it: the runner records what it sees and reports a finding, and does not test against a guess.",
       "properties": {
+        "target": {
+          "enum": ["graph", "service_simulation"],
+          "description": "What is broken. Absent means graph, as in every manifest from before this key. The service target is the discrete-event service simulator's controller and surface, with an executor of its own, and it has no graph."
+        },
+        "scenario": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The simulator scenario that is broken: a fixture name or the trace of a seed. Required for the service target and refused for the graph one."
+        },
         "points": {
           "type": "array",
           "minItems": 1,
@@ -172,7 +181,17 @@
                   "scheduled_frame",
                   "teardown",
                   "mid_drag_teardown",
-                  "removed_host"
+                  "removed_host",
+                  "service_data_node_construction",
+                  "service_data_setter",
+                  "service_overlay_write",
+                  "service_control_aria",
+                  "service_timer_request",
+                  "service_frame_request",
+                  "service_gallery_hidden",
+                  "service_detached_before_draw",
+                  "service_detached_during_draw",
+                  "service_teardown_late_tick"
                 ]
               },
               "expect": { "enum": ["nothing_committed", "partly_committed", "undocumented"] }
@@ -183,7 +202,65 @@
         }
       },
       "required": ["points"],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["target"],
+            "properties": { "target": { "const": "service_simulation" } }
+          },
+          "then": {
+            "required": ["scenario"],
+            "properties": {
+              "points": {
+                "items": {
+                  "properties": {
+                    "point": {
+                      "enum": [
+                        "service_data_node_construction",
+                        "service_data_setter",
+                        "service_overlay_write",
+                        "service_control_aria",
+                        "service_timer_request",
+                        "service_frame_request",
+                        "service_gallery_hidden",
+                        "service_detached_before_draw",
+                        "service_detached_during_draw",
+                        "service_teardown_late_tick"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "not": { "required": ["scenario"] },
+            "properties": {
+              "points": {
+                "items": {
+                  "properties": {
+                    "point": {
+                      "enum": [
+                        "node_construction",
+                        "dom_transform",
+                        "connector_update",
+                        "label_update",
+                        "drag_install",
+                        "edge_construction",
+                        "scheduled_frame",
+                        "teardown",
+                        "mid_drag_teardown",
+                        "removed_host"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "limits": {
       "type": "object",
@@ -206,9 +283,23 @@
       "additionalProperties": false
     }
   },
-  "required": ["schema_version", "workload", "seed", "prng", "graph", "execution", "measurement", "limits"],
+  "required": ["schema_version", "workload", "seed", "prng", "execution", "measurement", "limits"],
   "additionalProperties": false,
   "allOf": [
+    {
+      "description": "Every workload has a graph, except the recovery workload aimed at the service simulator, which has none.",
+      "if": {
+        "required": ["recovery"],
+        "properties": {
+          "recovery": {
+            "required": ["target"],
+            "properties": { "target": { "const": "service_simulation" } }
+          }
+        }
+      },
+      "then": { "not": { "required": ["graph"] } },
+      "else": { "required": ["graph"] }
+    },
     {
       "if": {
         "properties": {

@@ -552,5 +552,38 @@ for (const [name, cases] of Object.entries(rejected)) {
   report(validators.comparison(doc), 'comparison accepts an incompatible pair with only not_comparable verdicts')
 }
 
+// The service target of the recovery workload has no graph, and it is told from the graph target by one key. Its manifests are read as the
+// graph target's are, and each way of getting the pair of target and points wrong is refused.
+{
+  const read = name =>
+    JSON.parse(JSON.stringify(parseToml(fs.readFileSync(new URL(`../manifests/${name}`, import.meta.url), 'utf8'))))
+  const service = read('w5-service-recovery-small.toml')
+  const graph = read('w5-recovery-small.toml')
+  const check = validators.manifest
+  report(check(service), `valid service recovery manifest${check.errors ? ' ' + ajv.errorsText(check.errors) : ''}`)
+  report(check(graph), 'valid graph recovery manifest, which names no target')
+  const refuses = (label, doc) => report(!check(doc), `manifest rejects ${label}`)
+  const edit = (base, ops) => {
+    const doc = clone(base)
+    applyOps(doc, ops)
+    return doc
+  }
+  refuses('a mistyped target', edit(service, [{ set: ['recovery', 'target'], value: 'service_simulator' }]))
+  refuses('the service target with no scenario', edit(service, [{ delete: ['recovery', 'scenario'] }]))
+  refuses('an empty scenario', edit(service, [{ set: ['recovery', 'scenario'], value: '' }]))
+  refuses(
+    'a graph point on the service target',
+    edit(service, [{ set: ['recovery', 'points', 0, 'point'], value: 'node_construction' }])
+  )
+  refuses(
+    'a service point on the graph target',
+    edit(graph, [{ set: ['recovery', 'points', 0, 'point'], value: 'service_overlay_write' }])
+  )
+  refuses('a scenario on the graph target', edit(graph, [{ set: ['recovery', 'scenario'], value: 'E0' }]))
+  refuses('a graph with the service target', edit(service, [{ set: ['graph'], value: { nodes: 4, edges: 3 } }]))
+  refuses('the graph target with no graph', edit(graph, [{ delete: ['graph'] }]))
+  refuses('a mistyped key of the recovery table', edit(service, [{ set: ['recovery', 'tarjet'], value: 'graph' }]))
+}
+
 console.log(failures ? `\n${failures} failed` : '\nall passed')
 process.exit(failures ? 1 : 0)

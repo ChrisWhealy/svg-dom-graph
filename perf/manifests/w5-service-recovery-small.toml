@@ -1,0 +1,47 @@
+# W5, recovery, aimed at the discrete-event service simulator: a controller on a surface is built and checked, and then broken on purpose,
+# one fault point at a time (design: design-specs/discrete_event_service_simulator.pdf, sections 7 and 8).
+#
+# The target is the simulator and not the graph, so there is no [graph] and no connector to break. Each fault point is given what the
+# contract in perf/fault-contracts.json says it leaves behind, and the contract cites the code that makes the promise. The scenario is one
+# of the S1 fixtures (E0, twelve slices), whose every slice the independent oracle hashes.
+schema_version = 1
+workload = "recovery"
+seed = 20261106
+prng = "splitmix64"
+
+[execution]
+modes = ["correctness", "recovery", "endurance"]
+warmup_iterations = 3
+measurement_iterations = 12
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+checkpoint_every = 1
+
+[checkpoint]
+view = "unchanged"
+
+[recovery]
+target = "service_simulation"
+scenario = "E0"
+points = [
+    { point = "service_data_node_construction", expect = "nothing_committed" },
+    { point = "service_data_setter", expect = "partly_committed" },
+    { point = "service_overlay_write", expect = "partly_committed" },
+    { point = "service_control_aria", expect = "partly_committed" },
+    { point = "service_timer_request", expect = "nothing_committed" },
+    { point = "service_frame_request", expect = "nothing_committed" },
+    { point = "service_gallery_hidden", expect = "nothing_committed" },
+    { point = "service_detached_before_draw", expect = "nothing_committed" },
+    { point = "service_detached_during_draw", expect = "partly_committed" },
+    { point = "service_teardown_late_tick", expect = "nothing_committed" },
+]
+
+[limits]
+wall_ms = 300000
