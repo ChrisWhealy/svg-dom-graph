@@ -11,9 +11,15 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
-## [0.2.49] - 2026-11-10
+## [0.2.50] - 2026-11-10
+
+## Fixed
+
+- Prevent non-library content from leaking into published crate (``)
 
 # [Released]
+
+## [0.2.49] - 2026-11-10
 
 ## Fixed
 

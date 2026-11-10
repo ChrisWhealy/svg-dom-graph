@@ -44,7 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: W6 A/B four-slice obs; C real Next/Play; 3-repeat diagnostic smoke test; 1k/10k/100k pops; mandatory setter (`49c4358`)
 - `perf/runner/promote-from-run.mjs` script to download CI workload data to `perf/baselines` for a given run id (`f4990cb`)
 - Promote initial CI workload data to `perf/baselines` (`7ba9852`)
-- Promote second and third CI workload data to `perf/baselines` (``)
+- Promote second and third CI workload data to `perf/baselines` (`2fa97ae`)
 
 ### Changed
 

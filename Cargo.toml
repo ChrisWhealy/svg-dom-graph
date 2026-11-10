@@ -26,7 +26,7 @@ exclude = ["bench-butterfly"]
 [package]
 authors = ["Chris Whealy <chris@whealy.com>"]
 name = "svg-dom-graph"
-version = "0.2.49"
+version = "0.2.50"
 edition = "2024"
 rust-version = "1.85"
 description = "Plot SVG graphs using svg-dom"
@@ -35,16 +35,27 @@ categories = ["wasm", "web-programming", "rendering"]
 repository = "https://github.com/ChrisWhealy/svg-dom-graph"
 license = "MIT"
 readme = "README.md"
-exclude = [
-    ".github/",
-    "demo/",
-    "docs/",
-    "img/",
-    "design-specs/",
-    "perf/",
-    "rustfmt.toml",
-    "webdriver.json",
-    "refresh-cdp-timings.sh",
+
+# What is published is named here, and nothing else.
+#
+# The workspace holds a many workspace crates that are not part of the library:
+# * its integration and browser tests
+# * the performance harness,
+# * the simulator and its evidence,
+# * the demos
+# * the documentation.
+#
+# A list of what to leave out allows any new directory to leak into the published crate until someone remembers to
+# add it to the exclusion list. Alternatively, a list of what to put in cannot suffer from such leaks.
+#
+# The script `.github/scripts/check-package-contents.sh` fails CI if the package holds anything not named here. The
+# leading slash anchors a name to the crate's own directory, since a pattern without one matches a file of that name at
+# any depth.
+include = [
+    "/src/**/*",
+    "/README.md",
+    "/LICENSE",
+    "/changelog.md",
 ]
 
 [dependencies]
