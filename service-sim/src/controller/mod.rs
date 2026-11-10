@@ -88,6 +88,19 @@ pub enum Outcome {
     Failed,
 }
 
+/// What the controller's own engine holds. The slice that its counters say is read from the engine, and the slice that
+/// the controller believes it is at is the controller's own record, so a disagreement between them is a defect of the
+/// bookkeeping.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LiveEngine {
+    /// The slice that the controller recorded when it last stepped or replaced the engine.
+    pub recorded_at: u64,
+    /// The slice that the engine's own counters say it has done.
+    pub slice: u64,
+    /// The hash that the engine makes of its whole state, as it does at the end of that slice.
+    pub sha256: String,
+}
+
 /// A slice that has been worked out and has not been committed.
 struct Staged {
     slice: u64,
@@ -214,6 +227,27 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     #[must_use]
     pub fn committed(&self) -> Projection {
         self.inner.state.borrow().committed.clone()
+    }
+
+    /// The model of the committed slice, which is what the controller holds and checks a draw against. It is read here
+    /// as it is, and is not worked out again from the run.
+    #[must_use]
+    pub fn committed_model(&self) -> Model {
+        self.inner.state.borrow().committed_model.clone()
+    }
+
+    /// What the controller's own engine holds now. A slice is worked out before it is drawn, so after a draw that
+    /// failed the engine is one slice ahead of the committed one, and that is a state that the controller keeps on
+    /// purpose.
+    #[must_use]
+    pub fn live_engine(&self) -> LiveEngine {
+        let st = self.inner.state.borrow();
+        let model = crate::projection::extract(&st.engine, &st.view);
+        LiveEngine {
+            recorded_at: st.engine_at,
+            slice: model.slice,
+            sha256: st.engine.checkpoint(model.tick, model.slice),
+        }
     }
 
     /// Whether the page may differ from the committed projection, because a draw failed or the host went.

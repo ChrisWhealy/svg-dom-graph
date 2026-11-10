@@ -92,6 +92,18 @@ const MUTATIONS = [
   ],
   [
     CONTROLLER,
+    'a draw that failed corrupts the committed model and leaves its slice number alone',
+    '            self.full_repair();\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();',
+    '            self.full_repair();\n            self.state.borrow_mut().committed_model.counters.completed += 1;\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();'
+  ],
+  [
+    CONTROLLER,
+    'a draw that failed leaves the live engine rewound by a slice, with the controller still recording where it was',
+    '            self.full_repair();\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();',
+    '            self.full_repair();\n            if let Ok(engine) = self.replay(target.slice.saturating_sub(2)) {\n                self.state.borrow_mut().engine = engine;\n            }\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();'
+  ],
+  [
+    CONTROLLER,
     'a draw that failed moves the cursor and still reports failure',
     '            self.full_repair();\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();',
     '            self.full_repair();\n            self.state.borrow_mut().committed_slice = target.slice;\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();'

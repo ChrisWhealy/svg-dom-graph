@@ -66,4 +66,3 @@ Never kill it part way, since that can leave a source mutated.
 - The visibility events are synthetic, because a headless tab cannot be hidden.
 - The service target has no Layer C scenario.
 - Optional setters of the library are not audited and stay undocumented.
-- The library version is not bumped.

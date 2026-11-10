@@ -47,8 +47,28 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
     return result
   }
   const oracle = testing.oracle?.checkpoints ?? null
+  // What the controller holds is read from the controller, and what it should hold comes from outside it: the oracle, and a replay of the
+  // run. The live engine may be a slice ahead of the committed one after a failed draw, and then it is compared at its own slice.
+  const liveEngineBroken = checkpoint => {
+    const broken = []
+    if (!checkpoint.committed_model_matches_reference)
+      broken.push('the model that the controller holds is not the model of a replay')
+    if (checkpoint.engine_recorded_at !== checkpoint.engine_slice)
+      broken.push(
+        `the controller thinks its engine is at slice ${checkpoint.engine_recorded_at} and the engine is at ${checkpoint.engine_slice}`
+      )
+    if (![checkpoint.committed_slice, checkpoint.committed_slice + 1].includes(checkpoint.engine_slice))
+      broken.push(`the engine is at slice ${checkpoint.engine_slice} and the page is at ${checkpoint.committed_slice}`)
+    if (oracle && oracle[checkpoint.engine_slice] !== checkpoint.engine_sha256)
+      broken.push('the live engine does not hold the state that the oracle says it should at its slice')
+    return broken
+  }
   const agreesWithOracle = checkpoint =>
-    oracle ? oracle[checkpoint.committed_slice] === checkpoint.model_sha256 : null
+    liveEngineBroken(checkpoint).length > 0
+      ? false
+      : oracle
+        ? oracle[checkpoint.committed_slice] === checkpoint.model_sha256
+        : null
   const logical = checkpoint => ({
     committed_slice: checkpoint.committed_slice,
     model_sha256: checkpoint.model_sha256,
@@ -669,7 +689,11 @@ export const runServiceRecovery = async (h, manifest, testing = {}) => {
     if (built.ok) {
       for (let k = 0; k < 8; k++) {
         const c = R.cp(0)
-        slices.push(testing.oracle.checkpoints[c.committed_slice] === c.model_sha256)
+        slices.push(
+          testing.oracle.checkpoints[c.committed_slice] === c.model_sha256 &&
+            testing.oracle.checkpoints[c.engine_slice] === c.engine_sha256 &&
+            c.committed_model_matches_reference
+        )
         if (R.act(0, { op: 'next' }).outcome !== 'done') break
       }
     }

@@ -19,7 +19,7 @@ use service_sim::projection::View;
 use service_sim::surface::Surface;
 use service_sim_engine::hash::sha256_hex;
 use service_sim_engine::trace::Scenario;
-use service_sim_engine::{Engine, Error as EngineError, Limits};
+use service_sim_engine::{Engine, Error as EngineError, Limits, Model};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -110,8 +110,10 @@ fn factory_for(scenario: &str) -> Result<(Factory, usize), String> {
     Ok((factory, servers))
 }
 
-/// The hash that the engine makes of its whole state at slice `slice`, by replaying the run from its first slice.
-fn model_checkpoint(factory: &Factory, slice: u64) -> Result<String, String> {
+/// The model and the hash of the whole state that a fresh engine has at slice `slice`, by replaying the run from its
+/// first slice, with the model made for the selection `selected`. This is a reference, and is not what the controller
+/// holds.
+fn reference_at(factory: &Factory, slice: u64, selected: Option<u64>) -> Result<(Model, String), String> {
     let mut engine = factory().map_err(|e| e.message())?;
     let mut last = engine.checkpoint(0, 0);
     for _ in 0..slice {
@@ -121,7 +123,7 @@ fn model_checkpoint(factory: &Factory, slice: u64) -> Result<String, String> {
             .ok_or("the run is shorter than the committed slice")?
             .checkpoint;
     }
-    Ok(last)
+    Ok((service_sim::projection::extract(&engine, &View { selected }), last))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -368,9 +370,19 @@ pub fn checkpoint(slot: u32) -> String {
         let page = c.with_host(|h| h.surface().snapshot())?;
         let (data, trusted) = c.with_host(|h| (h.surface().data_texts().unwrap_or_default(), h.surface().is_trusted()));
         let slice = c.committed_slice();
+        // Two hashes are made, and neither is taken on trust. The reference is a run replayed from its first slice. The
+        // live one is what the controller's own engine holds now, read where it is and not worked out again, so an
+        // engine that has drifted from its run while keeping its slice number does not agree with the reference. The
+        // committed model is the controller's own record, which is compared with the model that the replay gives.
+        let live = c.live_engine();
+        let (reference_model, reference_hash) = reference_at(&f.factory, slice, c.selected())?;
         Ok(serde_json::json!({
             "committed_slice": slice,
-            "model_sha256": model_checkpoint(&f.factory, slice)?,
+            "model_sha256": reference_hash,
+            "committed_model_matches_reference": c.committed_model() == reference_model,
+            "engine_recorded_at": live.recorded_at,
+            "engine_slice": live.slice,
+            "engine_sha256": live.sha256,
             "projection_sha256": committed.sha256(),
             "page_sha256": sha256_hex(page.as_bytes()),
             "data_cells": data,
