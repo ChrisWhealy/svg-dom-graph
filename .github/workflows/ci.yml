@@ -302,16 +302,6 @@ jobs:
           cargo run -p demo-server -- --build-only
           node dess/s3/gallery-order.mjs
 
-      # The proof that the harness would notice: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
-      - name: The harness catches an injected regression and an injected leak
-        run: node perf/runner/selftest-regression.mjs
-
-      # Workload W6's runners are shown to refuse, reject and fail where they should: a refused seed, a wrong checkpoint, a controller that
-      # reads layout, a shifted window, three repetitions being diagnostic and five not, and a late Pause being an extra tick. The Play series
-      # costs 40 seconds a repetition and is on the nightly profile, so only the late-Pause protocol check, which is about 20 seconds, runs here.
-      - name: The simulator workload's runners refuse, reject and fail where they should
-        run: node dess/s5/selftest.mjs
-
       # Historical runs are kept as artifacts and never committed. A baseline is committed only by the promotion command.
       - name: Keep the results
         if: always()
@@ -320,6 +310,57 @@ jobs:
           name: perf-smoke-${{ github.sha }}
           path: target/perf-smoke
           retention-days: 90
+
+  # The proofs that the harness would notice, which take about nine minutes each and are the slowest things that CI does. They are jobs of their own,
+  # so that they run beside the smoke workloads and not after them, and a commit waits for the longest and not for the sum.
+  #
+  # regression: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
+  #
+  # w6: workload W6's runners are shown to refuse, reject and fail where they should: a refused seed, a wrong checkpoint, a controller that reads
+  # layout, a shifted window, seeds over 2**53, a manifest held to its layers, and a late Pause being an extra tick. The classification of three
+  # repetitions as diagnostic and five as not, which runs the manifests eight times, is on the nightly profile. Play costs 40 seconds a repetition and
+  # is there too, so only the late-Pause protocol check, which is about 20 seconds, runs here.
+  perf-selftests:
+    name: perf self-tests (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: harness catches an injected regression and leak
+            run: node perf/runner/selftest-regression.mjs
+          - name: simulator runners refuse, reject and fail
+            run: node dess/s5/selftest.mjs --skip-classification
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
+      PERF_CHROME_NO_SANDBOX: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      # The self-tests run the harness without building it, so it is built here, as perf-smoke builds it before its first run.
+      - name: Build the harness
+        run: |
+          cargo build --release -p perf-harness
+          wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+      - name: ${{ matrix.name }}
+        run: ${{ matrix.run }}
 
   library-version:
     name: published library version

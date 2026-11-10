@@ -101,6 +101,10 @@ node dess/s5/selftest.mjs
 node dess/s5/mutation-check.mjs
 ```
 
+`node dess/s5/selftest.mjs --skip-classification` is what every commit runs, as a job of its own beside the smoke profile.
+The full self-test also runs the manifests eight times to classify three repetitions as diagnostic and five as not, and the nightly profile runs it.
+`--skip-play` skips the late-Pause protocol check, which takes about 20 seconds.
+
 The first command is the per-commit smoke profile: three repetitions of Layers A, B and Next, and the correctness and endurance modes.
 The comparison profile `w6-service-simulation-comparison.toml` has five repetitions, which is the least that gives a statistical verdict.
 It is named apart and is never added to the smoke silently.

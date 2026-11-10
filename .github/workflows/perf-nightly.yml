@@ -15,7 +15,7 @@ jobs:
   w6-play:
     name: W6 Layer C Play (nightly)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       PERF_RUNNER_CLASS: github-ubuntu-24.04
       PERF_CHROME_NO_SANDBOX: '1'
@@ -45,6 +45,13 @@ jobs:
           node perf/runner/run.mjs perf/manifests/w6-service-simulation-smoke.toml --mode performance --layers c --play --out-dir target/perf-nightly
           finished=$(date +%s)
           echo "W6 Layer C, Next and Play, three repetitions: $((finished - started)) seconds" | tee -a "$GITHUB_STEP_SUMMARY"
+      # The self-tests that are too slow for every commit: the classification of three repetitions as diagnostic and five as not, which runs the
+      # smoke and comparison manifests eight times, and the late-Pause protocol check. The rest of the self-test runs per commit.
+      - name: The simulator workload's runners, in full
+        run: |
+          cargo build --release -p perf-harness
+          wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+          node dess/s5/selftest.mjs
       - name: Keep the results
         if: always()
         uses: actions/upload-artifact@v7

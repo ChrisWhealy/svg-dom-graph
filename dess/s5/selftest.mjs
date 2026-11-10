@@ -1,6 +1,6 @@
 // Proves that the W6 runners can fail: that each thing they say they guard against is noticed when it is made to happen.
 //
-//   node dess/s5/selftest.mjs [--skip-play]
+//   node dess/s5/selftest.mjs [--skip-play] [--skip-classification]
 //
 // A clean run in which every gate passes shows nothing until it is known that a gate fails when it should. This makes things wrong on
 // purpose, in the pieces that a clean run does not break, and each has to be seen for what it is and for nothing else.
@@ -32,6 +32,9 @@ const root = path.resolve(import.meta.dirname, '../..')
 const binary = path.join(root, 'target/release/perf-harness')
 const manifestPath = path.join(root, 'perf/manifests/w6-service-simulation-smoke.toml')
 const skipPlay = process.argv.includes('--skip-play')
+// The classification of repetitions runs the smoke manifest three times and the comparison manifest five, which is most of this script's time, and
+// it tests the comparison and not the runners. Per-commit CI skips it, and the nightly profile runs it.
+const skipClassification = process.argv.includes('--skip-classification')
 const canonical = spawnSync(binary, ['canonical', manifestPath], { encoding: 'utf8' }).stdout.trim()
 const manifest = JSON.parse(canonical)
 const trace = buildTrace(manifest.simulation, manifest.seed)
@@ -228,7 +231,8 @@ try {
 }
 
 // 5. Three repetitions are diagnostic, and five are not.
-{
+if (skipClassification) console.log('skip the classification of repetitions: --skip-classification')
+else {
   const classify = (manifestFile, repetitions, layer) => {
     const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dess-s5-classify-'))
     const out = path.join(work, 'out')
