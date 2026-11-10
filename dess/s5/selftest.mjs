@@ -298,7 +298,14 @@ try {
 // 6. A late Pause.
 if (skipPlay) console.log('skip the late Pause: --skip-play')
 else {
-  const o = await runSimulationC({ binary, manifest, trace: trace.expected, series: ['play'], injectLatePause: true })
+  const o = await runSimulationC({
+    binary,
+    manifest,
+    seed: String(manifest.seed),
+    trace: trace.expected,
+    series: ['play'],
+    injectLatePause: true
+  })
   check(
     o.status === 'invalid_incorrect' &&
       o.checkpoints_failed.length === 1 &&

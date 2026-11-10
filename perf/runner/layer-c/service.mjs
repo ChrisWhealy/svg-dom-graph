@@ -73,6 +73,9 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
     stream: null,
     timer_resolution_us: 0
   }
+  // The seed is the exact decimal text of the manifest's, which a number can round, and a runner without it cannot build the controller.
+  if (typeof seed !== 'string' || !/^\d+$/.test(seed))
+    throw new Error(`the Layer C runner needs the seed as its decimal text, and was given ${JSON.stringify(seed)}`)
   const fail = (section, detail) => outcome.checkpoints_failed.push({ section, detail })
   const pass = () => outcome.checkpoints_passed++
   const playWanted = series.includes('play')
@@ -371,6 +374,9 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
     stream: null,
     timer_resolution_us: 5
   }
+  // The seed is the exact decimal text of the manifest's, which a number can round, and a runner without it cannot build the controller.
+  if (typeof seed !== 'string' || !/^\d+$/.test(seed))
+    throw new Error(`the Layer C runner needs the seed as its decimal text, and was given ${JSON.stringify(seed)}`)
   const fail = (section, detail) => outcome.checkpoints_failed.push({ section, detail })
   const pass = () => outcome.checkpoints_passed++
   const page = await openHarnessPage()
@@ -393,15 +399,18 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
   // What a pointer must not change: the view of the scene, and which control has the focus, which is the one that was used.
   const invariants = async (before, expectedActive, what) => {
     const now = JSON.parse(await view())
-    if (now.viewBox !== before.viewBox || now.transform !== before.transform) fail('interaction', `${what} moved the view`)
+    if (now.viewBox !== before.viewBox || now.transform !== before.transform)
+      fail('interaction', `${what} moved the view`)
     else pass()
-    if (now.active !== expectedActive) fail('interaction', `${what} left the focus on ${now.active} and not on ${expectedActive}`)
+    if (now.active !== expectedActive)
+      fail('interaction', `${what} left the focus on ${now.active} and not on ${expectedActive}`)
     else pass()
   }
   /** All three controls in the browser's own accessibility tree, each by its role and name, and the Play control's pressed state. */
   const controlsInTree = async (what, pressed) => {
     const nodes = (await page.send('Accessibility.getFullAXTree')).result.nodes
-    const named = (role, pattern) => nodes.find(n => n.role?.value === role && pattern.test(String(n.name?.value ?? '')))
+    const named = (role, pattern) =>
+      nodes.find(n => n.role?.value === role && pattern.test(String(n.name?.value ?? '')))
     const next = named('button', /^Next slice$/)
     const play = named('button', /^(Play|Pause)$/)
     const seek = named('slider', /^Seek to slice$/)
@@ -414,7 +423,10 @@ export const runSimulationCCorrectness = async ({ manifest, seed, trace }) => {
       const state = String(play.properties?.find(p => p.name === 'pressed')?.value?.value ?? '')
       const name = play.name.value
       if (state !== pressed || name !== (pressed === 'true' ? 'Pause' : 'Play'))
-        fail('accessibility', `${what}: the Play control is named ${name} and pressed ${state}, and ${pressed === 'true' ? 'Pause' : 'Play'} and pressed ${pressed} were meant`)
+        fail(
+          'accessibility',
+          `${what}: the Play control is named ${name} and pressed ${state}, and ${pressed === 'true' ? 'Pause' : 'Play'} and pressed ${pressed} were meant`
+        )
       else pass()
     }
   }
