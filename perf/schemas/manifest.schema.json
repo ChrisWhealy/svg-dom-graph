@@ -337,6 +337,15 @@
           "minimum": 100,
           "maximum": 1000000,
           "description": "How many arrivals the generator makes, for a scaled run of the frozen revision. Absent means the revision's own 4,000. The draws of an arrival do not depend on how many there are, so a scaled trace is the same run for longer."
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "enum": ["a", "b", "c"]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The layers that the manifest is meant to be run on. Absent means all three. A scaled trace that is only a streaming check against the independent engine names a, so that it is never dispatched to a browser."
         }
       },
       "required": [

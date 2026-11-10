@@ -612,6 +612,9 @@ for (const [name, cases] of Object.entries(rejected)) {
   refuses('a mistyped key of the simulation table', edit(simulation, [{ set: ['simulation', 'batches'], value: 4 }]))
   refuses('a simulation table with no queue capacity', edit(simulation, [{ delete: ['simulation', 'queue_capacity'] }]))
   refuses('a zero pop minimum', edit(simulation, [{ set: ['simulation', 'min_pops'], value: 0 }]))
+  refuses('a layer that does not exist', edit(simulation, [{ set: ['simulation', 'layers'], value: ['d'] }]))
+  refuses('no layer', edit(simulation, [{ set: ['simulation', 'layers'], value: [] }]))
+  refuses('a repeated layer', edit(simulation, [{ set: ['simulation', 'layers'], value: ['a', 'a'] }]))
   refuses('too few arrivals', edit(simulation, [{ set: ['simulation', 'arrivals'], value: 10 }]))
   refuses('too many arrivals', edit(simulation, [{ set: ['simulation', 'arrivals'], value: 2000000 }]))
   report(

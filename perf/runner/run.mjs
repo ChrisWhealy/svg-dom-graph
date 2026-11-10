@@ -38,8 +38,10 @@ const parseArguments = argv => {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--mode') options.mode = argv[++i]
-    else if (arg === '--layers') options.layers = argv[++i].split(',')
-    else if (arg === '--repetitions') options.repetitions = Number(argv[++i])
+    else if (arg === '--layers') {
+      options.layers = argv[++i].split(',')
+      options.layersAsked = true
+    } else if (arg === '--repetitions') options.repetitions = Number(argv[++i])
     else if (arg === '--out-dir') options.outDir = argv[++i]
     else if (arg === '--no-build') options.build = false
     else if (arg === '--inject-slowdown-us') options.slowdownUs = Number(argv[++i])
@@ -116,6 +118,17 @@ const manifest = report.manifest.canonical
 const interactive = manifest.workload === 'interaction'
 const recovery = manifest.workload === 'recovery'
 options.layers ??= service ? ['b'] : interactive || recovery || simulating ? ['a', 'b', 'c'] : ['a', 'b']
+// A simulator manifest can say which layers it is for. A scaled streaming check names Layer A alone, and then no browser is ever started for
+// it: the layers are cut down to those that it names, and a layer that was asked for by name and is not one of them is refused.
+if (simulating && manifest.simulation.layers) {
+  const allowed = manifest.simulation.layers
+  const refused = options.layers.filter(layer => !allowed.includes(layer))
+  if (options.layersAsked && refused.length > 0)
+    throw new Error(`this manifest is for layer ${allowed.join(', ')} alone, and ${refused.join(', ')} was asked for`)
+  if (refused.length > 0)
+    console.log(`skipping layer ${refused.join(', ')}: the manifest is for layer ${allowed.join(', ')} alone`)
+  options.layers = options.layers.filter(layer => allowed.includes(layer))
+}
 if (service && options.layers.some(layer => layer !== 'b')) {
   console.log(
     'skipping layers a and c: the service target is broken in the page, by its own executor, and has neither native work nor real input'

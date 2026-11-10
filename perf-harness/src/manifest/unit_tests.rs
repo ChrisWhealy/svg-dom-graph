@@ -544,6 +544,23 @@ fn scaled_simulator_manifests_say_their_arrivals_and_the_smoke_one_says_none() -
         Ok(_) => Err(format!("{why} was accepted")),
         Err(_) => Ok(()),
     };
+    let big = Manifest::from_toml(SIMULATION_100K).map_err(|e| e.to_string())?;
+    if big.simulation.as_ref().and_then(|s| s.layers.clone()) != Some(vec!["a".to_owned()]) {
+        return Err("the 100,000-pop manifest does not say that it is for Layer A alone".to_owned());
+    }
+    let json = String::from_utf8(smoke.canonical_json()).map_err(|e| e.to_string())?;
+    if json.contains("layers") {
+        return Err("the smoke manifest was written with a layers key".to_owned());
+    }
+    refused(
+        SIMULATION_100K.replace("layers = [\"a\"]", "layers = [\"d\"]"),
+        "a layer that does not exist",
+    )?;
+    refused(SIMULATION_100K.replace("layers = [\"a\"]", "layers = []"), "no layer")?;
+    refused(
+        SIMULATION_100K.replace("layers = [\"a\"]", "layers = [\"a\", \"a\"]"),
+        "a repeated layer",
+    )?;
     refused(SIMULATION_100K.replace("arrivals = 36000", "arrivals = 10"), "too few arrivals")?;
     refused(
         SIMULATION_100K.replace("arrivals = 36000", "arrivals = 2000000"),

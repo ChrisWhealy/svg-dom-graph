@@ -119,6 +119,11 @@ pub struct Simulation {
     /// scaling is not a new revision.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub arrivals: Option<u64>,
+    /// The layers that this manifest is meant to be run on, from `a`, `b` and `c`. Absent means all three, and is not
+    /// written back. A scaled trace that is only a streaming check against the independent engine names `a`, so that it
+    /// is never dispatched to a browser, and the orchestrator refuses a layer that is asked for and is not named.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layers: Option<Vec<String>>,
 }
 
 impl Simulation {
@@ -151,6 +156,14 @@ impl Simulation {
         }
         if self.arrivals.is_some_and(|n| !(100..=1_000_000).contains(&n)) {
             return refuse("simulation.arrivals must be from 100 to 1,000,000 when it is given".to_string());
+        }
+        if let Some(layers) = &self.layers {
+            if layers.is_empty() || layers.iter().any(|l| !matches!(l.as_str(), "a" | "b" | "c")) {
+                return refuse("simulation.layers must name at least one of a, b and c, and nothing else".to_string());
+            }
+            if layers.iter().enumerate().any(|(i, l)| layers[..i].contains(l)) {
+                return refuse("simulation.layers must not repeat a layer".to_string());
+            }
         }
         if self.batch_slices != 4 {
             return refuse(

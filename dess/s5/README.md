@@ -35,7 +35,7 @@ A scaled run has more or fewer arrivals, and the draws of an arrival do not depe
 |---|---|---|---|
 | `w6-service-simulation-1k.toml` | 360 | 1,009 | Correctness only, since 487 slices cannot be timed |
 | `w6-service-simulation-smoke.toml` | 4,000 | 11,214 | All three modes |
-| `w6-service-simulation-100k.toml` | 36,000 | 101,139 | Correctness only, which is streaming against the independent engine |
+| `w6-service-simulation-100k.toml` | 36,000 | 101,139 | Correctness on Layer A alone, which is streaming against the independent engine |
 
 | Figure for the manifest seed | Value |
 |---|---|
@@ -135,5 +135,5 @@ The working tree is never touched, so nothing can be committed mutated.
 - Chrome 157 on one machine, and nothing about Firefox or Safari.
 - A baseline or a statistical verdict, since none is promoted.
 - The Seek control is the fixture's own range input and not the gallery's.
-- The 100,000-pop trace is not run through the browser, as the design says.
+- The 100,000-pop trace is not run through the browser: its manifest names Layer A alone, and the orchestrator enforces that.
 - A stale, hidden or failed tick in the Play series is rejected for the repetition and is not counted separately.

@@ -1,8 +1,8 @@
 # W6 at about 100,000 pops, as a scaled run of the frozen generator revision: the same draws for more arrivals.
 #
-# This is pure streaming against the independent engine at scale, and the controller committing every slice of it. The design is explicit that
-# a sampled DOM is not a claim about 100,000 updates of a crate, so this asks for the correctness mode only, which checks every slice's hash
-# and the data node's setter at every displayed slice, and makes no timing claim.
+# This is pure streaming against the independent engine at scale: the Rust engine's hash after every slice, held to the independent engine's.
+# The design is explicit that a sampled DOM is not a claim about 100,000 updates of a crate, so the manifest names Layer A alone, and the
+# orchestrator never dispatches it to a browser. It asks for the correctness mode only, and makes no timing claim.
 #
 schema_version = 1
 workload = "service_simulation"
@@ -17,6 +17,7 @@ max_attempts = 2
 retry_deferral_cap = 4
 min_pops = 100000
 arrivals = 36000
+layers = ["a"]
 batch_slices = 4
 
 [execution]

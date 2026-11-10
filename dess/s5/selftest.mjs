@@ -102,6 +102,29 @@ const check = (ok, text) => {
   fs.rmSync(work, { recursive: true, force: true })
 }
 
+// A manifest that names its layers is held to them. The 100,000-pop one is for Layer A alone, so no browser is started for it, and a layer
+// that is asked for by name and is not named is refused.
+{
+  const big = path.join(root, 'perf/manifests/w6-service-simulation-100k.toml')
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'dess-s5-100k-'))
+  const args = [path.join(root, 'perf/runner/run.mjs'), big, '--out-dir', out, '--no-build']
+  const ran = spawnSync('node', args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 })
+  const layers = fs
+    .readdirSync(out)
+    .filter(f => f.startsWith('w6-service-simulation-100k') && f.endsWith('.json') && !f.endsWith('.cases.json'))
+    .map(f => JSON.parse(fs.readFileSync(path.join(out, f), 'utf8')).run_id.match(/-([ABC])-/)?.[1])
+  check(
+    ran.status === 0 && layers.length === 1 && layers[0] === 'A' && /skipping layer b, c/.test(ran.stdout),
+    `the 100,000-pop manifest, with no layers asked for, runs Layer A only: ${layers.join(', ') || 'none'}`
+  )
+  const asked = spawnSync('node', [...args, '--layers', 'a,b'], { cwd: root, encoding: 'utf8' })
+  check(
+    asked.status !== 0 && /for layer a alone, and b was asked for/.test(asked.stderr),
+    'and Layer B, asked for by name, is refused'
+  )
+  fs.rmSync(out, { recursive: true, force: true })
+}
+
 // 2, 3 and 4 need a page.
 const page = await openHarnessPage()
 const run = async (mode, expected, testing = {}, changed = manifest) =>
@@ -119,7 +142,9 @@ try {
   inside.checkpoints[299] = '0'.repeat(64)
   const hidden = await run('performance', inside)
   check(
-    hidden.status === 'invalid_incorrect' && hidden.checkpoints_failed.some(f => /after slice 299/.test(f.detail)) && hidden.stream.matches === false,
+    hidden.status === 'invalid_incorrect' &&
+      hidden.checkpoints_failed.some(f => /after slice 299/.test(f.detail)) &&
+      hidden.stream.matches === false,
     `Layer B performance with a wrong checkpoint inside a batch (slice 299) is invalid_incorrect and names it: ${hidden.status}`
   )
   for (const mode of ['correctness', 'performance']) {
