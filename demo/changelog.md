@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S4: Enforce calculated aggregate `externref` loss (`76323ab`)
 - DESS S5: Complete Layer C's real-control correctness checks (`9b8c4c6`)
 - DESS S5: Adjust W4 interaction runner to count `frames_unattributed` and continue. Only fails if count > 15 (`03b698a`)
-- DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (``)
+- DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (`685cac3`)
 
 ### Fixed
 
