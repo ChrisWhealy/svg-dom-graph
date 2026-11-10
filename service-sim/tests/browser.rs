@@ -383,12 +383,26 @@ fn the_overlay_is_in_the_one_content_group_and_follows_the_view() -> Result<(), 
         .query_selector(":scope > g")
         .map_err(|e| format!("{e:?}"))?
         .ok_or("no node")?;
-    let width = |e: &web_sys::Element| e.get_bounding_client_rect().width();
-    let (overlay_before, node_before) = (width(s.overlay()), width(&node));
+    // The scale that the browser applies to an element, which is a property of the transforms above it and does not depend on what is drawn
+    // in it. A bounding box would measure the glyphs of the overlay's text, and a browser need not lay text out exactly twice as wide at
+    // twice the size: Firefox gives 1.993, from the advance widths of the scaled font. That is the browser's text and not the view.
+    let scale = |e: &web_sys::Element| -> Result<f64, String> {
+        let matrix = js_sys::Reflect::get(e, &"getCTM".into())
+            .ok()
+            .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
+            .ok_or("the element has no getCTM")?
+            .call0(e)
+            .map_err(|e| format!("{e:?}"))?;
+        js_sys::Reflect::get(&matrix, &"a".into())
+            .map_err(|e| format!("{e:?}"))?
+            .as_f64()
+            .ok_or_else(|| "the matrix has no scale".to_owned())
+    };
+    let (overlay_before, node_before) = (scale(s.overlay())?, scale(&node)?);
     s.scene()
         .set_view(ViewTransform { scale: 2.0, tx: 0.0, ty: 0.0 })
         .map_err(|e| e.to_string())?;
-    let (overlay_ratio, node_ratio) = (width(s.overlay()) / overlay_before, width(&node) / node_before);
+    let (overlay_ratio, node_ratio) = (scale(s.overlay())? / overlay_before, scale(&node)? / node_before);
     check((node_ratio - 2.0).abs() < 1e-6, &format!("the node scaled by {node_ratio}"))?;
     check(
         (overlay_ratio - 2.0).abs() < 1e-6,

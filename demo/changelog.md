@@ -133,4 +133,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: Ensure that 100k trace test is not run in the browser (`ca10052`)
 - DESS S5: Ensure W6 maintains precision for large 64-bit seeds (`5fb1ef4`)
 - DESS S5: Ensure mutation-check corrrectly classifies a failed build (`0a3654a`)
-- DESS S5: Ensure late-Pause self-test supplies the required seed (``)
+- DESS S5: Ensure late-Pause self-test supplies the required seed (`7c78dcc`)
+- DESS S5: Correct failing `wasm-pack` test in Firefox (``)
