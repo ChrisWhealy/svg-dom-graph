@@ -187,6 +187,7 @@ jobs:
         run: |
           cargo build --release -p perf-harness
           node perf/lib/test-regression.mjs
+          node perf/runner/test-promote-from-run.mjs
 
       # Workload W6's trace is worked out by the independent engine before anything is timed. The manifest seed has to qualify with the figures
       # that S0 froze, a seed that S0 refused has to be refused with its reason, and a trace with too few pops has to be refused whatever its slices.

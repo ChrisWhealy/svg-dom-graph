@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S3: Manual clock, epochs/tokens, synchronous hidden predicate, pre/post-draw host checks, forced mid-draw detach. Reflow comments (`0647f47`)
 - DESS S4: Audit/repair required data setter, service-specific W5 executor, JS oracle checkpoints, source-cited contracts (`d9f1e9a`)
 - DESS S5: W6 A/B four-slice obs; C real Next/Play; 3-repeat diagnostic smoke test; 1k/10k/100k pops; mandatory setter (`49c4358`)
+- `perf/runner/promote-from-run.mjs` script to download CI workload data to `perf/baselines` for a given run id (``)
 
 ### Changed
 

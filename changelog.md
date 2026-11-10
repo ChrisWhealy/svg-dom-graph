@@ -11,11 +11,13 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
-## Fixed
-
-- `Scene::set_data_values` now repairs a node that a failed call left torn. A call that fails part way marks the node's cells as not known to match its values, and the next call writes every cell, whatever values it asks for, and then clears the mark. Before, a call that asked for the values the model still held changed nothing and left the cells that were already rewritten. A node that has not failed is written exactly as before
+## [0.2.49] - 2026-11-10
 
 # [Released]
+
+## Fixed
+
+- `Scene::set_data_values` now repairs a node that a failed call left torn.
 
 ## [0.2.48] - 2026-11-06
 
