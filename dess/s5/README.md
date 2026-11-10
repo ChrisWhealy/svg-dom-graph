@@ -53,6 +53,7 @@ A scaled run has more or fewer arrivals, and the draws of an arrival do not depe
 | C Next | A real click on the Next button, to the presentation of the frame that carries the commit | The Play interval |
 | C Play | The entry of the timer callback, to the presentation of the frame that carries the commit | The 1,000 ms interval and the wait from the click |
 
+After every batch, outside the timed interval, the page is read back from its elements and held to the committed projection.
 The four slices of a Layer B batch are worked out first by `Controller::prepare_ahead`, so the timed interval is the render and the commit alone.
 A gate fails if the engine was stepped inside the interval.
 The measurement fixture asks whether the host may be drawn on by a cached activation flag and `isConnected`.
@@ -126,7 +127,7 @@ The endurance mode runs 70 cycles with no growth in live bytes, listeners or ele
 A refused seed has to be refused in every mode, a wrong checkpoint has to make Layers B invalid, and a controller that reads layout has to fail its gate.
 It also checks that three repetitions are diagnostic and five are not, and that a late Pause is rejected for the extra tick and for nothing else.
 
-`dess/s5/mutation-check.mjs` breaks the product in seven small ways, one at a time, in a copy of the tree, and the orchestrator has to fail each.
+`dess/s5/mutation-check.mjs` breaks the product in eight small ways, one at a time, in a copy of the tree, and the orchestrator has to fail each.
 The working tree is never touched, so nothing can be committed mutated.
 
 ## What S5 does not show

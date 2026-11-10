@@ -72,6 +72,13 @@ const MUTATIONS = [
     'Field::Text => el.text.set_text_content(Some(&slot.text)),',
     'Field::Text => {},',
     'correctness'
+  ],
+  [
+    SURFACE,
+    'a slot is never written, and the timing is of the cheaper draw',
+    'Field::Text => el.text.set_text_content(Some(&slot.text)),',
+    'Field::Text => {},',
+    'performance'
   ]
 ]
 

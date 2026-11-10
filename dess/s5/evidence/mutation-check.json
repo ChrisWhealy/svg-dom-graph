@@ -62,6 +62,15 @@
       "built": true,
       "status": 1,
       "first": "FAIL the run is valid (invalid_incorrect)"
+    },
+    {
+      "name": "a slot is never written, and the timing is of the cheaper draw",
+      "file": "service-sim/src/surface.rs",
+      "mode": "performance",
+      "caught": true,
+      "built": true,
+      "status": 1,
+      "first": "FAIL the run is valid (invalid_incorrect)"
     }
   ]
 }

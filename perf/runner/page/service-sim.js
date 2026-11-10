@@ -284,6 +284,11 @@ export const runSimulationPerformance = async (h, manifest, trace, testing = {})
       cursor += BATCH
       state = parse(h.sim_state())
       const good = engineAt(state, cursor, `the batch ending at slice ${cursor}`)
+      // What the batch drew is read back from the page, outside the timed interval, and held to the projection that was committed. A draw that
+      // skipped a write and still returned success would otherwise make the timing cheaper without failing anything.
+      if (!state.page_is_projection)
+        fail('content', `the batch ending at slice ${cursor}: the page, read back from its elements, is not the projection that was committed`)
+      else pass()
       if (result.outcomes.some(o => o !== 'done'))
         fail('content', `batch ending at slice ${cursor}: ${result.outcomes.join(', ')}`)
       const setterCalls = state.setter_calls - setterBefore
