@@ -3,6 +3,9 @@
 //
 //   node dess/s4/selftest.mjs
 //
+// An endurance run has to break every documented fault point in every cycle. One whose rows are withheld, as they would be if the operation
+// stopped reaching it, has to fail the recovery gate and no other, and the gate reports how many failures each point was given.
+//
 // Each time sample is counted against the rows of its own point: a point has one sample for each recovery that its failures needed, and the
 // repair that follows a failed repair is timed under a name of its own.
 //
@@ -66,6 +69,28 @@ try {
         JSON.stringify(clean.samples['recovery.service_data_setter.time']),
     'the overlay and the setter do not share one set of samples'
   )
+
+  // Endurance, on a short manifest, since the gate is about coverage and not about growth.
+  const short = JSON.stringify({ ...JSON.parse(canonical), execution: { ...JSON.parse(canonical).execution, warmup_iterations: 1, measurement_iterations: 2 } })
+  const endure = async testing =>
+    JSON.parse(
+      await page.evaluate(
+        `window.perfHarness.service_recovery_endurance(${JSON.stringify(short)}, ${JSON.stringify(JSON.stringify({ oracle, ...testing }))})`
+      )
+    )
+  const RECOVERIES = 'endurance.recoveries_succeed'
+  const full = await endure({})
+  const fullGate = full.gates.find(g => g.name === RECOVERIES)
+  check(fullGate?.status === 'pass', `endurance as it is, with no other gate than ${[...new Set(full.gates.filter(g => g.status !== 'pass').map(g => g.name))].join(', ') || 'none'} unmet, breaks every point in every cycle: ${fullGate?.detail?.slice(0, 150)}`)
+  const counted = full.metrics.filter(m => m.name.endsWith('.failures_injected')).reduce((n, m) => n + m.value, 0)
+  check(counted > 0 && fullGate?.detail.startsWith(`${counted} failures`), `the per-point counts add up to the ${counted} that the gate claims`)
+  const gap = await endure({ withholdPoint: 'service_control_aria' })
+  const gapGate = gap.gates.find(g => g.name === RECOVERIES)
+  check(gapGate?.status === 'fail', `with the control's writes no longer reached, endurance fails: ${gapGate?.detail}`)
+  // What the short run fails on its own is not what the coverage did: growth cannot be judged from two measured cycles.
+  const alone = new Set(full.gates.filter(g => g.status !== 'pass').map(g => g.name))
+  const gapOthers = gap.gates.filter(g => g.name !== RECOVERIES && g.status !== 'pass' && !alone.has(g.name)).map(g => g.name)
+  check(gapOthers.length === 0, `and only that gate fails: ${gapOthers.join(', ') || 'no other gate'}`)
 
   const leaky = await run({ unexplainedSlotLoss: true })
   const slot = leaky.gates.find(g => g.name === GATE)

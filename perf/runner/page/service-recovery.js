@@ -147,6 +147,22 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
 
   const SLICE = 1
 
+  /**
+   * Which of the DOM calls of an operation to break. All of them, or in a cycle of an endurance run one call of each fault point that the
+   * calls are classified as, a different one from cycle to cycle, so that every point is broken in every cycle and a point that the
+   * operation no longer reaches is found missing.
+   */
+  const pickCalls = (calls, options) => {
+    const all = calls.map((_, i) => i + 1)
+    if (!options.cycle) return all
+    const groups = new Map()
+    for (const index of all) {
+      const point = classify(calls[index - 1])
+      if (point !== 'other') groups.set(point, [...(groups.get(point) ?? []), index])
+    }
+    return [...groups.values()].map(group => group[(options.cycle - 1) % group.length])
+  }
+
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * The draw of the next slice, broken at each of its DOM calls. Every call is the overlay's or the data node's setter's, and a failure at
@@ -163,7 +179,7 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
     const calls = twin.calls
     const agrees =
       twin.result.outcome === 'done' && after.committed_slice === base + 1 && agreesWithOracle(after) !== false
-    const pick = options.cycle ? [((options.cycle - 1) % calls.length) + 1] : calls.map((_, i) => i + 1)
+    const pick = pickCalls(calls, options)
     for (const index of pick) {
       const c = calls[index - 1]
       const point = classify(c)
@@ -243,7 +259,8 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
     const times = {}
     let calls = 0
     let agrees = true
-    for (const base of options.cycle ? [BASES[(options.cycle - 1) % BASES.length]] : BASES) {
+    // The data node's setter writes only the cells that changed, so a draw from one base may not reach it, and a cycle breaks all three.
+    for (const base of BASES) {
       const swept = drawFrom(scenario, base, options)
       rows.push(...swept.rows)
       for (const [point, taken] of Object.entries(swept.times)) (times[point] ??= []).push(...taken)
@@ -272,7 +289,7 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
     const twin = dryRun(1, { op: 'repair' })
     const calls = twin.calls
     const agrees = twin.result.outcome === 'done' && cp(1).page_sha256 === before.page_sha256
-    const pick = options.cycle ? [((options.cycle - 1) % calls.length) + 1] : calls.map((_, i) => i + 1)
+    const pick = pickCalls(calls, options)
     for (const index of pick) {
       const c = calls[index - 1]
       const point = classify(c)
@@ -324,7 +341,11 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
     call(h.service_teardown, 2)
     const calls = twin.calls
     const agrees = twin.built.ok && clean !== null && clean.committed_slice === 0 && agreesWithOracle(clean) !== false
-    const pick = options.cycle ? [((options.cycle - 1) % calls.length) + 1] : calls.map((_, i) => i + 1)
+    // A failure of any call that is not one of the build's own is a draw, so a cycle goes on from the call that it started at until a call
+    // has made the build fail, which is the case that this sweep is for.
+    const pick = options.cycle
+      ? calls.map((_, k) => ((k + options.cycle - 1) % calls.length) + 1)
+      : calls.map((_, i) => i + 1)
     for (const index of pick) {
       const c = calls[index - 1]
       const slotsBefore = h.held_handles().undefinedSlots
@@ -373,6 +394,7 @@ export const makeServiceRecovery = (h, now, testing = {}) => {
         call(h.service_teardown, 2)
       }
       rows.push(row(point, index, c, observed, broken))
+      if (options.cycle && point === 'service_data_node_construction') break
     }
     return { rows, calls: calls.length, agrees, times: [] }
   }
@@ -903,7 +925,9 @@ export const runServiceEndurance = async (h, manifest, testing = {}) => {
   let slotsExplained = 0
   const series = []
   const unmet = []
-  let judged = 0
+  // How many failures were injected at each point over the run, so that the recoveries that are claimed can be reconciled with the
+  // operations that were exercised.
+  const injected = Object.fromEntries(wanted.filter(p => p.expect !== 'undocumented').map(p => [p.point, 0]))
   for (let cycle = 1; cycle <= total; cycle++) {
     const rows = []
     for (const group of GROUPS) {
@@ -911,11 +935,12 @@ export const runServiceEndurance = async (h, manifest, testing = {}) => {
       rows.push(...(await R.sweeps[group.sweep](scenario, { cycle: testing.pin ?? cycle })).rows)
     }
     slotsExplained += rows.reduce((n, r) => n + (r.observed?.slot_explained ?? 0), 0)
+    if (testing.withholdPoint) rows.splice(0, rows.length, ...rows.filter(r => r.point !== testing.withholdPoint))
     for (const { point, expect } of wanted.filter(p => p.expect !== 'undocumented')) {
       const verdict = R.judge(point, expect, rows)
-      if (verdict.status === 'inconclusive') continue
-      judged++
-      if (verdict.status === 'fail') unmet.push(`cycle ${cycle}, ${point}: ${verdict.detail}`)
+      injected[point] += rows.filter(r => r.point === point).length
+      // A point that was not broken in a cycle is a gap in what the cycle exercised, and is a failure and not a skipped observation.
+      if (verdict.status !== 'pass') unmet.push(`cycle ${cycle}, ${point}: ${verdict.detail}`)
     }
     R.teardownAll()
     h.service_forget()
@@ -941,14 +966,29 @@ export const runServiceEndurance = async (h, manifest, testing = {}) => {
     )
   )
   outcome.gates.push({ name: 'endurance.live_bytes_do_not_grow', status: verdict.status, detail: verdict.detail })
+  const injectedTotal = Object.values(injected).reduce((n, count) => n + count, 0)
+  const perPoint = Object.entries(injected)
+    .map(([point, count]) => `${point.replace('service_', '')} ${count}`)
+    .join(', ')
   outcome.gates.push({
     name: 'endurance.recoveries_succeed',
-    status: unmet.length === 0 && judged > 0 ? 'pass' : judged === 0 ? 'inconclusive' : 'fail',
+    status: unmet.length === 0 && injectedTotal > 0 ? 'pass' : 'fail',
     detail:
       unmet.length === 0
-        ? `${judged} recoveries over ${total} cycles each reached the state the contract promises`
-        : `${unmet.length} of ${judged} recoveries did not: ${unmet[0]}`
+        ? `${injectedTotal} failures were injected over ${total} cycles (${perPoint}), every point was broken in every cycle, and each recovery reached the state the contract promises`
+        : `${unmet.length} of ${total * Object.keys(injected).length} point-cycles did not pass, the first being ${unmet[0]}`
   })
+  for (const [point, count] of Object.entries(injected)) {
+    outcome.metrics.push({
+      name: `recovery.${point}.failures_injected`,
+      layer: 'B',
+      status: 'measured',
+      unit: 'count',
+      kind: 'count',
+      value: count,
+      mechanism: 'DOM calls and situations of the operation made to fail one at a time, over every cycle'
+    })
+  }
   const back = (name, field, what) => {
     const off = series.filter(point => point[field] !== baseline[field])
     outcome.gates.push({
@@ -1009,7 +1049,7 @@ export const runServiceEndurance = async (h, manifest, testing = {}) => {
   outcome.notes.push(
     `${total} cycles (${warmup} warm-up), each breaking the fault points of the manifest at one DOM call, a different one from cycle to cycle`
   )
-  outcome.checkpoints_passed = judged - unmet.length
+  outcome.checkpoints_passed = Math.max(0, injectedTotal - unmet.length)
   for (const line of unmet) outcome.checkpoints_failed.push({ section: 'dom_identity', detail: line })
   if (outcome.checkpoints_failed.length > 0) outcome.status = 'invalid_incorrect'
   return outcome

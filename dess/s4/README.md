@@ -58,6 +58,11 @@ node dess/s4/selftest.mjs
 
 The self-test loses one externref slot outside every measured row, and the aggregate slot gate has to fail while nothing else does.
 The gate compares the slots lost over the whole run, the slots the rows measured, and the slots that the failed calls explain.
+It counts the recovery time samples of each fault point against the rows that needed a recovery, so a point never holds another's times.
+The repair that follows a failed repair is timed as `recovery.service.full_repair.time`, which belongs to no single point.
+It also runs a short endurance run with one point's rows withheld, as if the operation no longer reached it, and the recovery gate has to fail.
+An endurance cycle breaks one call of each fault point, a different one from cycle to cycle, and a point that is not broken in a cycle fails the gate.
+The gate reports the failures injected at each point, and the same counts are the `recovery.<point>.failures_injected` metrics.
 
 The mutation check breaks the controller too.
 
