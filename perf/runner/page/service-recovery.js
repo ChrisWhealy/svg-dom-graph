@@ -810,13 +810,26 @@ export const runServiceRecovery = async (h, manifest, testing = {}) => {
         ? 'the listener tracker is not in this page'
         : `the effective listener count was ${listenersBefore} before the sweeps and ${listenersAfter} after them`
   })
+  // For the self-test: a failed call of the harness's own, which no row records, loses a slot that nothing explains.
+  if (testing.unexplainedSlotLoss) {
+    window.__faults.arm(1)
+    R.build(2, scenario)
+    window.__faults.disarm()
+    h.service_teardown(2)
+  }
   const slotsLost = h.held_handles().undefinedSlots - slotsBefore
   const explained = rows.reduce((n, r) => n + (r.observed?.slot_explained ?? 0), 0)
   const measured = rows.reduce((n, r) => n + (r.observed?.slots_lost ?? 0), 0)
+  // Three quantities have to agree: what was lost over the whole run, what the rows measured, and what the failed calls explain. A slot
+  // lost outside every row makes the first larger than the others, and no row sees it.
+  const rowsClean = rows.every(r => !r.broken.some(b => /externref/.test(b)))
+  const slotsAgree = slotsLost === explained && measured === explained
   outcome.gates.push({
     name: 'recovery.service.every_row_loses_exactly_the_slots_its_failure_explains',
-    status: rows.every(r => !r.broken.some(b => /externref/.test(b))) ? 'pass' : 'fail',
-    detail: `${measured} externref slots were lost in the rows that measured it, and the failed calls that return an object explain ${explained}`
+    status: rowsClean && slotsAgree ? 'pass' : 'fail',
+    detail: slotsAgree
+      ? `${slotsLost} externref slots were lost over the run, ${measured} in the rows that measured it, and the failed calls that return an object explain ${explained}`
+      : `${slotsLost} externref slots were lost over the run and ${measured} in the rows that measured it, and the failed calls that return an object explain ${explained}`
   })
   outcome.metrics.push({
     name: 'wasm.externref_slots_lost',

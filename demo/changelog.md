@@ -57,7 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Refactor `perf/README` into multiple chapters (`65511d1`)
 - SPMV: Improve keyboard accessibility for large graph selections (`51b0617`)
 - DESS S3: Normalise `Some(0)` to `Some(1)` when specifying seek frames (`237b5cd`)
-- DESS S4: Ensure model checkpoint inspects the controller's actual engine state (``)
+- DESS S4: Ensure model checkpoint inspects the controller's actual engine state (`f0d3fe4`)
+- DESS S4: Enforce calculated aggregate `externref` loss (``)
 
 ### Fixed
 

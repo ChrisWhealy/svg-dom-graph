@@ -53,6 +53,15 @@ The endurance run made 140 recoveries over 15 cycles, with no growth in bytes, l
 ## Proving the executor can fail
 
 ```sh
+node dess/s4/selftest.mjs
+```
+
+The self-test loses one externref slot outside every measured row, and the aggregate slot gate has to fail while nothing else does.
+The gate compares the slots lost over the whole run, the slots the rows measured, and the slots that the failed calls explain.
+
+The mutation check breaks the controller too.
+
+```sh
 node dess/s4/mutation-check.mjs
 ```
 
