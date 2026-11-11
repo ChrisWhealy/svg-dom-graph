@@ -117,7 +117,7 @@
       "documented": "code",
       "says": "A failure at any DOM call while the surface is built returns the error and makes no surface, so no Surface exists to draw on. The scene's own add_data_node draws a node as a transaction, so a failure there leaves the scene as it was. The caller removes the host and builds again on a fresh one. A failure in the first draw of the controller that is built on it is a draw like any other, and belongs to the overlay and the setter.",
       "retry": "Building again on a fresh host.",
-      "sources": ["service-sim/src/surface.rs:141-143", "src/scene/node/data/construct.rs:55-58"]
+      "sources": ["service-sim/src/surface.rs:123-125", "src/scene/node/data/construct.rs:55-58"]
     },
     {
       "id": "service_data_setter",
@@ -126,7 +126,7 @@
       "contract": "partly_committed",
       "documented": "code",
       "says": "A failure part way through the cells leaves some cells rewritten and the node's values as they were, and marks the node. The next call, whatever values it asks for, writes every cell, changed or not, and clears the mark when it has written them all. Until finding F1 of the S0 audit was closed, a call that asked for the values the node still held changed nothing and left the node torn.",
-      "differs": ["content", "accessibility"],
+      "differs": ["content","accessibility"],
       "retry": "One call to Scene::set_data_values with the last committed values. The controller's repair is that call, as part of the full redraw.",
       "sources": ["src/scene/node/data/values.rs:77-84"]
     },
@@ -137,9 +137,9 @@
       "contract": "partly_committed",
       "documented": "code",
       "says": "A write that fails leaves the page partly written. No new slice is committed, the cursor and the model are as they were, playback is stopped, the page is marked dirty and one failure is reported. The controller then makes one immediate full redraw of the committed slice, and if that fails the page stays dirty and stopped.",
-      "differs": ["content", "accessibility"],
+      "differs": ["content","accessibility"],
       "retry": "Repair, which draws the committed slice again in full, and then the slice again.",
-      "sources": ["service-sim/src/surface.rs:8-10", "service-sim/src/controller/mod.rs:536-537"]
+      "sources": ["service-sim/src/surface.rs:8-10", "service-sim/src/controller/inner.rs:166-167"]
     },
     {
       "id": "service_control_aria",
@@ -150,7 +150,7 @@
       "says": "A write of the control that fails leaves it half written and the page says nothing: the cursor is where it was, and playback is as the controller says. The host remembers that the control is stale, and a full draw writes its content and ARIA again from what the controller last said. A repair never starts or stops playback.",
       "differs": ["accessibility"],
       "retry": "Repair, which writes the control again.",
-      "sources": ["service-sim/src/host.rs:340-342", "service-sim/src/host.rs:315-317"]
+      "sources": ["service-sim/src/host.rs:372-374", "service-sim/src/host.rs:346-348"]
     },
     {
       "id": "service_timer_request",
@@ -160,7 +160,7 @@
       "documented": "code",
       "says": "If the page refuses a timer the callback does not exist, so nothing is committed. The last committed display stays, playback stops, and one failure is reported. The next timer is asked for only after a slice was committed.",
       "retry": "Play, which asks for the timer again.",
-      "sources": ["service-sim/src/controller/mod.rs:711-712", "service-sim/src/scheduler.rs:19-19"]
+      "sources": ["service-sim/src/controller/inner.rs:404-405", "service-sim/src/scheduler.rs:19-19"]
     },
     {
       "id": "service_frame_request",
@@ -170,7 +170,7 @@
       "documented": "code",
       "says": "If the page refuses a frame the seek is not started and nothing is committed. The cursor stays, the target is kept as the retry, one failure is reported, and no synchronous replay is made in its place.",
       "retry": "Retry, which asks for the frame again.",
-      "sources": ["service-sim/src/controller/mod.rs:799-800", "service-sim/src/scheduler.rs:29-29"]
+      "sources": ["service-sim/src/controller/inner.rs:494-495", "service-sim/src/scheduler.rs:29-29"]
     },
     {
       "id": "service_gallery_hidden",
@@ -180,7 +180,7 @@
       "documented": "code",
       "says": "Hiding stops playback, takes back what was scheduled, and moves the epoch and the seek token, so a callback that was already on its way is stale. It is not promised that no callback runs while the panel is hidden. It is promised that one that does is inert: it commits nothing and writes nothing. Showing the panel again repairs a dirty page and never resumes playback.",
       "retry": "Play, which a person presses after the panel is shown.",
-      "sources": ["service-sim/src/controller/mod.rs:11-16", "service-sim/src/host.rs:349-352"]
+      "sources": ["service-sim/src/controller/mod.rs:11-16", "service-sim/src/host.rs:381-384"]
     },
     {
       "id": "service_detached_before_draw",
@@ -190,7 +190,7 @@
       "documented": "code",
       "says": "A detached element accepts writes without complaint, so the host is checked and not discovered: the surface refuses a detached host before any write, and the controller does not draw. Nothing is written and nothing is committed. On return the committed slice is drawn again in full, and the cursor does not advance.",
       "retry": "Presence, which is told when the host returns, and then the slice again.",
-      "sources": ["service-sim/src/surface.rs:332-334", "service-sim/src/controller/mod.rs:507-507"]
+      "sources": ["service-sim/src/surface.rs:360-362", "service-sim/src/controller/inner.rs:137-137"]
     },
     {
       "id": "service_detached_during_draw",
@@ -201,7 +201,7 @@
       "says": "A write that went through is no evidence that the page is attached, so the guard is asked again after the draw. A host that left in the middle of it leaves the page partly written, and the slice is not committed: the cursor and the model are as they were, playback is stopped, the page is marked dirty and the host is announced as unavailable once.",
       "differs": ["content"],
       "retry": "Presence, told when the host returns, which draws the committed slice again in full.",
-      "sources": ["service-sim/src/controller/mod.rs:525-526", "service-sim/src/surface.rs:8-10"]
+      "sources": ["service-sim/src/controller/inner.rs:155-156", "service-sim/src/surface.rs:8-10"]
     },
     {
       "id": "service_teardown_late_tick",
@@ -211,7 +211,7 @@
       "documented": "code",
       "says": "Disposing marks the controller first, then takes back what it scheduled, so a callback that was already on its way finds the controller disposed or its token moved and does nothing: no slice is committed, no DOM is written and no notice is changed. It holds only a weak reference, so nothing is kept alive, and no closure or listener is left.",
       "retry": "None: a disposed controller is never resumed.",
-      "sources": ["service-sim/src/controller/mod.rs:385-386", "service-sim/src/controller/mod.rs:719-726"]
+      "sources": ["service-sim/src/controller/mod.rs:382-383", "service-sim/src/controller/inner.rs:413-420"]
     }
   ]
 }

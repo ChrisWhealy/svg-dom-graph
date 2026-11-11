@@ -3,15 +3,15 @@
 //
 //   node dess/s1/mutation-check.mjs [--out FILE]
 //
-// Each mutation is a single edit to `service-sim-engine/src/engine.rs`, made on a copy that is put back afterwards, even if the
+// Each mutation is a single edit to a file of `service-sim-engine/src/engine/`, made on a copy that is put back afterwards, even if the
 // run is interrupted. The engine is rebuilt for each, so a run takes a few minutes.
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { locate } from '../lib/locate.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
-const file = path.join(root, 'service-sim-engine/src/engine.rs')
-const original = fs.readFileSync(file, 'utf8')
+const ENGINE = 'service-sim-engine/src/engine/mod.rs'
 const out = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
 
 const MUTATIONS = [
@@ -78,6 +78,10 @@ const MUTATIONS = [
   ]
 ]
 
+// Each edit is made to the file of the engine's folder that holds its text.
+const fileOf = new Map(MUTATIONS.map(([, from]) => [from, path.join(root, locate(root, ENGINE, from))]))
+const originals = new Map([...new Set(fileOf.values())].map(file => [file, fs.readFileSync(file, 'utf8')]))
+
 const build = () =>
   spawnSync('cargo', ['build', '--release', '-p', 'service-sim-engine'], { cwd: root, encoding: 'utf8' })
 const differential = () =>
@@ -88,17 +92,20 @@ const differential = () =>
   })
 
 // Every mutation has to apply to the source as it is now, and rustfmt can move the text, so this is checked before anything is changed.
-const stale = MUTATIONS.filter(([, from]) => !original.includes(from)).map(([name]) => name)
+const stale = MUTATIONS.filter(([, from]) => !originals.get(fileOf.get(from)).includes(from)).map(([name]) => name)
 if (stale.length > 0) {
-  console.error(`these mutations do not apply to engine.rs as it is: ${stale.join('; ')}`)
+  console.error(`these mutations do not apply to the engine as it is: ${stale.join('; ')}`)
   process.exit(2)
 }
 
 const results = []
 try {
   for (const [name, from, to, equivalent = false] of MUTATIONS) {
-    if (!original.includes(from)) throw new Error(`the mutation "${name}" does not apply: its text is not in engine.rs`)
-    fs.writeFileSync(file, original.replace(from, to))
+    // Only this edit is ever in place, wherever the last one was made.
+    for (const [other, text] of originals) fs.writeFileSync(other, text)
+    const file = fileOf.get(from)
+    if (!originals.get(file).includes(from)) throw new Error(`the mutation "${name}" does not apply: its text is not in the engine`)
+    fs.writeFileSync(file, originals.get(file).replace(from, to))
     const built = build()
     if (built.status !== 0) {
       results.push({
@@ -126,7 +133,7 @@ try {
     )
   }
 } finally {
-  fs.writeFileSync(file, original)
+  for (const [file, text] of originals) fs.writeFileSync(file, text)
   build()
 }
 const missed = results.filter(r => !r.caught && !r.equivalent)

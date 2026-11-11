@@ -28,7 +28,6 @@ const CONTROLS_HTML: &str = include_str!("controls.html");
 /// The readout: the verdict, what the selected node computes, and what the build and the steps cost.
 const READOUT_HTML: &str = include_str!("readout.html");
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `<svg>` of the window, and the room that is left for the scene.
 #[derive(Clone)]
 pub(super) struct Shell {
@@ -37,7 +36,6 @@ pub(super) struct Shell {
     pub area: (f64, f64, f64, f64),
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn make(document: &web_sys::Document, tag: &str, attributes: &[(&str, &str)]) -> Result<web_sys::Element, String> {
     let element = document
         .create_element_ns(Some(SVG_NS), tag)
@@ -50,7 +48,6 @@ fn make(document: &web_sys::Document, tag: &str, attributes: &[(&str, &str)]) ->
     Ok(element)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn add(parent: &web_sys::Element, child: &web_sys::Element) -> Result<(), String> {
     parent
         .append_child(child)
@@ -58,7 +55,6 @@ fn add(parent: &web_sys::Element, child: &web_sys::Element) -> Result<(), String
         .map_err(|e| format!("could not add an element: {e:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `<foreignObject>` of the given place, holding a `<div>` of HTML with `html` in it.
 fn foreign(
     document: &web_sys::Document,
@@ -85,7 +81,6 @@ fn foreign(
     Ok(object)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Fills `#root_id` with the window's `<svg>`: a backdrop for the scene, the controls and the readout. The size is the
 /// window's.
 ///
@@ -134,7 +129,6 @@ pub(super) fn build_host(document: &web_sys::Document, root_id: &str) -> Result<
     Ok(Shell { host, area })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene's own `<svg>`, and what the window needs to know of it.
 pub(super) struct SceneSvg {
     pub element: web_sys::Element,
@@ -144,7 +138,6 @@ pub(super) struct SceneSvg {
     pub view_size: (f64, f64),
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds the scene's own `<svg>` in the room that is left. Its view box has the shape of that room, and it gives where
 /// the graph is to begin in it: `extent` centred in the room, and a tall one at the top of it.
 ///

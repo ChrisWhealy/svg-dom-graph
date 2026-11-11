@@ -5,310 +5,43 @@
 //! nothing to act on is a no-op. Both are still pops, and both are in the event-pop hash. The rules the design leaves
 //! open are fixed in `dess/s1/docs/contract.md`, and each is named there as R1 to R12.
 
+mod counters;
+mod event;
+mod failure;
+mod final_state;
+mod job;
+mod kind;
+mod outcome;
+mod payload;
+mod pop_record;
+mod script_event;
+mod server;
+mod slice_record;
+mod state;
+
 use crate::generator::{Generator, OutageEvent, outages};
 use crate::hash::Writer;
 use crate::model::{JobState, JobView, Model, ServerView};
 use crate::params::{Config, Error, Limits, Params};
+pub use counters::Counters;
+use event::Event;
+use failure::Failure;
+pub use final_state::Final;
+use job::Job;
+pub use kind::Kind;
+pub use outcome::Outcome;
+use payload::Payload;
+pub use pop_record::PopRecord;
+pub use script_event::ScriptEvent;
+use server::Server;
 use sha2::{Digest, Sha256};
-use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+pub use slice_record::SliceRecord;
+use state::State;
+use std::{
+    cmp::Reverse,
+    collections::{BTreeMap, BTreeSet, BinaryHeap},
+};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The kind of an event. The number is its rank and also its code in the canonical encoding.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
-    Complete = 0,
-    Fail = 1,
-    Cancel = 2,
-    Deadline = 3,
-    Recover = 4,
-    Retry = 5,
-    Arrive = 6,
-}
-
-impl Kind {
-    #[must_use]
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Complete => "complete",
-            Self::Fail => "fail",
-            Self::Cancel => "cancel",
-            Self::Deadline => "deadline",
-            Self::Recover => "recover",
-            Self::Retry => "retry",
-            Self::Arrive => "arrive",
-        }
-    }
-}
-
-/// What a pop did.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Outcome {
-    /// It changed something.
-    Effective,
-    /// It carries a token, and found its job or attempt gone.
-    Stale,
-    /// It named something that had nothing to act on.
-    NoOp,
-}
-
-impl Outcome {
-    fn letter(self) -> char {
-        match self {
-            Self::Effective => 'e',
-            Self::Stale => 's',
-            Self::NoOp => 'n',
-        }
-    }
-
-    #[must_use]
-    pub fn code(self) -> u8 {
-        match self {
-            Self::Effective => 0,
-            Self::Stale => 1,
-            Self::NoOp => 2,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Payload {
-    Complete {
-        job: u64,
-        token: u64,
-    },
-    Fail {
-        server: u64,
-    },
-    Cancel {
-        key: String,
-    },
-    Deadline {
-        job: u64,
-    },
-    Recover {
-        server: u64,
-    },
-    Retry {
-        job: u64,
-        token: u64,
-    },
-    Arrive {
-        key: String,
-        generated: bool,
-        priority: u8,
-        durations: Vec<u64>,
-        deadline_or_slack: u64,
-        cancel_delay: u64,
-    },
-}
-
-#[derive(Debug, Clone)]
-struct Event {
-    tick: u64,
-    rank: u8,
-    seq: u64,
-    kind: Kind,
-    payload: Payload,
-}
-
-/// The heap orders events by `(tick, rank, sequence)`, which is unique since the sequence is.
-impl PartialEq for Event {
-    fn eq(&self, other: &Self) -> bool {
-        (self.tick, self.rank, self.seq) == (other.tick, other.rank, other.seq)
-    }
-}
-impl Eq for Event {}
-impl PartialOrd for Event {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Ord for Event {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.tick, self.rank, self.seq).cmp(&(other.tick, other.rank, other.seq))
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Failure {
-    AttemptsExhausted,
-    DeferralsExhausted,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum State {
-    Queued,
-    Running,
-    RetryWait,
-    Completed,
-    TimedOut,
-    Cancelled,
-    Rejected,
-    Failed(Failure),
-}
-
-impl State {
-    fn active(self) -> bool {
-        matches!(self, Self::Queued | Self::Running | Self::RetryWait)
-    }
-
-    fn text(self) -> String {
-        match self {
-            Self::Queued => "queued".into(),
-            Self::Running => "running".into(),
-            Self::RetryWait => "retrywait".into(),
-            Self::Completed => "completed".into(),
-            Self::TimedOut => "timedout".into(),
-            Self::Cancelled => "cancelled".into(),
-            Self::Rejected => "rejected".into(),
-            Self::Failed(Failure::AttemptsExhausted) => "failed(attempts_exhausted)".into(),
-            Self::Failed(Failure::DeferralsExhausted) => "failed(retry_deferrals_exhausted)".into(),
-        }
-    }
-
-    fn code(self) -> u8 {
-        match self {
-            Self::Queued => 1,
-            Self::Running => 2,
-            _ => 3,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Job {
-    id: u64,
-    key: String,
-    priority: u8,
-    durations: Vec<u64>,
-    state: State,
-    attempt: u32,
-    failures: u32,
-    token: u64,
-    defers: u32,
-    entered: u64,
-    server: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Server {
-    Idle,
-    Busy { job: u64, due: u64 },
-    Down,
-}
-
-/// The twelve counters, in the order of the canonical encoding.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Counters {
-    pub pops: u64,
-    pub stale: u64,
-    pub noops: u64,
-    pub slices: u64,
-    pub arrivals: u64,
-    pub admitted: u64,
-    pub rejected: u64,
-    pub completed: u64,
-    pub timed_out: u64,
-    pub cancelled: u64,
-    pub failed_attempts: u64,
-    pub failed_deferrals: u64,
-}
-
-impl Counters {
-    #[must_use]
-    pub fn as_array(&self) -> [u64; 12] {
-        [
-            self.pops,
-            self.stale,
-            self.noops,
-            self.slices,
-            self.arrivals,
-            self.admitted,
-            self.rejected,
-            self.completed,
-            self.timed_out,
-            self.cancelled,
-            self.failed_attempts,
-            self.failed_deferrals,
-        ]
-    }
-
-    /// The names the trace uses, in the same order.
-    pub const NAMES: [&'static str; 12] = [
-        "pops",
-        "stale",
-        "noops",
-        "slices",
-        "arrivals",
-        "admitted",
-        "rejected",
-        "completed",
-        "timedOut",
-        "cancelled",
-        "failedAttempts",
-        "failedDeferrals",
-    ];
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An event of a script, which is known before the run.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScriptEvent {
-    Arrive {
-        at: u64,
-        key: String,
-        priority: u8,
-        durations: Vec<u64>,
-        deadline: u64,
-    },
-    Cancel {
-        at: u64,
-        key: String,
-    },
-    Fail {
-        at: u64,
-        server: u64,
-    },
-    Recover {
-        at: u64,
-        server: u64,
-    },
-}
-
-/// One pop, as it is recorded for comparison.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PopRecord {
-    pub tick: u64,
-    pub kind: Kind,
-    pub seq: u64,
-    pub outcome: Outcome,
-    /// The job number, or the server index, or -1 for a cancel of a key with no job.
-    pub subject: i64,
-}
-
-/// One slice, as it is recorded for comparison.
-#[derive(Debug, Clone)]
-pub struct SliceRecord {
-    pub index: u64,
-    pub tick: u64,
-    pub pops: Vec<PopRecord>,
-    pub waiting: usize,
-    pub busy: usize,
-    pub checkpoint: String,
-}
-
-/// The state of every job and server at the end of a run.
-#[derive(Debug, Clone)]
-pub struct Final {
-    pub counters: Counters,
-    pub jobs: Vec<(u64, String, String)>,
-    pub servers: Vec<&'static str>,
-    pub event_pop_sha256: String,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub struct Engine {
     config_id: String,
     seed: u64,

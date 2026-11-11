@@ -11,6 +11,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { locating } from '../lib/locate.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const out = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
@@ -24,7 +25,7 @@ const PAGE = 'perf/runner/page/service-sim.js'
 
 // [file, what is wrong, from, to, the mode that sees it, the layers that see it (b when absent)]
 const PROVE_BUILD_FAILURE = process.argv.includes('--prove-build-failure')
-const ALL_MUTATIONS = [
+const RAW_MUTATIONS = [
   [
     SURFACE,
     "the data node's setter is not called, though a call is counted",
@@ -98,6 +99,7 @@ const ALL_MUTATIONS = [
     'c'
   ]
 ]
+const ALL_MUTATIONS = RAW_MUTATIONS.map(locating(root))
 
 const tree = path.join(root, 'target/s5-mutation-tree')
 fs.mkdirSync(tree, { recursive: true })

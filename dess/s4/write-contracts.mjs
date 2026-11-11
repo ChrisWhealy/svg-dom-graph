@@ -8,6 +8,7 @@
 // would write, so CI notices a contract that no longer matches the code.
 import fs from 'node:fs'
 import path from 'node:path'
+import { locate } from '../lib/locate.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const file = path.join(root, 'perf/fault-contracts.json')
@@ -20,8 +21,8 @@ const SCHEDULER = 'service-sim/src/scheduler.rs'
 const SETTER = 'src/scene/node/data/values.rs'
 const DATA_NODE = 'src/scene/node/data/construct.rs'
 
-// A source is the file, the text at which its range begins, and how many lines it runs.
-const at = (source, anchor, lines = 1) => ({ source, anchor, lines })
+// A source is the file, the text at which its range begins, and how many lines it runs. A file that was split into a folder is found by the text.
+const at = (source, anchor, lines = 1) => ({ source: locate(root, source, anchor), anchor, lines })
 
 const POINTS = [
   {

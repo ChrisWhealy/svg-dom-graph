@@ -52,6 +52,14 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
         "../../../service-sim/src/controller/mod.rs"
     ),
     source_file!(
+        "service-sim/src/controller/inner.rs",
+        "../../../service-sim/src/controller/inner.rs"
+    ),
+    source_file!(
+        "service-sim/src/controller/host.rs",
+        "../../../service-sim/src/controller/host.rs"
+    ),
+    source_file!(
         "service-sim/src/projection/mod.rs",
         "../../../service-sim/src/projection/mod.rs"
     ),

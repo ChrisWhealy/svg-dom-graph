@@ -15,11 +15,11 @@
 //! The quiet zone is not part of the symbol. An export adds it.
 //!
 //! The golden vectors come from python-qrcode, and segno is only a cross-check. `golden.rs` has the codewords, and
-//! `symbol_golden.rs` has the eight candidate matrices, format bits and scores of each input. segno adds a whole extra
-//! zero codeword where the standard adds none, so its symbols hold other codewords than this encoder's, and a matrix or
-//! a mask candidate from it cannot be compared. Its scores of python-qrcode's matrices can, and are. python-qrcode
-//! counts N3 without a border and scores before the format information is written, so it too can choose another mask
-//! than the design's. `generate_golden.py` and `generate_symbol_golden.py` give the details.
+//! `symbol_golden/` has the eight candidate matrices, format bits and scores of each input, one file for each input.
+//! segno adds a whole extra zero codeword where the standard adds none, so its symbols hold other codewords than this
+//! encoder's, and a matrix or a mask candidate from it cannot be compared. Its scores of python-qrcode's matrices can,
+//! and are. python-qrcode counts N3 without a border and scores before the format information is written, so it too
+//! can choose another mask than the design's. `generate_golden.py` and `generate_symbol_golden.py` give the details.
 
 pub(crate) mod bits;
 pub(crate) mod data;

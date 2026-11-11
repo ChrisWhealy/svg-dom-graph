@@ -12,6 +12,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { locating } from '../lib/locate.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const out = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
@@ -21,7 +22,7 @@ const HOST = 'service-sim/src/host.rs'
 const SETTER = 'src/scene/node/data/values.rs'
 const EXECUTOR = 'perf-harness-wasm/src/service_recovery.rs'
 
-const MUTATIONS = [
+const RAW_MUTATIONS = [
   [
     CONTROLLER,
     'a draw that failed is committed anyway',
@@ -109,6 +110,7 @@ const MUTATIONS = [
     '            self.full_repair();\n            self.state.borrow_mut().committed_slice = target.slice;\n            return Outcome::Failed;\n        }\n        let mut st = self.state.borrow_mut();'
   ]
 ]
+const MUTATIONS = RAW_MUTATIONS.map(locating(root))
 
 const originals = new Map(MUTATIONS.map(([file]) => [file, fs.readFileSync(path.join(root, file), 'utf8')]))
 // Every mutation has to apply to the source as it is now, and rustfmt can move the text, so this is checked before anything is changed.

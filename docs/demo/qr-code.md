@@ -112,7 +112,7 @@ The address is let go of after ten seconds if the request was made, and at once 
 The encoder, the symbol and the export are plain Rust, so they have native unit tests.
 They are compared with two independent encoders, with python-qrcode as the oracle and segno as a cross-check.
 segno pads a stream that is already on a codeword boundary with a whole extra zero codeword, which the standard does not, so its symbols hold other codewords than ours.
-The generated golden vectors in `qr_core/golden.rs` and `qr_core/symbol_golden.rs` therefore come from python-qrcode.
+The generated golden vectors in `qr_core/golden.rs` and `qr_core/symbol_golden/` therefore come from python-qrcode.
 `generate_golden.py` and `generate_symbol_golden.py` regenerate them, and say in their doc comments how each library counts.
 
 `export/decode_exports.py` decodes the exported files with a reader that shares nothing with the encoder.

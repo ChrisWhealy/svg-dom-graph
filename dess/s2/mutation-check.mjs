@@ -8,6 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { locating } from '../lib/locate.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const out = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
@@ -16,7 +17,7 @@ const SURFACE = 'service-sim/src/surface.rs'
 const PROJECTION = 'service-sim/src/projection/mod.rs'
 const ENGINE = 'service-sim-engine/src/engine.rs'
 
-const MUTATIONS = [
+const RAW_MUTATIONS = [
   [
     SURFACE,
     'a hidden slot is not marked hidden',
@@ -131,6 +132,7 @@ const MUTATIONS = [
   ],
   [PROJECTION, 'the stale count is not shown', 'c.stale,\n        c.noops,', '0,\n        c.noops,', 'native']
 ]
+const MUTATIONS = RAW_MUTATIONS.map(locating(root))
 
 const originals = new Map(MUTATIONS.map(([file]) => [file, fs.readFileSync(path.join(root, file), 'utf8')]))
 // Every mutation has to apply to the source as it is now, and rustfmt can move the text, so this is checked before anything is changed.
