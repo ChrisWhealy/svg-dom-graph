@@ -47,7 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Promote second and third CI workload data to `perf/baselines` (`2fa97ae`)
 - DESS Demo P0: Staging and injector proof (`ebf90a8`)
 - DESS Demo P0: Submit P0 acceptance evidence (`1d4cd4d`)
-- DESS Demo P1: Reusable session coordinator (``)
+- DESS Demo P1: Reusable session coordinator (`81dec07`)
 
 ### Changed
 
@@ -145,3 +145,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: Ensure mutation-check corrrectly classifies a failed build (`0a3654a`)
 - DESS S5: Ensure late-Pause self-test supplies the required seed (`7c78dcc`)
 - DESS S5: Correct failing `wasm-pack` test in Firefox (`c99e956`)
+- DESS Demo P1: Ensure post-publication verification detects a handoff that completes silently (``)

@@ -1,6 +1,6 @@
 // Shows that the session coordinator's tests can fail: the coordinator is broken in small ways, one at a time, and a test has to notice each.
 //
-//   node dess/demo-panel/p1/mutation-check.mjs
+//   node dess/demo-panel/p1/mutation-check.mjs [--out dess/demo-panel/p1/evidence/mutation-check.json]
 //
 // A test that passes proves nothing until it is known to fail when the code is wrong. The sources are copied to a tree of their own
 // (`target/p1-mutation-tree`) and every mutation is made there, so the working tree is never touched and nothing can be committed mutated. Each
@@ -11,14 +11,14 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 const root = path.resolve(import.meta.dirname, '../../..')
-const FILE = 'service-sim/src/session.rs'
+const FILE = 'service-sim/src/session/mod.rs'
 
 // [what is wrong, the text, what it becomes]
 const MUTATIONS = [
   [
     'the new scene is not validated after the handoff',
-    '        if let Err(reason) = Self::validate(&candidate) {\n            return self.rolled_back(Stage::Publish, reason, Some(candidate), true, &old);\n        }\n',
-    ''
+    'read_back.and_then(|()| Self::validate(&candidate))',
+    'read_back'
   ],
   [
     'a candidate that is not clean is accepted',
@@ -71,12 +71,20 @@ const MUTATIONS = [
     '            if false {'
   ],
   [
+    'a handoff that reports success is not read back',
+    '        let read_back = self\n            .host\n            .verify_published(self.active.as_ref().map(|a| &a.token), &candidate.token);\n        if let Err(reason) = read_back.and_then(|()| Self::validate(&candidate)) {',
+    '        if let Err(reason) = Self::validate(&candidate) {'
+  ],
+  [
     'a hook never reaches the current controller',
     '        self.target.upgrade().and_then(|t| t.borrow().clone())',
     '        None'
   ]
 ]
 
+const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
+const out = argument('--out') ? path.resolve(argument('--out')) : null
+const results = []
 const tree = path.join(root, 'target/p1-mutation-tree')
 fs.mkdirSync(tree, { recursive: true })
 const copied = spawnSync(
@@ -101,6 +109,10 @@ if (copied.status !== 0) {
   console.error(`copying the sources failed: ${copied.stderr}`)
   process.exit(2)
 }
+if (!fs.existsSync(path.join(tree, FILE))) {
+  console.error(`${FILE} does not exist, so no mutation can reach the coordinator`)
+  process.exit(2)
+}
 const original = fs.readFileSync(path.join(tree, FILE), 'utf8')
 const stale = MUTATIONS.filter(([, from]) => !original.includes(from)).map(([name]) => name)
 if (stale.length > 0) {
@@ -123,6 +135,7 @@ try {
     const built = cargo('--no-run')
     if (built.status !== 0) {
       missed++
+      results.push({ name, built: false, caught: false })
       console.log(`MISSED  ${name}  (it did not build)`)
       console.log(`         ${built.stderr.trim().split('\n').slice(-3).join(' | ').slice(0, 200)}`)
       continue
@@ -131,11 +144,20 @@ try {
     const failed = `${ran.stdout}${ran.stderr}`.split('\n').filter(line => /FAIL \[|^test .* FAILED/.test(line))
     const caught = ran.status !== 0 && failed.length > 0
     if (!caught) missed++
+    results.push({ name, built: true, caught, first_failure: failed[0]?.trim().slice(0, 150) ?? null })
     console.log(`${caught ? 'caught ' : 'MISSED '} ${name}`)
     console.log(caught ? `         first failure: ${failed[0].trim().slice(0, 150)}` : `         exit ${ran.status}`)
   }
 } finally {
   fs.writeFileSync(path.join(tree, FILE), original)
+}
+if (out) {
+  const git = args => spawnSync('git', args, { cwd: root, encoding: 'utf8' }).stdout.trim()
+  fs.mkdirSync(path.dirname(out), { recursive: true })
+  fs.writeFileSync(
+    out,
+    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: git(['rev-parse', 'HEAD']), git_dirty: git(['status', '--porcelain']).length > 0, file: FILE, caught: results.filter(r => r.caught).length, total: MUTATIONS.length, mutations: results }, null, 2)}\n`
+  )
 }
 console.log(
   missed

@@ -75,6 +75,8 @@ struct World {
     fail_undo: bool,
     /// The handoff leaves the new page hidden, as a browser might if it were hidden in the middle.
     hide_candidate_on_publish: bool,
+    /// The step of the handoff, from 0, that is skipped without a word: `publish` returns `Ok` and has not done it.
+    skipped_publish_step: Option<usize>,
 }
 
 struct Fake(Rc<RefCell<World>>);
@@ -137,10 +139,27 @@ impl SessionHost for Fake {
             if w.fail_publish_step == Some(index) {
                 return Err(format!("step {index} of the handoff failed"));
             }
+            if w.skipped_publish_step == Some(index) {
+                continue;
+            }
             step(&mut w);
         }
         if w.hide_candidate_on_publish {
             w.pages[to].borrow_mut().presence = Presence::Hidden;
+        }
+        Ok(())
+    }
+
+    fn verify_published(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
+        let w = self.0.borrow();
+        if !w.visible.contains(to) {
+            return Err("the new page is not shown: it is still staged".to_owned());
+        }
+        if from.is_some_and(|from| w.visible.contains(from)) || w.visible.len() != 1 {
+            return Err("the old page is still shown beside the new one".to_owned());
+        }
+        if w.focus != Some(*to) {
+            return Err("the focus is not in the new page".to_owned());
         }
         Ok(())
     }
@@ -491,6 +510,46 @@ fn a_handoff_that_fails_at_any_step_is_undone_and_the_old_page_is_repaired() {
             "step {step}: the handoff was undone and the candidate removed"
         );
         assert_eq!(w.built, vec![0, 1]);
+    }
+}
+
+#[test]
+fn a_handoff_that_reports_success_and_is_incomplete_is_not_committed() {
+    // Each step in turn is skipped without an error: the page is not shown, the old page is not hidden, the focus is
+    // not moved. The candidate is clean, at slice 0 and Live to the controller the whole time, since a staged host is
+    // as live as a shown one, so only the readback sees it.
+    for (step, expected) in [
+        (0, "still staged"),
+        (1, "still shown beside"),
+        (2, "focus is not in the new page"),
+    ] {
+        let (mut session, world) = started();
+        let old = current(&session);
+        old.next();
+        world.borrow_mut().skipped_publish_step = Some(step);
+        let SwitchOutcome::RolledBack(rollback) = session.switch(noop()) else {
+            panic!("step {step}")
+        };
+        assert_eq!(rollback.stage, Stage::Publish, "step {step}");
+        assert!(rollback.reason.contains(expected), "step {step}: {}", rollback.reason);
+        assert!(!rollback.undo_failed, "step {step}");
+        assert_eq!(
+            rollback.repair,
+            Some(Outcome::Done),
+            "step {step}: the old page is repaired, since it was handed off"
+        );
+        assert_old_is_untouched(&session, &world, &old, 1);
+        let w = world.borrow();
+        assert_eq!(
+            (w.undos, w.discarded.clone()),
+            (1, vec![1]),
+            "step {step}: the handoff was undone and the candidate removed"
+        );
+        assert_eq!(session.state(), State::RolledBack, "step {step}");
+        assert!(
+            !old.is_disposed(),
+            "step {step}: and the old controller is still the one in use"
+        );
     }
 }
 

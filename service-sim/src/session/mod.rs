@@ -15,7 +15,9 @@
 //! 3. **Validate.** A controller that was made is not a controller that drew: its first draw may have failed and left
 //!    it dirty, so it is checked clean, at slice 0, on a live host, and then by the host's own readback.
 //! 4. **Publish.** The host hands the page from the old session to the new one: visibility, pointer and focus. If any
-//!    step fails, what was done is undone.
+//!    step fails, what was done is undone. A handoff that reports success is then read back by the host
+//!    ([`SessionHost::verify_published`]), since a candidate that is still staged is as live to the controller as one
+//!    that is shown, and only the page knows which it is.
 //! 5. **Commit.** Only now does the stable target point at the new controller, and the old one is disposed, once, with
 //!    its host removed.
 //!
@@ -180,6 +182,21 @@ pub trait SessionHost {
     ///
     /// Returns a message if a step failed. The coordinator then calls [`undo_publish`](Self::undo_publish).
     fn publish(&mut self, from: Option<&Self::Token>, to: &Self::Token) -> Result<(), String>;
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Reads back, from the page and not from what [`publish`](Self::publish) did, what a completed handoff leaves. The
+    /// new page is shown and no longer staged, it is the only scene that is exposed to the keyboard, the pointer and
+    /// the accessibility tree, the old one is hidden, and the focus is on a valid target in the new one.
+    ///
+    /// The controller cannot tell a staged host from a shown one: an `opacity:0` host that is `inert` is as `Live` to
+    /// it as a visible host is. So a `publish` that returns `Ok` without having removed the staging, shown the page or
+    /// moved the focus passes every check that the coordinator can make itself, and only this readback sees it.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message naming what is not as a completed handoff leaves it. The coordinator then undoes the handoff
+    /// and rolls back.
+    fn verify_published(&mut self, from: Option<&Self::Token>, to: &Self::Token) -> Result<(), String>;
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Puts the page back as `from` had it, after a [`publish`](Self::publish) that failed or was refused, whatever
@@ -421,8 +438,12 @@ impl<F: SessionHost> Coordinator<F> {
         if let Err(reason) = published {
             return self.rolled_back(Stage::Publish, reason, Some(candidate), true, &old);
         }
-        // The handoff is done, and the candidate has to be the live, clean scene that it was before it.
-        if let Err(reason) = Self::validate(&candidate) {
+        // The handoff reported success. It is read back from the page, and the candidate has to be the live, clean
+        // scene that it was before it.
+        let read_back = self
+            .host
+            .verify_published(self.active.as_ref().map(|a| &a.token), &candidate.token);
+        if let Err(reason) = read_back.and_then(|()| Self::validate(&candidate)) {
             return self.rolled_back(Stage::Publish, reason, Some(candidate), true, &old);
         }
         // The commit boundary: the target and the metadata change together, and only here.

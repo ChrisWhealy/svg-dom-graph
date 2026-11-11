@@ -1,0 +1,88 @@
+{
+  "measured_at": "2026-11-11T10:39:23.974Z",
+  "git_sha": "81dec076087193ac59d10f7fd1241298c6e1bad8",
+  "git_dirty": true,
+  "file": "service-sim/src/session/mod.rs",
+  "caught": 13,
+  "total": 13,
+  "mutations": [
+    {
+      "name": "the new scene is not validated after the handoff",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_candidate_that_is_not_live_after_the_handoff_is_rolled_back ... FAILED"
+    },
+    {
+      "name": "a candidate that is not clean is accepted",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_candidate_that_was_built_dirty_is_refused_although_its_constructor_succeeded ... FAILED"
+    },
+    {
+      "name": "a rolled back candidate is not removed",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+    },
+    {
+      "name": "the old picture is not repaired after a failed handoff",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
+    },
+    {
+      "name": "a failed handoff is not undone",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+    },
+    {
+      "name": "the old playback is not invalidated at the start of a request",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_candidate_that_fails_before_the_handoff_leaves_the_old_session_as_it_was ... FAILED"
+    },
+    {
+      "name": "the saved speed is not applied",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_different_number_of_servers_replaces_the_session_and_keeps_the_speed_without_playing ... FAILED"
+    },
+    {
+      "name": "the old controller is not disposed on commit",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_different_number_of_servers_replaces_the_session_and_keeps_the_speed_without_playing ... FAILED"
+    },
+    {
+      "name": "the old page is not removed on commit",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_different_number_of_servers_replaces_the_session_and_keeps_the_speed_without_playing ... FAILED"
+    },
+    {
+      "name": "a request that is not valid is built anyway",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_request_that_is_not_valid_changes_nothing_and_does_not_stop_the_playback ... FAILED"
+    },
+    {
+      "name": "a scenario of the same size builds a new surface",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_same_size_switch_whose_draw_fails_keeps_the_old_scenario ... FAILED"
+    },
+    {
+      "name": "a handoff that reports success is not read back",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
+    },
+    {
+      "name": "a hook never reaches the current controller",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_rolled_back_replacement_leaves_the_hook_pointing_at_the_old_controller ... FAILED"
+    }
+  ]
+}
