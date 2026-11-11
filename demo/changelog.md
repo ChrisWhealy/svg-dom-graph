@@ -52,7 +52,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P2: Lifecycle and switching (`2182fcb`)
 - DESS Demo P3: Script to accumulate `dess` evidence (`48fdeb2`)
 - DESS Demo P3: Evidence gathered by running script (`41beb8e`)
-- DESS Demo P4: Advance/Scale and release (``)
+- DESS Demo P4: Advance/Scale and release (`d652bae`)
+- DESS Demo P4: Evidence gathered by running script (``)
 
 ### Changed
 

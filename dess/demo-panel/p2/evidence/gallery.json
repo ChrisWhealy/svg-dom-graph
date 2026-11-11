@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T16:01:19.280Z",
-  "git_sha": "48fdeb2c7ee1c4fb7fff72b854c5c379d30e09ab",
+  "measured_at": "2026-11-11T16:27:31.785Z",
+  "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -1049,7 +1049,7 @@
         },
         {
           "ok": true,
-          "text": "a switch of size makes 948 counted DOM writes"
+          "text": "a switch of size makes 952 counted DOM writes"
         },
         {
           "ok": true,
@@ -1325,6 +1325,41 @@
         {
           "ok": true,
           "text": "and snapshot 6 of that scenario is the independent engine's"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G20",
+      "title": "3 cycles of switching, hiding, taking the panel down and building it again leave nothing behind",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the table of externrefs can be read (2052 slots)"
+        },
+        {
+          "ok": true,
+          "text": "taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written ({\"hosts\":0,\"observers\":0,\"state\":null,\"controlsHome\":true,\"frames\":0,\"svgs\":0})"
+        },
+        {
+          "ok": true,
+          "text": "callbacks that were kept and are called afterwards change nothing in the page (0 ran, 2 refused)"
+        },
+        {
+          "ok": true,
+          "text": "after 3 further cycles the elements, listeners, observers, externref slots and waiting callbacks are exactly the baseline ({\"elements\":19235,\"listeners\":111,\"observers\":1,\"externrefs\":2052,\"held\":{\"timers\":0,\"frames\":0}})"
+        },
+        {
+          "ok": true,
+          "text": "and the panel that was built last works: it is at snapshot 0 of the walkthrough"
+        },
+        {
+          "ok": true,
+          "text": "and steps to the independent engine's snapshot 1"
+        },
+        {
+          "ok": true,
+          "text": "and the page raised no exception (0: )"
         }
       ],
       "deferred": null

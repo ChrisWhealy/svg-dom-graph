@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T16:01:05.330Z",
-  "git_sha": "48fdeb2c7ee1c4fb7fff72b854c5c379d30e09ab",
+  "measured_at": "2026-11-11T16:27:16.678Z",
+  "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
   "git_dirty": true,
   "file": "service-sim/src/session/mod.rs",
   "caught": 15,
@@ -22,7 +22,7 @@
       "name": "a rolled back candidate is not removed",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+      "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
     },
     {
       "name": "the old picture is not repaired after a failed handoff",

@@ -1,6 +1,6 @@
 # P0-D: the feature graphs of the demo build and the harness build
 # cargo 1.99.1 (5f94df478 2026-08-27)
-# measured 2026-11-11T16:01:06.219Z
+# measured 2026-11-11T16:27:17.521Z
 # demo has service-sim: true; demo has fault-hook: false; harness has fault-hook: true
 
 ## cargo tree -p svg-dom-graph-demo --target wasm32-unknown-unknown -e features --charset utf8 --color never

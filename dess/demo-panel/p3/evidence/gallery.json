@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T16:22:33.012Z",
-  "git_sha": "41beb8e867e9735bfab7200ce44858b7ddc105a3",
+  "measured_at": "2026-11-11T16:27:31.785Z",
+  "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1035 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1024 ms, which is told and not judged)"
         },
         {
           "ok": true,
