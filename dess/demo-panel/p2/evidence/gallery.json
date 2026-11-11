@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T16:27:31.785Z",
-  "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
+  "measured_at": "2026-11-11T19:59:36.446Z",
+  "git_sha": "3efd7831ee99a597e06722fac8cb16c919c9455c",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -969,7 +969,7 @@
       "checks": [
         {
           "ok": true,
-          "text": "the page is scrolled, so that a scroll that moved would show ([[0,334],[0,334]])"
+          "text": "the page is scrolled, so that a scroll that moved would show ([[0,315],[0,315]])"
         },
         {
           "ok": true,
@@ -1088,7 +1088,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2352} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2333} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
         },
         {
           "ok": true,
@@ -1112,7 +1112,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
         },
         {
           "ok": true,
@@ -1136,7 +1136,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
         },
         {
           "ok": true,
@@ -1145,6 +1145,93 @@
         {
           "ok": true,
           "text": "a handoff that works keeps the focus on the control that had it"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G16R",
+      "title": "a handoff that fails the controller's check, or whose focus move does nothing, is undone with the focus where it was",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the controller's check fails after the readback passes, with the focus on the scenario list: it is there to begin with"
+        },
+        {
+          "ok": true,
+          "text": "the switch is refused at the handoff (The scenario could not be changed: Publish failed: the new scene's host is Hidden and not Live. The )"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on the scenario list (dess-scenario)"
+        },
+        {
+          "ok": true,
+          "text": "the controller's check fails after the readback passes, with the focus on the Next button: it is there to begin with"
+        },
+        {
+          "ok": true,
+          "text": "the switch is refused at the handoff (The scenario could not be changed: Publish failed: the new scene's host is Hidden and not Live. The )"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on the Next button (dess-next)"
+        },
+        {
+          "ok": true,
+          "text": "the controller's check fails after the readback passes, with the focus on a node inside the old scene: it is there to begin with"
+        },
+        {
+          "ok": true,
+          "text": "the switch is refused at the handoff (The scenario could not be changed: Publish failed: the new scene's host is Hidden and not Live. The )"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on a node inside the old scene (S0)"
+        },
+        {
+          "ok": true,
+          "text": "the focus move silently does nothing, with the focus on a node inside the old scene: it is there to begin with"
+        },
+        {
+          "ok": true,
+          "text": "the switch is refused at the handoff (The scenario could not be changed: Publish failed: the focus did not reach where it belongs. The pre)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on a node inside the old scene (S0)"
+        },
+        {
+          "ok": true,
+          "text": "the return of the focus to a control silently does nothing, with the focus on the Next button: it is there to begin with"
+        },
+        {
+          "ok": true,
+          "text": "the switch is refused at the handoff (The scenario could not be changed: Publish failed: the focus did not reach where it belongs. The pre)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on the Next button (dess-next)"
         }
       ],
       "deferred": null
@@ -1225,7 +1312,7 @@
       "checks": [
         {
           "ok": true,
-          "text": "E0: the dispatch node's midline is the common midline of the 2 servers (813.5, 813.5)"
+          "text": "E0: the dispatch node's midline is the common midline of the 2 servers (794.5, 794.5)"
         },
         {
           "ok": true,
@@ -1233,7 +1320,7 @@
         },
         {
           "ok": true,
-          "text": "E0: every server box is inside the scene (801,882 of 1111)"
+          "text": "E0: every server box is inside the scene (782,863 of 1092)"
         },
         {
           "ok": true,
@@ -1241,7 +1328,7 @@
         },
         {
           "ok": true,
-          "text": "E3-NOOP: the dispatch node's midline is the common midline of the 1 servers (773.0, 773.0)"
+          "text": "E3-NOOP: the dispatch node's midline is the common midline of the 1 servers (754.0, 754.0)"
         },
         {
           "ok": true,
@@ -1249,7 +1336,7 @@
         },
         {
           "ok": true,
-          "text": "E3-NOOP: every server box is inside the scene (801 of 1111)"
+          "text": "E3-NOOP: every server box is inside the scene (782 of 1092)"
         },
         {
           "ok": true,
@@ -1257,7 +1344,7 @@
         },
         {
           "ok": true,
-          "text": "scaled: the dispatch node's midline is the common midline of the 3 servers (854.0, 854.0)"
+          "text": "scaled: the dispatch node's midline is the common midline of the 3 servers (835.0, 835.0)"
         },
         {
           "ok": true,
@@ -1265,7 +1352,7 @@
         },
         {
           "ok": true,
-          "text": "scaled: every server box is inside the scene (801,882,963 of 1111)"
+          "text": "scaled: every server box is inside the scene (782,863,944 of 1092)"
         },
         {
           "ok": true,
@@ -1273,7 +1360,7 @@
         },
         {
           "ok": true,
-          "text": "five: the dispatch node's midline is the common midline of the 5 servers (906.8, 906.8)"
+          "text": "five: the dispatch node's midline is the common midline of the 5 servers (887.8, 887.8)"
         },
         {
           "ok": true,
@@ -1281,7 +1368,7 @@
         },
         {
           "ok": true,
-          "text": "five: every server box is inside the scene (801,868,935,1002,1069 of 1111)"
+          "text": "five: every server box is inside the scene (782,849,916,983,1050 of 1092)"
         },
         {
           "ok": true,
@@ -1305,7 +1392,7 @@
         },
         {
           "ok": true,
-          "text": "at 640 px wide the inspector is still beside the scene and inside it (511 to 1061)"
+          "text": "at 640 px wide the inspector is still beside the scene and inside it (511 to 1042)"
         }
       ],
       "deferred": null
@@ -1335,7 +1422,7 @@
       "checks": [
         {
           "ok": true,
-          "text": "the table of externrefs can be read (2052 slots)"
+          "text": "the table of externrefs can be read: 532 of 2052 slots hold an object, and 2 were lost to a failed import"
         },
         {
           "ok": true,
@@ -1343,11 +1430,19 @@
         },
         {
           "ok": true,
-          "text": "callbacks that were kept and are called afterwards change nothing in the page (0 ran, 2 refused)"
+          "text": "callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (0 ran, 2 refused)"
         },
         {
           "ok": true,
-          "text": "after 3 further cycles the elements, listeners, observers, externref slots and waiting callbacks are exactly the baseline ({\"elements\":19235,\"listeners\":111,\"observers\":1,\"externrefs\":2052,\"held\":{\"timers\":0,\"frames\":0}})"
+          "text": "and called again after a new panel was built, they leave it at snapshot 0 and change nothing (0 of 12, Committed 0)"
+        },
+        {
+          "ok": true,
+          "text": "negative control: a callback that changes a text without adding an element is seen (true), and so is one that asks for a timer (1)"
+        },
+        {
+          "ok": true,
+          "text": "after 3 further cycles the elements, listeners, observers, held externref slots, lost externref slots, table capacity and waiting callbacks are exactly the baseline ({\"elements\":19311,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"frames\":0}})"
         },
         {
           "ok": true,

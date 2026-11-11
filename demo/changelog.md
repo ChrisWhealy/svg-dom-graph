@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P3: Evidence gathered by running script (`41beb8e`)
 - DESS Demo P4: Advance/Scale and release (`d652bae`)
 - DESS Demo P4: Evidence gathered by running script (`0fd5394`)
+- DESS Demo P4: Evidence gathered by running script (``)
 
 ### Changed
 
@@ -165,4 +166,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P3: Maintain the previously focused control after failed publication (`9603e0a`)
 - DESS Demo P4: Prevent publication from losing focus after the final controller check fails (`2c84797`)
 - DESS Demo P4: G20 measure `externref` leaks from occupied references not just table capacity (`55734a7`)
-- DESS Demo P4: G20 Strengthen stale-callback assertion (``)
+- DESS Demo P4: G20 Strengthen stale-callback assertion (`3efd783`)

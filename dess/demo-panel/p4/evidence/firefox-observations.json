@@ -1,5 +1,5 @@
 {
-  "observed_at": "2026-11-11T16:27:47.992Z",
+  "observed_at": "2026-11-11T19:59:53.167Z",
   "browser": "Mozilla Firefox 159.0",
   "note": "Observations, not a pass claim. Chrome is the release gate.",
   "observations": [
@@ -39,16 +39,7 @@
     },
     {
       "name": "the data node holds the eight numbers",
-      "seen": [
-        "4",
-        "4",
-        "3",
-        "1",
-        "0",
-        "0",
-        "0",
-        "1"
-      ]
+      "seen": ["4", "4", "3", "1", "0", "0", "0", "1"]
     },
     {
       "name": "Play for 2.6 seconds at 1 Hz, then Pause",
@@ -60,9 +51,7 @@
     {
       "name": "a switch to E3-NOOP",
       "seen": {
-        "hosts": [
-          "dess-host-1"
-        ],
+        "hosts": ["dess-host-1"],
         "refusal": "none",
         "scenes": 1,
         "servers": 1,
@@ -72,9 +61,7 @@
     {
       "name": "a switch to five",
       "seen": {
-        "hosts": [
-          "dess-host-2"
-        ],
+        "hosts": ["dess-host-2"],
         "refusal": "none",
         "scenes": 1,
         "servers": 5,
@@ -84,9 +71,7 @@
     {
       "name": "a switch to E0",
       "seen": {
-        "hosts": [
-          "dess-host-3"
-        ],
+        "hosts": ["dess-host-3"],
         "refusal": "none",
         "scenes": 1,
         "servers": 2,
@@ -96,24 +81,9 @@
     {
       "name": "the controls and inspector are inside the scene (left, top, width, height)",
       "seen": {
-        "side": [
-          1153,
-          1,
-          299,
-          413
-        ],
-        "svg": [
-          273,
-          1,
-          1179,
-          554
-        ],
-        "toolbar": [
-          273,
-          1,
-          880,
-          114
-        ]
+        "side": [1153, 1, 299, 413],
+        "svg": [273, 1, 1179, 554],
+        "toolbar": [273, 1, 880, 114]
       }
     },
     {

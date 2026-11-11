@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T16:41:14.326Z",
-  "git_sha": "0fd53946fd0ab2d45753a1e0b2d297d20c5e8fdb",
+  "measured_at": "2026-11-11T19:59:36.446Z",
+  "git_sha": "3efd7831ee99a597e06722fac8cb16c919c9455c",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1021 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1024 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -1422,7 +1422,7 @@
       "checks": [
         {
           "ok": true,
-          "text": "the table of externrefs can be read (2052 slots)"
+          "text": "the table of externrefs can be read: 532 of 2052 slots hold an object, and 2 were lost to a failed import"
         },
         {
           "ok": true,
@@ -1430,11 +1430,19 @@
         },
         {
           "ok": true,
-          "text": "callbacks that were kept and are called afterwards change nothing in the page (0 ran, 2 refused)"
+          "text": "callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (0 ran, 2 refused)"
         },
         {
           "ok": true,
-          "text": "after 3 further cycles the elements, listeners, observers, externref slots and waiting callbacks are exactly the baseline ({\"elements\":19310,\"listeners\":111,\"observers\":1,\"externrefs\":2052,\"held\":{\"timers\":0,\"frames\":0}})"
+          "text": "and called again after a new panel was built, they leave it at snapshot 0 and change nothing (0 of 12, Committed 0)"
+        },
+        {
+          "ok": true,
+          "text": "negative control: a callback that changes a text without adding an element is seen (true), and so is one that asks for a timer (1)"
+        },
+        {
+          "ok": true,
+          "text": "after 3 further cycles the elements, listeners, observers, held externref slots, lost externref slots, table capacity and waiting callbacks are exactly the baseline ({\"elements\":19311,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"frames\":0}})"
         },
         {
           "ok": true,
