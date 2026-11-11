@@ -79,7 +79,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
 - DESS Demo P0: Gather P0 acceptance evidence (`7f6df69`)
 - DESS Demo P3: Update Service Simulator demo (`79e5efe`)
-- DESS Demo P4: Housekeeping updates (``)
+- DESS Demo P4: Housekeeping updates (`9ecb935`)
+- Update top-level README (``)
 
 ### Fixed
 
