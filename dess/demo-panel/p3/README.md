@@ -41,11 +41,16 @@ Nothing can wrap below the scene, since everything scales together.
 
 The controls are written once in the panel's markup, and are moved into each scene as it is shown, which keeps their listeners, their state and their focus.
 A scene that is removed takes nothing with it that the page needs, since the controls are put back first.
+The error and notice messages are below the scene, since a message above it would push the scene down when it appeared.
+G16 and G16F check that the scene's rectangle and the page's scroll are the same after a switch, after a rollback and after the focus is given back.
 
 The scene's nodes are placed by the number of servers.
 The dispatch node's midline is the common midline of the column of servers, whatever their number.
 Every connector leaves the dispatch node on its east side and enters its server on the west side.
 Each counter's value has room for the longest name.
+Up to five servers are drawn, and five are brought closer together so that the column ends inside the scene.
+A server's box is green while it runs a job, red while it is down and the library's blue while it is idle.
+The word and the job are still written in the box, so the colour is never the only sign.
 
 The eight cells of the data node are two to a row, each wide enough for six digits, and each row is named beside it.
 The library sizes a numeric cell by the number that it is made with.
@@ -63,8 +68,9 @@ So the cells are made with a six-digit number, and the first draw writes the rea
 | G13 | Hiding during a seek that is waiting leaves no frame, and a later seek succeeds |
 | G14 | A host detached in the middle of a draw, or before one, commits nothing, and a full repair follows |
 | G15 | A switch to the same size is atomic and in place, and a failure at three writes leaves the old scenario, selection and picture |
-| G16 | The sizes 2, 1, 3 and 2 each keep one scene in the document and the accessibility tree, and 38 failures through the whole switch roll back |
+| G16 | The sizes 2, 1, 3 and 2 each keep one scene in the document and the accessibility tree, the scene does not move and the page does not scroll, and 38 failures through the whole switch roll back |
 | G16F | A switch that fails at the handoff gives the focus back to the list, a button or a node of the old scene |
+| L02 | A server's box is green while it runs a job, red while it is down and blue while it is idle, at every snapshot of the walkthrough and in the five-server scenario |
 | G16P | A handoff that silently skips the old scene's `inert` or its style is found at the handoff and rolled back |
 | G17 | The no-op scenario's nine slices match the independent engine, and its end commits nothing |
 | L01 | The controls and inspector are in the scene at any width, the nodes and connectors are laid out as designed, and the counters have room |
@@ -76,7 +82,7 @@ The writes that did not roll back fell after the commit, in the page's own refre
 The native coordinator tests add a matrix.
 Each way a replacement can go wrong, at each transition on the way 2, 1, 3, 2, leaves the old session on the page, shown and focused.
 
-`dess/demo-panel/p3/mutation-check.mjs` breaks the page in 16 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+`dess/demo-panel/p3/mutation-check.mjs` breaks the page in 21 ways, one at a time, in a copy of the tree, and a test has to fail for each.
 Its result is in `evidence/mutation-check.json`, and the run of the tests is in `evidence/gallery.json`.
 
 ## What P3 does not do

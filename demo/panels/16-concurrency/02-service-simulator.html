@@ -1,142 +1,149 @@
 <section class="section" id="panel-service-simulator" data-label="Service Simulator: Queue and Servers">
-    <h2>Service Simulator: A Queue, Servers, Outages and Retries</h2>
-    <p>
-        Jobs <b>arrive</b> at a service. A job that finds a free server starts at once, and one that does not waits in
-        a <b>queue</b> of a fixed size. A job arriving at a full queue is <b>rejected</b>.
-    </p>
-    <p>
-        A <b>high</b> priority job is taken from the queue before a <b>low</b> one. A server can go <b>down</b>, which
-        interrupts the job that it holds, and a job whose attempt fails <b>waits to retry</b> until it has no attempt
-        left. A job that is still not done at its <b>deadline</b> <b>times out</b>, and a job can be
-        <b>cancelled</b> while it waits or runs.
-    </p>
-    <p>
-        Time is counted in whole ticks, and a <b>snapshot</b> is the state of the service after one more tick in which
-        something happened. Snapshot 0 is the state before anything has. The run is the same every time it is chosen,
-        since nothing in it is random.
-    </p>
-    <p class="demo-error" id="dess-error" hidden></p>
-    <p class="visually-hidden" id="dess-live" role="status" aria-live="polite"></p>
-    <p class="dess-notice" id="dess-notice" hidden></p>
-    <div class="canvas" id="dess-stage"></div>
-    <!--
+  <h2>Service Simulator: A Queue, Servers, Outages and Retries</h2>
+  <p>The following rules govern how jobs are handled by a service.</p>
+  <ul>
+    <li>Jobs arrive at the service at unspecified intervals.</li>
+    <li>Jobs have a priority of <b>high</b> or <b>low</b>.</li>
+    <li>If a job finds a free server, it is started immediately.</li>
+    <li>If a job does not find a free server, it waits in a queue.</li>
+    <li>A high priority job is removed from the queue before a low one.</li>
+    <li>The wait queue has a fixed size.</li>
+    <li>Any jobs arriving while the wait queue is full are rejected.</li>
+    <li>Servers can go down. This will terminate the current job and place it on a retry queue.</li>
+    <li>A job has a retry limit.</li>
+    <li>A job that must finish before its deadline is reached.</li>
+    <li>A job that exceeds its deadline is terminated with a timeout.</li>
+    <li>A job can be cancelled at any time.</li>
+  </ul>
+  <p>
+    Time is counted in whole ticks, and a <b>snapshot</b> is the state of the service after one more ticks during which
+    something happened.
+  </p>
+  <p>
+    Snapshot 0 is the initial state, before any processing has taklen place. The run is the same every time it is
+    chosen, since nothing in it is random.
+  </p>
+  <p class="visually-hidden" id="dess-live" role="status" aria-live="polite"></p>
+  <div class="canvas" id="dess-stage"></div>
+  <!-- Below the scene, so that a message that appears does not push the scene down. -->
+  <p class="demo-error" id="dess-error" hidden></p>
+  <p class="dess-notice" id="dess-notice" hidden></p>
+  <!--
         The controls and the inspector are in the scene's own <svg>, as foreignObjects that do not zoom or pan with it, so that they stay beside it at any
         width. They are written here, and moved into each scene as it is shown, which keeps their listeners and their state.
     -->
-    <div class="dess-holder" hidden>
-        <div class="dess-fo dess-toolbar" id="dess-toolbar">
-            <div class="dess-head">
-                <p class="dess-scenario">
-                    <label for="dess-scenario">Scenario</label>
-                    <select id="dess-scenario"></select>
-                </p>
-                <p class="dess-snapshot" id="dess-snapshot">Snapshot 0 of 0</p>
-            </div>
-            <div class="dess-transport" role="group" aria-label="Playback">
-                <button type="button" id="dess-prev" aria-describedby="dess-prev-reason">Previous</button>
-                <button type="button" id="dess-next" aria-describedby="dess-next-reason">Next</button>
-                <button type="button" id="dess-restart">Restart</button>
-                <button type="button" id="dess-play" aria-pressed="false">Play</button>
-                <label for="dess-speed">Speed</label>
-                <select id="dess-speed">
-                    <option value="1000">1 slice per second</option>
-                    <option value="500">2 slices per second</option>
-                    <option value="200">5 slices per second</option>
-                    <option value="100">10 slices per second</option>
-                </select>
-                <button type="button" id="dess-repair">Repair display</button>
-            </div>
-            <p class="dess-reasons">
-                <span id="dess-prev-reason"></span>
-                <span id="dess-next-reason"></span>
-            </p>
-            <div class="dess-seek">
-                <label for="dess-seek">Snapshot</label>
-                <input type="range" id="dess-seek" min="0" max="0" step="1" value="0" aria-describedby="dess-seek-desc" />
-                <span id="dess-seek-text">Committed 0</span>
-                <span class="visually-hidden" id="dess-seek-desc"></span>
-            </div>
-        </div>
-        <div class="dess-fo dess-side" id="dess-side">
-            <h3>This snapshot</h3>
-            <dl class="dess-status" id="dess-inspector">
-                <dt>Snapshot</dt>
-                <dd id="dess-i-snapshot">&mdash;</dd>
-                <dt>Tick</dt>
-                <dd id="dess-i-tick">&mdash;</dd>
-                <dt>Waiting</dt>
-                <dd id="dess-i-waiting">&mdash;</dd>
-                <dt>Busy servers</dt>
-                <dd id="dess-i-busy">&mdash;</dd>
-                <dt>Selected</dt>
-                <dd id="dess-i-selected">&mdash;</dd>
-            </dl>
-            <label for="dess-job">Inspect a job</label>
-            <select id="dess-job"></select>
-            <h3>Counters</h3>
-            <dl class="dess-status" id="dess-counters"></dl>
-            <h3>Panel</h3>
-            <dl class="dess-status">
-                <dt>State</dt>
-                <dd id="dess-i-state">&mdash;</dd>
-                <dt>Display</dt>
-                <dd id="dess-i-display">&mdash;</dd>
-            </dl>
-        </div>
+  <div class="dess-holder" hidden>
+    <div class="dess-fo dess-toolbar" id="dess-toolbar">
+      <div class="dess-head">
+        <p class="dess-scenario">
+          <label for="dess-scenario">Scenario</label>
+          <select id="dess-scenario"></select>
+        </p>
+        <p class="dess-snapshot" id="dess-snapshot">Snapshot 0 of 0</p>
+      </div>
+      <div class="dess-transport" role="group" aria-label="Playback">
+        <button type="button" id="dess-prev" aria-describedby="dess-prev-reason">Previous</button>
+        <button type="button" id="dess-next" aria-describedby="dess-next-reason">Next</button>
+        <button type="button" id="dess-restart">Restart</button>
+        <button type="button" id="dess-play" aria-pressed="false">Play</button>
+        <label for="dess-speed">Speed</label>
+        <select id="dess-speed">
+          <option value="1000">1 slice per second</option>
+          <option value="500">2 slices per second</option>
+          <option value="200">5 slices per second</option>
+          <option value="100">10 slices per second</option>
+        </select>
+        <button type="button" id="dess-repair">Repair display</button>
+      </div>
+      <p class="dess-reasons">
+        <span id="dess-prev-reason"></span>
+        <span id="dess-next-reason"></span>
+      </p>
+      <div class="dess-seek">
+        <label for="dess-seek">Snapshot</label>
+        <input type="range" id="dess-seek" min="0" max="0" step="1" value="0" aria-describedby="dess-seek-desc" />
+        <span id="dess-seek-text">Committed 0</span>
+        <span class="visually-hidden" id="dess-seek-desc"></span>
+      </div>
     </div>
-    <h3>Reading the picture</h3>
-    <ul class="dess-legend">
-        <li><b>Server</b> boxes say <b>idle</b>, <b>down</b>, or the job that they run and the tick at which it is due.</li>
-        <li>
-            The <b>queue</b> boxes hold the jobs that wait, in the order that they will be taken, and each says
-            <b>high</b> or <b>low</b>. A line says how many more wait than fit in the picture.
-        </li>
-        <li>
-            The <b>Dispatch</b> node stands for the dispatcher. It takes the job at the front of the queue, a high priority
-            job before a low one, and gives it to a server that is idle. Each line to a server is a place that a job can go.
-        </li>
-        <li>
-            The <b>counters</b> are totals so far: arrived, admitted, rejected, completed, timed out, cancelled, failed,
-            waiting to retry, stale pops and no-op pops.
-        </li>
-        <li>
-            <b>Snapshot in eight numbers</b> is a grid of eight cells that sums up the snapshot that you are on. Each row
-            is named beside it. The first row is the snapshot and the simulated tick, the second is how many jobs wait and
-            how many servers are busy, and the last two are the totals completed, timed out, cancelled and rejected. It is
-            drawn as one of the library's data nodes, which is rewritten once for each snapshot, and the same numbers are
-            in the inspector.
-        </li>
-        <li>The <b>selected</b> job is outlined wherever it is, and its line at the bottom says where.</li>
-    </ul>
-    <h3>Using the page</h3>
-    <ul>
-        <li>
-            <b>Next</b> and <b>Previous</b> move one snapshot. <b>Restart</b> goes back to snapshot 0. A button that has
-            nowhere to go is dimmed but can still be pressed, and then says so.
-        </li>
-        <li>
-            <b>Play</b> steps at the speed that you choose and stops at the end. It never loops, and it never starts
-            again on its own after the panel has been hidden.
-        </li>
-        <li>
-            The <b>Snapshot</b> range goes straight to any snapshot. Each arrow key is a request of its own, and the
-            last one wins.
-        </li>
-        <li>
-            Choosing another <b>scenario</b> starts it at snapshot 0. If it cannot be shown, the one that you had stays
-            as it was, and the page says why. The <b>advanced</b> scenario is a long run of 5,464 snapshots, and it is
-            not a benchmark.
-        </li>
-        <li>
-            Hiding the panel, or the page, stops <b>Play</b>, and it is never started again for you. The page says that
-            it paused, and <b>Play</b> resumes from where it stopped.
-        </li>
-        <li>
-            <b>Repair display</b> draws the snapshot that you are on again, in full. It never moves, selects or plays.
-        </li>
-        <li>
-            <b>Inspect a job</b> outlines a job that is in the picture and says what state it is in. Choose
-            <b>None</b> to clear it.
-        </li>
-    </ul>
+    <div class="dess-fo dess-side" id="dess-side">
+      <h3>This snapshot</h3>
+      <dl class="dess-status" id="dess-inspector">
+        <dt>Snapshot</dt>
+        <dd id="dess-i-snapshot">&mdash;</dd>
+        <dt>Tick</dt>
+        <dd id="dess-i-tick">&mdash;</dd>
+        <dt>Waiting</dt>
+        <dd id="dess-i-waiting">&mdash;</dd>
+        <dt>Busy servers</dt>
+        <dd id="dess-i-busy">&mdash;</dd>
+        <dt>Selected</dt>
+        <dd id="dess-i-selected">&mdash;</dd>
+      </dl>
+      <label for="dess-job">Inspect a job</label>
+      <select id="dess-job"></select>
+      <h3>Counters</h3>
+      <dl class="dess-status" id="dess-counters"></dl>
+      <h3>Panel</h3>
+      <dl class="dess-status">
+        <dt>State</dt>
+        <dd id="dess-i-state">&mdash;</dd>
+        <dt>Display</dt>
+        <dd id="dess-i-display">&mdash;</dd>
+      </dl>
+    </div>
+  </div>
+  <h3>Reading the picture</h3>
+  <ul class="dess-legend">
+    <li><b>Server</b> boxes say <b>idle</b>, <b>down</b>, or the job that they run and the tick at which it is due.</li>
+    <li>
+      The <b>queue</b> boxes hold the jobs that wait, in the order that they will be taken, and each says <b>high</b> or
+      <b>low</b>. A line says how many more wait than fit in the picture.
+    </li>
+    <li>
+      The <b>Dispatch</b> node stands for the dispatcher. It takes the job at the front of the queue, a high priority
+      job before a low one, and gives it to a server that is idle. Each line to a server is a place that a job can go.
+    </li>
+    <li>
+      The <b>counters</b> are totals so far: arrived, admitted, rejected, completed, timed out, cancelled, failed,
+      waiting to retry, stale pops and no-op pops.
+    </li>
+    <li>
+      The <b>Snapshot</b> is a grid of eight cells that sums up the snapshot that you are on. Each row is
+      named beside it. The first row is the snapshot and the simulated tick, the second is how many jobs wait and how
+      many servers are busy, and the last two are the totals completed, timed out, cancelled and rejected. It is drawn
+      as one of the library's data nodes, which is rewritten once for each snapshot, and the same numbers are in the
+      inspector.
+    </li>
+    <li>The <b>selected</b> job is outlined wherever it is, and its line at the bottom says where.</li>
+  </ul>
+  <h3>Using the page</h3>
+  <ul>
+    <li>
+      <b>Next</b> and <b>Previous</b> move one snapshot. <b>Restart</b> goes back to snapshot 0. A button that has
+      nowhere to go is dimmed but can still be pressed, and then says so.
+    </li>
+    <li>
+      <b>Play</b> steps at the speed that you choose and stops at the end. It never loops, and it never starts again on
+      its own after the panel has been hidden.
+    </li>
+    <li>
+      The <b>Snapshot</b> range goes straight to any snapshot. Each arrow key is a request of its own, and the last one
+      wins.
+    </li>
+    <li>
+      Choosing another <b>scenario</b> starts it at snapshot 0. If it cannot be shown, the one that you had stays as it
+      was, and the page says why. The <b>advanced</b> scenario is a long run of 5,464 snapshots, and it is not a
+      benchmark.
+    </li>
+    <li>
+      Hiding the panel, or the page, stops <b>Play</b>, and it is never started again for you. The page says that it
+      paused, and <b>Play</b> resumes from where it stopped.
+    </li>
+    <li><b>Repair display</b> draws the snapshot that you are on again, in full. It never moves, selects or plays.</li>
+    <li>
+      <b>Inspect a job</b> outlines a job that is in the picture and says what state it is in. Choose <b>None</b> to
+      clear it.
+    </li>
+  </ul>
 </section>

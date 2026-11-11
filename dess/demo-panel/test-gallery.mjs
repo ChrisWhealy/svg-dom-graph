@@ -55,6 +55,8 @@ const COUNTER_NAMES = [
 // The oracle: the state of E0 after k slices, from the independent engine, in the form that the page shows it.
 const fixtures = JSON.parse(fs.readFileSync(path.join(root, 'dess/s1/fixtures.json'), 'utf8'))
 const E0_SLICES = fixtures.E0.expect.slices
+/** The five-server scenario's parameters, which are the frozen generator's with five servers and its own revision. */
+const FIVE = { ...MIXED_OUTAGE_7, servers: 5, arrivals: 360, revision: 'gallery/five-servers' }
 /** The scenarios of the catalogue, as the independent engine runs them, with what the panel shows of their shape. */
 const SCENARIOS = {
   E0: {
@@ -72,6 +74,17 @@ const SCENARIOS = {
       seed: 0,
       config: fixtures['E3-NOOP'].config,
       script: fixtures['E3-NOOP'].script
+    }
+  },
+  five: {
+    servers: 5,
+    capacity: MIXED_OUTAGE_7.queueCapacity,
+    slices: 493,
+    run: {
+      configId: 'gallery/five-servers:20261106',
+      seed: 20261106,
+      config: FIVE,
+      params: FIVE
     }
   },
   scaled: {
@@ -288,6 +301,17 @@ const scenarioState = () =>
 /** How many scenes the accessibility tree exposes: the overlay is a group named Service simulator, and there is one in each scene. */
 const scenes = async () =>
   (await accessibility()).filter(n => n.role?.value === 'group' && n.name?.value === 'Service simulator').length
+/** Where the scene is on the screen, and how far the page and every container above the scene are scrolled. A staged host that took room, or a focus that scrolled, moves one of them. */
+const layoutOf = () =>
+  evaluate(`(() => {
+    const svg = document.querySelector('#dess-stage svg')
+    const r = svg.getBoundingClientRect()
+    const scrolls = [[window.scrollX, window.scrollY]]
+    for (let e = svg.parentElement; e; e = e.parentElement) scrolls.push([e.scrollLeft, e.scrollTop])
+    return { rect: [r.left, r.top, r.width, r.height], scrolls, document: document.documentElement.scrollHeight }
+  })()`)
+const unmoved = (a, b) =>
+  a.rect.every((v, i) => Math.abs(v - b.rect[i]) <= 0.5) && same(a.scrolls, b.scrolls)
 const routeAway = () => click('#menu .menu-item[data-target="panel-petri-net"]')
 const routeBack = () => click(`#menu .menu-item[data-target="${PANEL}"]`)
 /** What the page says without reading the scene, for when the scene is not in the document. */
@@ -1451,6 +1475,10 @@ await test(
     const { x, y } = await centre('#dess-stage svg')
     for (let i = 0; i < 3; i++) await wheel(chrome, x, y, -200, { ctrl: true })
     const zoomed = (await scenarioState()).transform
+  // The scene is brought into view, and where it is and how far the page is scrolled are kept, since neither may move while another scene is staged.
+  await evaluate(`document.querySelector('#dess-stage').scrollIntoView({ block: 'center' })`)
+  const layout0 = await layoutOf()
+  check(layout0.scrolls.some(([x, y]) => y > 0), `the page is scrolled, so that a scroll that moved would show (${JSON.stringify(layout0.scrolls.filter(([x, y]) => x || y))})`)
     check(
       zoomed !== null && !/scale\(1\)|matrix\(1,0,0,1,0,0\)/.test(zoomed),
       `the scene was zoomed by real wheel input (${zoomed})`
@@ -1472,6 +1500,7 @@ await test(
         `${id}: ${state.servers} servers, ${state.snapshot}`
       )
       check(state.transform === zoomed, `${id}: the zoom went with it (${state.transform})`)
+    check(unmoved(layout0, await layoutOf()), `${id}: the scene did not move and the page did not scroll`)
       check(
         focused === 'S0' && (await evaluate('document.activeElement.id')) === 'dess-scenario',
         `${id}: a focus that was inside the old scene is on the scenario list`
@@ -1514,6 +1543,8 @@ await test(
     let committed = 0
     for (const at of points) {
       const before = await scenarioState()
+      // Where the scene is now, after the clicks of the last point, which scroll what they click into view.
+      const layoutBefore = await layoutOf()
       await evaluate(`__faults.arm(${at}, 3)`)
       await chooseScenario('E3-NOOP')
       await evaluate('__faults.disarm()')
@@ -1525,6 +1556,10 @@ await test(
         continue
       }
       rolled++
+      {
+        const layoutAfter = await layoutOf()
+        if (!unmoved(layoutBefore, layoutAfter)) check(false, `a failure at write ${at} moved the scene or scrolled the page: ${JSON.stringify(layoutBefore)} then ${JSON.stringify(layoutAfter)}`)
+      }
       stages.add(/(Build|Validate|Publish) failed/.exec(state.error)?.[1] ?? 'other')
       const exposed = await scenes()
       const ok =
@@ -1603,7 +1638,10 @@ await test('G16F', 'a switch that fails at the handoff gives the focus back to w
   for (const [name, focusIt, read, expected] of cases) {
     const before = await scenarioState()
     const hostId = before.hosts[0].id
+    await evaluate(`document.querySelector('#dess-stage').scrollIntoView({ block: 'center' })`)
     check((await evaluate(focusIt)) === expected, `the focus is on ${name}`)
+    // Taking the focus there may have scrolled it into view, and that is the test's own doing, so the layout is kept after it.
+    const layout = await layoutOf()
     await failUnstage(hostId)
     await chooseScenario('E3-NOOP')
     await evaluate('__restoreRemove()')
@@ -1621,6 +1659,10 @@ await test('G16F', 'a switch that fails at the handoff gives the focus back to w
       'and the old scenario, scene and cursor are as they were'
     )
     check((await evaluate(read)) === expected, `and the focus is back on ${name} (${await evaluate(read)})`)
+    {
+      const after = await layoutOf()
+      check(unmoved(layout, after), `and giving the focus back did not scroll the page or move the scene (${JSON.stringify(layout)} then ${JSON.stringify(after)})`)
+    }
     check(
       await evaluate('document.getElementById("dess-next").closest("#' + hostId + '") !== null'),
       'with the controls in the old scene'
@@ -1737,7 +1779,7 @@ await test(
       for (const g of content.querySelectorAll(':scope > g:not(.ss-overlay)')) {
         const label = g.querySelector('text')?.textContent?.trim()
         const rect = g.querySelector('rect')
-        if (label && rect && /^(Dispatch|S\\d+)$/.test(label)) nodes[label] = box(rect)
+        if (label && rect && /^(Job dispatch|S\\d+)$/.test(label)) nodes[label] = box(rect)
       }
       const ends = [...content.querySelectorAll('path')].filter(p => p.getAttribute('marker-end') || p.closest('[class*="edge"]')).map(p => {
         const at = p.getPointAtLength(p.getTotalLength())
@@ -1756,12 +1798,12 @@ await test(
                toolbar: box(document.getElementById('dess-toolbar')), side: box(document.getElementById('dess-side')), svg: box(svg), outside: document.querySelectorAll('#panel-service-simulator > .dess-wrap, #panel-service-simulator > .dess-head, #panel-service-simulator > .dess-transport').length }
     })()`)
     const near = (a, b) => Math.abs(a - b) <= 1.5
-    for (const id of ['E0', 'E3-NOOP', 'scaled']) {
+    for (const id of ['E0', 'E3-NOOP', 'scaled', 'five']) {
       await chooseScenario(id)
       const g = await geometry()
       const servers = SCENARIOS[id].servers
       const names = Array.from({ length: servers }, (_, i) => `S${i}`)
-      const w = g.nodes.Dispatch
+      const w = g.nodes['Job dispatch']
       const expected = (g.nodes.S0.top + g.nodes[names.at(-1)].bottom) / 2
       check(
         near(w.centre, expected),
@@ -1781,6 +1823,10 @@ await test(
           .map(c => c.right)
       )
       const narrowest = Math.min(...Object.values(g.values).map(v => v.left))
+      check(
+        names.every(n => g.nodes[n].bottom <= g.svg.bottom - 1),
+        `${id}: every server box is inside the scene (${names.map(n => g.nodes[n].bottom.toFixed(0))} of ${g.svg.bottom.toFixed(0)})`
+      )
       check(
         widest + 4 <= narrowest,
         `${id}: the longest counter name ends at ${widest.toFixed(1)}, before the values at ${narrowest.toFixed(1)}`
@@ -1815,6 +1861,37 @@ await test(
     )
   }
 )
+
+await test('L02', 'a server box is green while it runs a job, red while it is down, and blue while it is idle', async () => {
+  await fresh()
+  const COLOURS = { idle: 'rgb(238, 244, 255)', busy: 'rgb(187, 247, 208)', down: 'rgb(254, 202, 202)' }
+  const seen = new Set()
+  const boxes = () =>
+    evaluate(`(() => {
+      const svg = document.querySelector('#dess-stage svg')
+      return [...svg.querySelectorAll('[data-ss-key^="S"]')].filter(g => /^S\\d+$/.test(g.getAttribute('data-ss-key'))).map(g => {
+        const key = g.getAttribute('data-ss-key')
+        const state = ['busy', 'down', 'idle'].find(s => g.classList.contains('ss-' + s))
+        const rect = [...svg.querySelectorAll('.svg-dom-graph-content > g[aria-label^="' + key + '."] > rect')][0]
+        return { key, state, fill: getComputedStyle(rect).fill, text: g.querySelector('text')?.textContent }
+      })
+    })()`)
+  for (let k = 0; k <= E0_SLICES; k++) {
+    if (k > 0) await click('#dess-next')
+    for (const box of await boxes()) {
+      seen.add(box.state)
+      if (box.fill !== COLOURS[box.state]) check(false, `snapshot ${k}: ${box.key} is ${box.state} and its box is ${box.fill}, not ${COLOURS[box.state]}`)
+      if (box.state === 'down' && box.text !== 'down') check(false, `snapshot ${k}: ${box.key} is down and says ${box.text}`)
+    }
+  }
+  check(seen.has('idle') && seen.has('busy') && seen.has('down'), `the walkthrough shows all three states (${[...seen]}), and each box was the colour of its state at every snapshot`)
+  // The five-server scenario, where the fifth box is the one that the old layout had no room for.
+  await chooseScenario('five')
+  for (let i = 0; i < 6; i++) await click('#dess-next')
+  const five = await boxes()
+  check(five.length === 5 && five.every(b => b.fill === COLOURS[b.state]), `five servers, each box the colour of its state (${five.map(b => b.state)})`)
+  check(matchesOracle(await read(), 6, SCENARIOS.five).length === 0, 'and snapshot 6 of that scenario is the independent engine\'s')
+})
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const first = (command, args) => spawnSync(command, args, { cwd: root, encoding: 'utf8' }).stdout.trim().split('\n')[0]

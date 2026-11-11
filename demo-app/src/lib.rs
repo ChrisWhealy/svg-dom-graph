@@ -43,7 +43,7 @@
 //!   two producers that compete for the last slot, and workers that overlap. A manual branch lets a person fire the
 //!   enabled transitions. The net, not the page, stops a full buffer from taking an item.
 //! - `panel-service-simulator` / `#dess-stage` — [`service_sim::build_service_simulator_demo`]: a discrete-event service
-//!   simulator, with a queue, one to four servers, outages, retries and cancellations, on one long-lived scene with a
+//!   simulator, with a queue, one to five servers, outages, retries and cancellations, on one long-lived scene with a
 //!   data node of eight counters. Native controls drive the simulator's own controller, and the page shows only what it
 //!   committed. A list of four scenarios replaces the scene when the number of servers changes, and keeps the old one if the
 //!   new one cannot be shown.

@@ -28,7 +28,7 @@ Where the design is silent, the choice made here is a binding rule, and every on
 
 A scenario is a configuration and some inputs.
 
-The configuration has the number of servers (1 to 4), the queue capacity (1 to 64), the maximum attempts (1 to 3) and the retry deferral cap (0 to 16).
+The configuration has the number of servers (1 to 5), the queue capacity (1 to 64), the maximum attempts (1 to 3) and the retry deferral cap (0 to 16).
 One server is allowed for the probes E1-RC and E2-RT.
 The product supports 2 to 4.
 

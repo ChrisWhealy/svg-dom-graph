@@ -1,6 +1,6 @@
 //! The discrete-event service simulator, as a gallery panel:
 //!
-//! - `panel-service-simulator` / `#dess-stage` — [`build_service_simulator_demo`]: a queue and one to four servers,
+//! - `panel-service-simulator` / `#dess-stage` — [`build_service_simulator_demo`]: a queue and one to five servers,
 //!   with jobs that arrive, wait, run, time out, retry, fail and are cancelled, drawn on one long-lived `Scene` with an
 //!   overlay and a data node of eight counters.
 //!

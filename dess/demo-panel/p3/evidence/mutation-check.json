@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T14:46:13.587Z",
-  "git_sha": "115bd34aaa0abebe5175a36a75c6c387eaf88ca8",
+  "measured_at": "2026-11-11T15:48:49.304Z",
+  "git_sha": "9603e0ac3b8905e045de6f32916dba813084cc3e",
   "git_dirty": true,
-  "caught": 16,
-  "total": 16,
+  "caught": 20,
+  "total": 21,
   "mutations": [
     {
       "name": "a stop by hiding is not said",
@@ -63,7 +63,7 @@
       "name": "the dispatch node is not at the common midline of the servers",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL E0: the dispatch node's midline is the common midline of the 2 servers (675.0, 634.5)"
+      "first_failure": "FAIL E0: the dispatch node's midline is the common midline of the 2 servers (854.0, 813.5)"
     },
     {
       "name": "a connector is not forced to enter the west side",
@@ -94,6 +94,36 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL and the focus is back on the scenario list, as when a person used the keyboard ()"
+    },
+    {
+      "name": "a message is put above the scene, so that it pushes the scene down",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL a failure at write 1 moved the scene or scrolled the page: {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2352} then {\"rect\":[2"
+    },
+    {
+      "name": "five servers are drawn at the pitch that four have room for",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL five: every server box is inside the scene (801,882,963,1044,1125 of 1111)"
+    },
+    {
+      "name": "the surface refuses a fifth server",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the test stopped: TypeError: Cannot read properties of undefined (reading 'bottom')"
+    },
+    {
+      "name": "a running server is not green",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL snapshot 1: S0 is busy and its box is rgb(238, 244, 255), not rgb(187, 247, 208)"
+    },
+    {
+      "name": "a server that is down is not red",
+      "built": true,
+      "caught": false,
+      "first_failure": null
     },
     {
       "name": "a refusal is not shown in the error area",

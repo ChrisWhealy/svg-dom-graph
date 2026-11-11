@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T14:40:10.756Z",
-  "git_sha": "115bd34aaa0abebe5175a36a75c6c387eaf88ca8",
+  "measured_at": "2026-11-11T15:40:49.505Z",
+  "git_sha": "9603e0ac3b8905e045de6f32916dba813084cc3e",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1038 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1031 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -969,6 +969,10 @@
       "checks": [
         {
           "ok": true,
+          "text": "the page is scrolled, so that a scroll that moved would show ([[0,334],[0,334]])"
+        },
+        {
+          "ok": true,
           "text": "the scene was zoomed by real wheel input (translate(-1884.2475816589888, -462.0507417704544) scale(3.814697265625))"
         },
         {
@@ -982,6 +986,10 @@
         {
           "ok": true,
           "text": "E3-NOOP: the zoom went with it (translate(-1884.2475816589888, -462.0507417704544) scale(3.814697265625))"
+        },
+        {
+          "ok": true,
+          "text": "E3-NOOP: the scene did not move and the page did not scroll"
         },
         {
           "ok": true,
@@ -1005,6 +1013,10 @@
         },
         {
           "ok": true,
+          "text": "scaled: the scene did not move and the page did not scroll"
+        },
+        {
+          "ok": true,
           "text": "scaled: a focus that was inside the old scene is on the scenario list"
         },
         {
@@ -1022,6 +1034,10 @@
         {
           "ok": true,
           "text": "E0: the zoom went with it (translate(-1884.2475816589888, -462.0507417704544) scale(3.814697265625))"
+        },
+        {
+          "ok": true,
+          "text": "E0: the scene did not move and the page did not scroll"
         },
         {
           "ok": true,
@@ -1072,6 +1088,10 @@
         },
         {
           "ok": true,
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2352} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
+        },
+        {
+          "ok": true,
           "text": "with the controls in the old scene"
         },
         {
@@ -1092,6 +1112,10 @@
         },
         {
           "ok": true,
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
+        },
+        {
+          "ok": true,
           "text": "with the controls in the old scene"
         },
         {
@@ -1109,6 +1133,10 @@
         {
           "ok": true,
           "text": "and the focus is back on a node inside the old scene (S0)"
+        },
+        {
+          "ok": true,
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2417})"
         },
         {
           "ok": true,
@@ -1197,7 +1225,7 @@
       "checks": [
         {
           "ok": true,
-          "text": "E0: the dispatch node's midline is the common midline of the 2 servers (634.5, 634.5)"
+          "text": "E0: the dispatch node's midline is the common midline of the 2 servers (813.5, 813.5)"
         },
         {
           "ok": true,
@@ -1205,11 +1233,15 @@
         },
         {
           "ok": true,
+          "text": "E0: every server box is inside the scene (801,882 of 1111)"
+        },
+        {
+          "ok": true,
           "text": "E0: the longest counter name ends at 1042.4, before the values at 1075.4"
         },
         {
           "ok": true,
-          "text": "E3-NOOP: the dispatch node's midline is the common midline of the 1 servers (594.0, 594.0)"
+          "text": "E3-NOOP: the dispatch node's midline is the common midline of the 1 servers (773.0, 773.0)"
         },
         {
           "ok": true,
@@ -1217,11 +1249,15 @@
         },
         {
           "ok": true,
+          "text": "E3-NOOP: every server box is inside the scene (801 of 1111)"
+        },
+        {
+          "ok": true,
           "text": "E3-NOOP: the longest counter name ends at 1042.4, before the values at 1075.4"
         },
         {
           "ok": true,
-          "text": "scaled: the dispatch node's midline is the common midline of the 3 servers (675.0, 675.0)"
+          "text": "scaled: the dispatch node's midline is the common midline of the 3 servers (854.0, 854.0)"
         },
         {
           "ok": true,
@@ -1229,7 +1265,27 @@
         },
         {
           "ok": true,
+          "text": "scaled: every server box is inside the scene (801,882,963 of 1111)"
+        },
+        {
+          "ok": true,
           "text": "scaled: the longest counter name ends at 1042.4, before the values at 1075.4"
+        },
+        {
+          "ok": true,
+          "text": "five: the dispatch node's midline is the common midline of the 5 servers (906.8, 906.8)"
+        },
+        {
+          "ok": true,
+          "text": "five: every connector enters its server on the west side (true,true,true,true,true)"
+        },
+        {
+          "ok": true,
+          "text": "five: every server box is inside the scene (801,868,935,1002,1069 of 1111)"
+        },
+        {
+          "ok": true,
+          "text": "five: the longest counter name ends at 1042.4, before the values at 1075.4"
         },
         {
           "ok": true,
@@ -1249,7 +1305,26 @@
         },
         {
           "ok": true,
-          "text": "at 640 px wide the inspector is still beside the scene and inside it (511 to 844)"
+          "text": "at 640 px wide the inspector is still beside the scene and inside it (511 to 1061)"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "L02",
+      "title": "a server box is green while it runs a job, red while it is down, and blue while it is idle",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the walkthrough shows all three states (idle,busy,down), and each box was the colour of its state at every snapshot"
+        },
+        {
+          "ok": true,
+          "text": "five servers, each box the colour of its state (busy,busy,busy,busy,idle)"
+        },
+        {
+          "ok": true,
+          "text": "and snapshot 6 of that scenario is the independent engine's"
         }
       ],
       "deferred": null

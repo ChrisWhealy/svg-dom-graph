@@ -279,7 +279,7 @@
     "expect": {
       "outcome": "error",
       "kind": "invalid",
-      "message": "servers 0 is outside 1 to 4"
+      "message": "servers 0 is outside 1 to 5"
     }
   },
   "DEADLINE-NOT-AFTER": {

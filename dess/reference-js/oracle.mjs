@@ -85,7 +85,7 @@ const validate = config => {
     if (!Number.isInteger(v) || v < lo || v > hi)
       throw new ScenarioError('invalid', `${name} ${v} is outside ${lo} to ${hi}`)
   }
-  inRange('servers', config.servers, 1, 4)
+  inRange('servers', config.servers, 1, 5)
   inRange('queue capacity', config.queueCapacity, 1, 64)
   inRange('maximum attempts', config.maxAttempts, 1, 3)
   inRange('retry deferral cap', config.deferralCap, 0, 16)

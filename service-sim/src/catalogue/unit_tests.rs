@@ -2,7 +2,7 @@ use super::*;
 use crate::session::{Extent, PreflightError};
 
 #[test]
-fn the_four_scenarios_are_offered_in_order_with_the_shapes_that_the_design_gives() {
+fn the_scenarios_are_offered_in_order_with_the_shapes_that_the_design_gives() {
     let entries = catalogue().expect("the catalogue");
     let shape: Vec<_> = entries
         .iter()
@@ -10,7 +10,13 @@ fn the_four_scenarios_are_offered_in_order_with_the_shapes_that_the_design_gives
         .collect();
     assert_eq!(
         shape,
-        [("E0", 2, false), ("E3-NOOP", 1, false), ("scaled", 3, false), ("W6", 3, true)]
+        [
+            ("E0", 2, false),
+            ("E3-NOOP", 1, false),
+            ("scaled", 3, false),
+            ("five", 5, false),
+            ("W6", 3, true)
+        ]
     );
 }
 
@@ -21,7 +27,16 @@ fn every_scenario_replays_to_exactly_the_totals_that_it_is_known_by() {
         .iter()
         .map(|e| e.spec.preflight().map(|x| (x.slices, x.pops)))
         .collect();
-    assert_eq!(found, [Ok((12, 19)), Ok((9, 9)), Ok((487, 1_009)), Ok((5_464, 11_214))]);
+    assert_eq!(
+        found,
+        [
+            Ok((12, 19)),
+            Ok((9, 9)),
+            Ok((487, 1_009)),
+            Ok((493, 1_103)),
+            Ok((5_464, 11_214))
+        ]
+    );
 }
 
 #[test]

@@ -309,8 +309,8 @@ fn a_scenario_that_is_refused_is_refused_for_a_reason_and_without_building_anyth
     none.servers = 0;
     assert_eq!(none.preflight(), Err(PreflightError::Servers(0)));
     let mut many = e0();
-    many.servers = 5;
-    assert_eq!(many.preflight(), Err(PreflightError::Servers(5)));
+    many.servers = 6;
+    assert_eq!(many.preflight(), Err(PreflightError::Servers(6)));
     // A count that is valid, and is not the engine's: E0 has two servers.
     let mut liar = e0();
     liar.servers = 3;

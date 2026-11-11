@@ -73,6 +73,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (`685cac3`)
 - Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
 - DESS Demo P0: Gather P0 acceptance evidence (`7f6df69`)
+- DESS Demo P3: Update Service Simulator demo (``)
 
 ### Fixed
 
@@ -157,4 +158,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P2: Do not ignore boundary-control attribute failures (`2cbeec8`)
 - DESS Demo P2: Prevent the gallery observer from seeing SVG class mutations (`a929d35`)
 - DESS Demo P3: Distinguish `is_still_staged()` from `is_fully_staged()` (`115bd34`)
-- DESS Demo P3: Maintain the previously focused control after failed publication (``)
+- DESS Demo P3: Maintain the previously focused control after failed publication (`9603e0a`)

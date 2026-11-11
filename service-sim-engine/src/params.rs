@@ -68,7 +68,7 @@ impl Config {
                 Err(Error::Invalid(format!("{name} {v} is outside {lo} to {hi}")))
             }
         };
-        check("servers", self.servers as u64, 1, 4)?;
+        check("servers", self.servers as u64, 1, 5)?;
         check("queue capacity", self.queue_capacity as u64, 1, 64)?;
         check("maximum attempts", u64::from(self.max_attempts), 1, 3)?;
         check("retry deferral cap", u64::from(self.deferral_cap), 0, 16)
@@ -340,7 +340,7 @@ mod tests {
         p.arrivals = Limits::default().max_arrivals + 1;
         assert_eq!(p.validate(&Limits::default()), Err(Error::Limit("arrivals")));
         let mut p = Params::mixed_outage_7();
-        p.servers = 5;
+        p.servers = 6;
         assert!(matches!(p.validate(&Limits::default()), Err(Error::Invalid(_))));
     }
 }

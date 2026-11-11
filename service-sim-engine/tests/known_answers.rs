@@ -219,7 +219,7 @@ fn run_to_end(mut e: Engine) -> Result<(), Error> {
 fn a_configuration_outside_its_range_is_refused_before_anything_runs() {
     for bad in [
         Config { servers: 0, ..config() },
-        Config { servers: 5, ..config() },
+        Config { servers: 6, ..config() },
         Config { queue_capacity: 0, ..config() },
         Config { queue_capacity: 65, ..config() },
         Config { max_attempts: 0, ..config() },

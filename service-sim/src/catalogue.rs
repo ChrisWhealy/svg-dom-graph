@@ -8,7 +8,7 @@
 use crate::controller::Factory;
 use crate::session::{Expected, Spec};
 use service_sim_engine::trace::Scenario;
-use service_sim_engine::{Engine, Error, Limits};
+use service_sim_engine::{Engine, Error, Limits, Params};
 use std::rc::Rc;
 
 /// The seed of the frozen generator's revision, which the scaled runs use.
@@ -55,6 +55,22 @@ fn scaled(arrivals: u64) -> Result<Scenario, Error> {
     Ok(scenario)
 }
 
+/// The same generator with five servers and a heavier load, which is the largest number that the surface draws. It is
+/// not a frozen revision, so it has an id of its own, and its totals are those that both engines were found to give.
+fn five_servers(arrivals: u64) -> Result<Scenario, Error> {
+    let mut params = Params::mixed_outage_7();
+    params.revision = "gallery/five-servers".into();
+    params.servers = 5;
+    params.arrivals = arrivals;
+    Ok(Scenario {
+        config_id: format!("{}:{SEED}", params.revision),
+        seed: SEED,
+        config: params.config()?,
+        script: Vec::new(),
+        params: Some(params),
+    })
+}
+
 fn entry(id: &str, label: &str, scenario: Scenario, (slices, pops): (u64, u64), advanced: bool) -> Entry {
     Entry {
         spec: Spec {
@@ -74,7 +90,7 @@ fn entry(id: &str, label: &str, scenario: Scenario, (slices, pops): (u64, u64), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The four scenarios, in the order that the gallery lists them. The first is the one that it opens with.
+/// The scenarios, in the order that the gallery lists them. The first is the one that it opens with.
 ///
 /// # Errors
 ///
@@ -84,6 +100,7 @@ pub fn catalogue() -> Result<Vec<Entry>, Error> {
         entry("E0", "Walkthrough - default", fixture("E0")?, (12, 19), false),
         entry("E3-NOOP", "No-op and stale events", fixture("E3-NOOP")?, (9, 9), false),
         entry("scaled", "Busy service / outages", scaled(360)?, (487, 1_009), false),
+        entry("five", "Five servers", five_servers(360)?, (493, 1_103), false),
         entry("W6", "W6 reference trace - advanced", scaled(4_000)?, (5_464, 11_214), true),
     ])
 }

@@ -3134,6 +3134,59 @@ svg.spmv-scene-svg rect.spmv-changed {
     padding-left: 1.2rem;
 }
 
+/* A server's box takes the colour of what it is doing: green while it runs a job, red while it is down, and the library's own blue
+   while it is idle. The word and the job are still written in the box, so the colour is never the only sign. The state is on the
+   overlay's own slot, so each rule reads it from there, and the box is the node of that name. */
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {
+    fill: #bbf7d0;
+    stroke: #15803d;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {
+    fill: #fecaca;
+    stroke: #b91c1c;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S1"].ss-busy) > g[aria-label^="S1."] > rect {
+    fill: #bbf7d0;
+    stroke: #15803d;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S1"].ss-down) > g[aria-label^="S1."] > rect {
+    fill: #fecaca;
+    stroke: #b91c1c;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S2"].ss-busy) > g[aria-label^="S2."] > rect {
+    fill: #bbf7d0;
+    stroke: #15803d;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S2"].ss-down) > g[aria-label^="S2."] > rect {
+    fill: #fecaca;
+    stroke: #b91c1c;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S3"].ss-busy) > g[aria-label^="S3."] > rect {
+    fill: #bbf7d0;
+    stroke: #15803d;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S3"].ss-down) > g[aria-label^="S3."] > rect {
+    fill: #fecaca;
+    stroke: #b91c1c;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S4"].ss-busy) > g[aria-label^="S4."] > rect {
+    fill: #bbf7d0;
+    stroke: #15803d;
+}
+
+.svg-dom-graph-content:has(> .ss-overlay [data-ss-key="S4"].ss-down) > g[aria-label^="S4."] > rect {
+    fill: #fecaca;
+    stroke: #b91c1c;
+}
+
 /* The scene is drawn on a light ground, so the overlay's text on it is dark, and the overlay never takes the pointer. */
 .ss-overlay {
     pointer-events: none;

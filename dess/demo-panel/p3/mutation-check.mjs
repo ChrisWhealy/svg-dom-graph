@@ -19,6 +19,9 @@ const only = argument('--only')?.split(',').map(Number) ?? null
 const CONTROLS = 'demo-app/src/service_sim/controls.rs'
 const SWITCHING = 'demo-app/src/service_sim/switching.rs'
 const DOM = 'demo-app/src/service_sim/dom.rs'
+const FRAGMENT = 'demo/panels/16-concurrency/02-service-simulator.html'
+const SESSION = 'service-sim/src/session/mod.rs'
+const STYLE = 'demo/style.css'
 const LAYOUT = 'service-sim/src/layout.rs'
 const SURFACE = 'service-sim/src/surface.rs'
 
@@ -87,8 +90,8 @@ const MUTATIONS = [
     [
       [
         DOM,
-        '        self.controllers.remove(&token);\n        self.remove(token);\n    }\n\n    fn finalize',
-        '        self.controllers.remove(&token);\n    }\n\n    fn finalize'
+        '    fn discard(&mut self, token: u32) {\n        self.controllers.remove(&token);\n        self.remove(token);',
+        '    fn discard(&mut self, token: u32) {\n        self.controllers.remove(&token);'
       ]
     ]
   ],
@@ -107,7 +110,7 @@ const MUTATIONS = [
     [
       [
         LAYOUT,
-        'let centre = SERVER_TOP + (last as f64 * SERVER_PITCH + SERVER_SIZE.1) / 2.0;',
+        'let centre = SERVER_TOP + (last as f64 * server_pitch(servers) + SERVER_SIZE.1) / 2.0;',
         'let centre = SERVER_TOP + SERVER_SIZE.1 / 2.0 + (last.min(1) as f64) * SERVER_PITCH;'
       ]
     ]
@@ -144,6 +147,23 @@ const MUTATIONS = [
       ]
     ]
   ],
+  [
+    'a message is put above the scene, so that it pushes the scene down',
+    [
+      [
+        FRAGMENT,
+        '<div class="canvas" id="dess-stage"></div>\n  <!-- Below the scene, so that a message that appears does not push the scene down. -->\n  <p class="demo-error" id="dess-error" hidden></p>',
+        '<p class="demo-error" id="dess-error" hidden></p>\n  <div class="canvas" id="dess-stage"></div>'
+      ]
+    ]
+  ],
+  [
+    'five servers are drawn at the pitch that four have room for',
+    [[LAYOUT, 'pub const SERVER_PITCH_FIVE: f64 = 76.0;', 'pub const SERVER_PITCH_FIVE: f64 = 92.0;']]
+  ],
+  ['the surface refuses a fifth server', [[SESSION, 'pub const MAX_SERVERS: usize = 5;', 'pub const MAX_SERVERS: usize = 4;']]],
+  ['a running server is not green', [[STYLE, '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #bbf7d0;', '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
+  ['a server that is down is not red', [[STYLE, '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #fecaca;', '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
   [
     'a refusal is not shown in the error area',
     [

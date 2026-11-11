@@ -135,12 +135,12 @@ impl Surface {
             .add_node(
                 Point::new(queue_x, queue_y),
                 Size::new(QUEUE_NODE_SIZE.0, QUEUE_NODE_SIZE.1),
-                "Dispatch",
+                "Job dispatch",
             )
             .map_err(|e| e.to_string())?;
         let mut server_nodes = Vec::with_capacity(servers);
         for i in 0..servers {
-            let (x, y) = server_at(i);
+            let (x, y) = server_at(servers, i);
             server_nodes.push(
                 scene
                     .add_node(Point::new(x, y), Size::new(SERVER_SIZE.0, SERVER_SIZE.1), format!("S{i}"))
@@ -189,7 +189,7 @@ impl Surface {
             ("Waiting queue".to_owned(), QUEUE_ORIGIN_X, 50.0),
             ("Servers".to_owned(), SERVER_X, 50.0),
             ("Counters".to_owned(), COUNTERS_AT.0, COUNTERS_AT.1 - 32.0),
-            ("Snapshot in eight numbers".to_owned(), DATA_AT.0, 50.0),
+            ("Snapshot".to_owned(), DATA_AT.0, 50.0),
         ];
 
         for (i, (_, name)) in COUNTER_NAMES.iter().enumerate() {
@@ -241,7 +241,7 @@ impl Surface {
         // The list is added where the first queue slot falls, so that the document order is the order of the keys.
         let mut slots = Vec::with_capacity(keys.len());
         for key in &keys {
-            let at = slot_position(key);
+            let at = slot_position(key, servers);
             let in_list = key.starts_with('Q');
             if key == "Q0" {
                 add(&overlay, &queue_list)?;
@@ -518,7 +518,7 @@ fn last_group_of(content: &web_sys::Element) -> Result<web_sys::Element, String>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the baseline of a slot's text starts.
-fn slot_position(key: &str) -> (f64, f64) {
+fn slot_position(key: &str, servers: usize) -> (f64, f64) {
     let counter = COUNTER_NAMES.iter().position(|(k, _)| *k == key);
     match key {
         "clock" => CLOCK_AT,
@@ -530,7 +530,7 @@ fn slot_position(key: &str) -> (f64, f64) {
         "selected" => SELECTED_AT,
         _ if key.starts_with('S') => {
             let i: usize = key[1..].parse().unwrap_or(0);
-            let (x, y) = server_at(i);
+            let (x, y) = server_at(servers, i);
             (x + 8.0, y + SERVER_SIZE.1 - 10.0)
         },
         _ if key.starts_with('Q') => {

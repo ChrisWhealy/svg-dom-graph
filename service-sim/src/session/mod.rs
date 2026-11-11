@@ -43,7 +43,7 @@ use std::{
 };
 
 /// The most servers that a surface is built for.
-pub const MAX_SERVERS: usize = 4;
+pub const MAX_SERVERS: usize = 5;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a scenario is known to come to, which is checked by running it and not assumed. The totals are exact, and the
@@ -69,7 +69,7 @@ pub struct Extent {
 /// Why a scenario was refused before anything was built.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreflightError {
-    /// The surface is built for one to four servers.
+    /// The surface is built for one to five servers.
     Servers(usize),
     /// The engine has a different number of servers from the one that the spec says, so the surface would be the wrong
     /// shape.
@@ -101,7 +101,7 @@ impl Spec {
     ///
     /// # Errors
     ///
-    /// Returns a [`PreflightError`] if the server count is not one to four, the engine fails or has other servers than
+    /// Returns a [`PreflightError`] if the server count is not one to five, the engine fails or has other servers than
     /// declared, a ceiling is passed, or the totals are not the expected ones.
     pub fn preflight(&self) -> Result<Extent, PreflightError> {
         if !(1..=MAX_SERVERS).contains(&self.servers) {

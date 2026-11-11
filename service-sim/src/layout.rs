@@ -15,7 +15,10 @@ pub const QUEUE_NODE_X: f64 = 300.0;
 pub const QUEUE_NODE_SIZE: (f64, f64) = (120.0, 56.0);
 pub const SERVER_SIZE: (f64, f64) = (150.0, 64.0);
 pub const SERVER_X: f64 = 500.0;
+/// The distance from the top of one server to the top of the next. It is the room that four servers need, and five are
+/// brought closer so that the column still ends inside the scene.
 pub const SERVER_PITCH: f64 = 92.0;
+pub const SERVER_PITCH_FIVE: f64 = 76.0;
 const SERVER_TOP: f64 = 64.0;
 
 /// The data node: eight cells of counters.
@@ -64,13 +67,19 @@ pub fn more_at() -> (f64, f64) {
 #[must_use]
 pub fn queue_node_at(servers: usize) -> (f64, f64) {
     let last = servers.max(1) - 1;
-    let centre = SERVER_TOP + (last as f64 * SERVER_PITCH + SERVER_SIZE.1) / 2.0;
+    let centre = SERVER_TOP + (last as f64 * server_pitch(servers) + SERVER_SIZE.1) / 2.0;
     (QUEUE_NODE_X, centre - QUEUE_NODE_SIZE.1 / 2.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where the top left of server `index` is.
+/// Where the top left of server `index` is, for a surface with `servers` servers.
 #[must_use]
-pub fn server_at(index: usize) -> (f64, f64) {
-    (SERVER_X, SERVER_TOP + index as f64 * SERVER_PITCH)
+pub fn server_at(servers: usize, index: usize) -> (f64, f64) {
+    (SERVER_X, SERVER_TOP + index as f64 * server_pitch(servers))
+}
+
+/// The distance between servers, for a surface with `servers` of them.
+#[must_use]
+pub fn server_pitch(servers: usize) -> f64 {
+    if servers > 4 { SERVER_PITCH_FIVE } else { SERVER_PITCH }
 }

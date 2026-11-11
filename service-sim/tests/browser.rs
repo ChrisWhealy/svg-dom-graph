@@ -544,37 +544,41 @@ fn layout_is_sound(id: &str, servers: usize, projection: &Projection) -> Result<
     Ok(())
 }
 
-/// The widest cases of the layout: E0 with a job selected, and four servers with a full window of twelve and "+N more"
+/// The widest cases of the layout: E0 with a job selected, and four and five servers with a full window of twelve and
+/// "+N more"
 /// under it.
 #[wasm_bindgen_test]
 fn nothing_is_drawn_outside_the_view_or_over_anything_else() -> Result<(), String> {
     let (servers, selected) = projections_with("E0", |_| View { selected: Some(2) });
     layout_is_sound("ss-layout-e0", servers, &selected[4])?;
 
-    let config = Config {
-        servers: 4,
-        queue_capacity: 40,
-        max_attempts: 1,
-        deferral_cap: 4,
-    };
-    let script: Vec<ScriptEvent> = (0..30)
-        .map(|i| ScriptEvent::Arrive {
-            at: 0,
-            key: format!("job-{i}"),
-            priority: u8::from(i % 3 == 0),
-            durations: vec![100],
-            deadline: 500,
-        })
-        .collect();
-    let mut engine = Engine::new("wide", 0, config, &script, None, Limits::default()).map_err(|e| e.to_string())?;
-    engine.step().map_err(|e| e.to_string())?;
-    let view = View { selected: Some(5) };
-    let wide = project(&extract(&engine, &view), &view);
-    check(
-        wide.slots.iter().any(|s| s.key == "more" && !s.hidden),
-        "the wide case has no \"more\" line",
-    )?;
-    layout_is_sound("ss-layout-wide", 4, &wide)
+    for servers in [4, 5] {
+        let config = Config {
+            servers,
+            queue_capacity: 40,
+            max_attempts: 1,
+            deferral_cap: 4,
+        };
+        let script: Vec<ScriptEvent> = (0..30)
+            .map(|i| ScriptEvent::Arrive {
+                at: 0,
+                key: format!("job-{i}"),
+                priority: u8::from(i % 3 == 0),
+                durations: vec![100],
+                deadline: 500,
+            })
+            .collect();
+        let mut engine = Engine::new("wide", 0, config, &script, None, Limits::default()).map_err(|e| e.to_string())?;
+        engine.step().map_err(|e| e.to_string())?;
+        let view = View { selected: Some(5) };
+        let wide = project(&extract(&engine, &view), &view);
+        check(
+            wide.slots.iter().any(|s| s.key == "more" && !s.hidden),
+            "the wide case has no \"more\" line",
+        )?;
+        layout_is_sound(&format!("ss-layout-wide-{servers}"), servers, &wide)?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
