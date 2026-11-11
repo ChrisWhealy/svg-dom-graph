@@ -77,7 +77,7 @@ The record is `evidence/size-ledger.json`, and the two trees are kept beside it.
 The panel added two crates to the demo's wasm dependency tree, `service-sim` and `service-sim-engine`, and nothing else.
 `sha2` was already in the demo and is there once, at version 0.11.0.
 The build is the demo server's own, which does not run `wasm-opt`.
-The record was made with changes that were not committed, so it should be made again from a clean tree.
+The record in the repository was made with changes that were not committed, so it must be made again from a clean tree, as above, before it is evidence.
 
 ## Browser observations
 
@@ -92,6 +92,23 @@ Safari and a screen reader have not been tried.
 - The captions under the data node carry their size on the element, so they are the same width in every browser.
 - `docs/demo/service-simulator.md` is the user-facing page, and it is linked from `docs/demo/README.md`.
 - `dess/gather-evidence.mjs` has steps for the long paths, the Firefox observations, the P4 mutation check and the size ledger.
+
+## Evidence provenance
+
+Each record names the commit that it was measured at and whether the source tree was dirty.
+The scripts write their records under `dess/**/evidence/`, and `dess/lib/git-state.mjs` does not count those files as changes.
+Without that, a step later in one run took an earlier step's output for a reason to call itself dirty.
+Everything else counts, so a record made while any source, test, script or document differs from the commit is marked dirty, and is not acceptance evidence.
+
+To make acceptance evidence, commit everything, and then run the following from a clean tree.
+
+```sh
+node dess/gather-evidence.mjs --all --skip s1-mutation,perf-smoke
+```
+
+At its end the script reads every record under `dess/` and lists those that were not measured at the current commit on a clean tree.
+It is the check that the records are what they say.
+`dess/gather-evidence.mjs --list` shows the steps, and `s1-mutation` and `perf-smoke` are left out here since they do not bear on this panel.
 
 ## What is not done
 

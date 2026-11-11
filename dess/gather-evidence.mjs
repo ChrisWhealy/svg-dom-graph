@@ -7,6 +7,10 @@
 // the gallery first, since the browser tests serve the staged build. A step that fails does not stop the others unless `--stop-on-failure` is
 // given, and the exit status is 1 if any step failed. Nothing is committed: look at `git status` afterwards and commit the evidence files.
 //
+// The files that the steps write under `dess/**/evidence/` are not counted as changes to the tree, so a step does not see an earlier step's output as a
+// reason to call itself dirty (`dess/lib/git-state.mjs`). At the end the script reads every evidence record that it can find and says which were not measured
+// at this commit on a clean tree.
+//
 // Without `--all` the steps that take most of an hour are left out. They are marked slow in `--list`.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -110,9 +114,24 @@ const STEPS = [
     'node',
     ['perf/runner/gallery-sweep.mjs', '--only', 'panel-service-simulator']
   ],
-  ['firefox-service-sim', 'an observation: the surface and controller tests in Firefox (not a gate)', 'wasm-pack', ['test', '--headless', '--firefox', 'service-sim']],
-  ['firefox-visit', 'an observation: a short visit to the panel in Firefox through geckodriver (not a gate)', 'node', [`${P}/p4/firefox-observe.mjs`]],
-  ['gallery-nightly', 'P4: the long paths G18 and G19 and the cycles of G20, at the nightly size (about a minute)', 'node', [`${P}/test-gallery.mjs`, '--nightly', '--out', `${P}/p4/evidence/gallery-nightly.json`]],
+  [
+    'firefox-service-sim',
+    'an observation: the surface and controller tests in Firefox (not a gate)',
+    'wasm-pack',
+    ['test', '--headless', '--firefox', 'service-sim']
+  ],
+  [
+    'firefox-visit',
+    'an observation: a short visit to the panel in Firefox through geckodriver (not a gate)',
+    'node',
+    [`${P}/p4/firefox-observe.mjs`]
+  ],
+  [
+    'gallery-nightly',
+    'P4: the long paths G18 and G19 and the cycles of G20, at the nightly size (about a minute)',
+    'node',
+    [`${P}/test-gallery.mjs`, '--nightly', '--out', `${P}/p4/evidence/gallery-nightly.json`]
+  ],
   [
     'p2-mutation',
     'P2: the panel is broken in small ways and the tests notice',
@@ -120,8 +139,20 @@ const STEPS = [
     [`${P}/p2/mutation-check.mjs`, '--out', `${P}/p2/evidence/mutation-check.json`],
     { slow: true }
   ],
-  ['p4-mutation', 'P4: the taking down of the panel and the long paths are broken in small ways and the tests notice', 'node', [`${P}/p4/mutation-check.mjs`, '--out', `${P}/p4/evidence/mutation-check.json`], { slow: true }],
-  ['size-ledger', 'P4: the demo wasm before and after the panel, in bytes and gzipped, with the dependency tree (two full builds)', 'node', [`${P}/p4/size-ledger.mjs`], { slow: true }],
+  [
+    'p4-mutation',
+    'P4: the taking down of the panel and the long paths are broken in small ways and the tests notice',
+    'node',
+    [`${P}/p4/mutation-check.mjs`, '--out', `${P}/p4/evidence/mutation-check.json`],
+    { slow: true }
+  ],
+  [
+    'size-ledger',
+    'P4: the demo wasm before and after the panel, in bytes and gzipped, with the dependency tree (two full builds)',
+    'node',
+    [`${P}/p4/size-ledger.mjs`],
+    { slow: true }
+  ],
   [
     'p3-mutation',
     'P3: the panel, the handoff and the layout are broken in small ways and the tests notice',
@@ -204,6 +235,30 @@ const summary = {
 }
 fs.mkdirSync(path.join(root, 'target/dess-evidence'), { recursive: true })
 fs.writeFileSync(path.join(root, 'target/dess-evidence/summary.json'), `${JSON.stringify(summary, null, 2)}\n`)
+
+// Every record that says what commit it was measured at, and whether the tree was clean.
+const head = git(['rev-parse', 'HEAD'])
+const stale = []
+const walk = dir => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) walk(full)
+    else if (entry.name.endsWith('.json') && full.includes(`${path.sep}evidence${path.sep}`)) {
+      try {
+        const record = JSON.parse(fs.readFileSync(full, 'utf8'))
+        const sha = record.git_sha ?? record.after?.commit
+        const unclean = record.git_dirty ?? record.after?.dirty
+        if (sha !== undefined && (sha !== head || unclean !== false))
+          stale.push(`${path.relative(root, full)} (${sha?.slice(0, 7)}${unclean ? ', dirty' : ''})`)
+      } catch {}
+    }
+  }
+}
+walk(path.join(root, 'dess'))
+
+if (stale.length)
+  console.log(`\nevidence records that are not from a clean ${head.slice(0, 7)}:\n  ${stale.join('\n  ')}`)
+else console.log(`\nevery evidence record that names a commit was measured at ${head.slice(0, 7)} on a clean tree`)
 
 console.log('\nTo do by hand, since no script can:')
 for (const line of MANUAL) console.log(`  - ${line}`)

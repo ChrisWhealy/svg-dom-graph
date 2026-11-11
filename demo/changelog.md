@@ -54,7 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P3: Evidence gathered by running script (`41beb8e`)
 - DESS Demo P4: Advance/Scale and release (`d652bae`)
 - DESS Demo P4: Evidence gathered by running script (`0fd5394`)
-- DESS Demo P4: Evidence gathered by running script (``)
+- DESS Demo P4: Evidence gathered by running script (`da62de2`)
 
 ### Changed
 
@@ -79,6 +79,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
 - DESS Demo P0: Gather P0 acceptance evidence (`7f6df69`)
 - DESS Demo P3: Update Service Simulator demo (`79e5efe`)
+- DESS Demo P4: Housekeeping updates (``)
 
 ### Fixed
 

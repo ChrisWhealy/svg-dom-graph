@@ -20,6 +20,7 @@ import { launch, serve } from '../../perf/lib/chrome-session.mjs'
 import { press, release, move, pause, wheel } from '../../perf/lib/input.mjs'
 import { run } from '../reference-js/oracle.mjs'
 import { MIXED_OUTAGE_7 } from '../reference-js/generator.mjs'
+import { sourceDirty } from '../lib/git-state.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
@@ -2390,7 +2391,7 @@ if (out) {
   fs.mkdirSync(path.dirname(out), { recursive: true })
   fs.writeFileSync(
     out,
-    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: first('git', ['rev-parse', 'HEAD']), git_dirty: first('git', ['status', '--porcelain']).length > 0, browser: version, tests: results }, null, 2)}\n`
+    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: first('git', ['rev-parse', 'HEAD']), git_dirty: sourceDirty(root), browser: version, tests: results }, null, 2)}\n`
   )
 }
 process.exit(failures ? 1 : 0)

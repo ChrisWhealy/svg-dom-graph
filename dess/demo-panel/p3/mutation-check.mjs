@@ -10,6 +10,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { sourceDirty } from '../../lib/git-state.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
@@ -317,7 +318,7 @@ if (out) {
   fs.mkdirSync(path.dirname(out), { recursive: true })
   fs.writeFileSync(
     out,
-    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: git(['rev-parse', 'HEAD']), git_dirty: git(['status', '--porcelain']).length > 0, caught: results.filter(r => r.caught).length, total: results.length, mutations: results }, null, 2)}\n`
+    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: git(['rev-parse', 'HEAD']), git_dirty: sourceDirty(root), caught: results.filter(r => r.caught).length, total: results.length, mutations: results }, null, 2)}\n`
   )
 }
 console.log(

@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import zlib from 'node:zlib'
 import { spawnSync } from 'node:child_process'
+import { sourceDirty } from '../../lib/git-state.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
@@ -27,7 +28,7 @@ const added = git('log', '--diff-filter=A', '--format=%H', '--', 'demo-app/src/s
 const beforeRef = argument('--before') ?? `${added}^`
 const beforeSha = git('rev-parse', beforeRef)
 const afterSha = git('rev-parse', 'HEAD')
-const dirty = git('status', '--porcelain').length > 0
+const dirty = sourceDirty(root)
 
 const tree = dir => {
   const result = run(

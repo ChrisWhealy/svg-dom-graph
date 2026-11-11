@@ -32,6 +32,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from '../../../perf/runner/lib/harness-page.mjs'
 import { press, release, pause } from '../../../perf/lib/input.mjs'
+import { sourceDirty } from '../../lib/git-state.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
@@ -299,7 +300,11 @@ const gates = (r, control) => {
       o.pageIsProjection,
     S3_isolation: isolated(r.staged),
     // The staged host does not move the live scene, what follows it, or the height of the page.
-    S5_no_layout_shift: Boolean(r.layout) && r.layout.liveShift === 0 && Math.abs(r.layout.belowShift) < 1 && Math.abs(r.layout.pageHeightShift) < 1,
+    S5_no_layout_shift:
+      Boolean(r.layout) &&
+      r.layout.liveShift === 0 &&
+      Math.abs(r.layout.belowShift) < 1 &&
+      Math.abs(r.layout.pageHeightShift) < 1,
     S4_publish: Boolean(r.published) && exposed(r.published) && isolated(r.restaged)
   }
 }
@@ -325,7 +330,7 @@ try {
     identity: {
       measured_at: new Date().toISOString(),
       git_sha: first('git', ['rev-parse', 'HEAD']),
-      git_dirty: spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).stdout.trim().length > 0,
+      git_dirty: sourceDirty(root),
       browser: await page.evaluate('navigator.userAgent'),
       rustc: first('rustc', ['--version']),
       wasm_pack: first('wasm-pack', ['--version']),

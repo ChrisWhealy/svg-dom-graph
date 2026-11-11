@@ -9,6 +9,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { sourceDirty } from '../../lib/git-state.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const FILE = 'service-sim/src/session/mod.rs'
@@ -80,11 +81,7 @@ const MUTATIONS = [
     '                        self.state = if done { State::Committed } else { State::RolledBack };\n',
     ''
   ],
-  [
-    'the engine\'s own server count is not checked',
-    '        if found != self.servers {',
-    '        if false {'
-  ],
+  ["the engine's own server count is not checked", '        if found != self.servers {', '        if false {'],
   [
     'a handoff is confirmed before the controller has been checked',
     '        let read_back = self\n            .host\n            .verify_published(self.active.as_ref().map(|a| &a.token), &candidate.token);',
@@ -176,7 +173,7 @@ if (out) {
   fs.mkdirSync(path.dirname(out), { recursive: true })
   fs.writeFileSync(
     out,
-    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: git(['rev-parse', 'HEAD']), git_dirty: git(['status', '--porcelain']).length > 0, file: FILE, caught: results.filter(r => r.caught).length, total: MUTATIONS.length, mutations: results }, null, 2)}\n`
+    `${JSON.stringify({ measured_at: new Date().toISOString(), git_sha: git(['rev-parse', 'HEAD']), git_dirty: sourceDirty(root), file: FILE, caught: results.filter(r => r.caught).length, total: MUTATIONS.length, mutations: results }, null, 2)}\n`
   )
 }
 console.log(
