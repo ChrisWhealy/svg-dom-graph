@@ -53,6 +53,16 @@ const MUTATIONS = [
     ]
   ],
   [
+    'taking the panel down leaks one JavaScript object a time, so that the table of externrefs does not grow',
+    [
+      [
+        MOD,
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());',
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());\n    std::mem::forget(document.clone());'
+      ]
+    ]
+  ],
+  [
     'the stale and no-op counters change places',
     [[PROJECTION, '        c.stale,\n        c.noops,', '        c.noops,\n        c.stale,']]
   ]

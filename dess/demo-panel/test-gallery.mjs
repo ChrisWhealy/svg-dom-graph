@@ -190,13 +190,27 @@ await send('Page.addScriptToEvaluateOnNewDocument', {
         return result
       }
     }
+    // The table of externrefs that wasm-bindgen keeps. Its length is its capacity, which stays the same while a slot is still free, so it cannot show a
+    // leak. What is held now is the slots that hold an object. A free slot holds null, a slot that holds undefined was filled by an import that then threw
+    // and is never freed, and the first four hold the constants undefined, null, true and false.
+    const externrefs = () => {
+      const table = window.__wasmInstances.at(-1)?.exports?.__wbindgen_externrefs
+      if (!table) return null
+      let held = 0
+      let undefinedSlots = 0
+      for (let slot = 0; slot < table.length; slot++) {
+        const value = table.get(slot)
+        if (value === undefined) undefinedSlots++
+        else if (value !== null) held++
+      }
+      return { capacity: table.length, held, undefinedSlots }
+    }
     window.__counts = () => {
-      const exports = window.__wasmInstances.at(-1)?.exports
       return {
         elements: document.getElementsByTagName('*').length,
         listeners: __listeners.snapshot().total,
         observers: window.__liveObservers.size,
-        externrefs: exports?.__wbindgen_externrefs?.length ?? null,
+        externrefs: externrefs(),
         held: { timers: __timers.pending().length, frames: __frames.pending() }
       }
     }
@@ -342,8 +356,7 @@ const layoutOf = () =>
     for (let e = svg.parentElement; e; e = e.parentElement) scrolls.push([e.scrollLeft, e.scrollTop])
     return { rect: [r.left, r.top, r.width, r.height], scrolls, document: document.documentElement.scrollHeight }
   })()`)
-const unmoved = (a, b) =>
-  a.rect.every((v, i) => Math.abs(v - b.rect[i]) <= 0.5) && same(a.scrolls, b.scrolls)
+const unmoved = (a, b) => a.rect.every((v, i) => Math.abs(v - b.rect[i]) <= 0.5) && same(a.scrolls, b.scrolls)
 const routeAway = () => click('#menu .menu-item[data-target="panel-petri-net"]')
 const routeBack = () => click(`#menu .menu-item[data-target="${PANEL}"]`)
 /** What the page says without reading the scene, for when the scene is not in the document. */
@@ -1507,10 +1520,13 @@ await test(
     const { x, y } = await centre('#dess-stage svg')
     for (let i = 0; i < 3; i++) await wheel(chrome, x, y, -200, { ctrl: true })
     const zoomed = (await scenarioState()).transform
-  // The scene is brought into view, and where it is and how far the page is scrolled are kept, since neither may move while another scene is staged.
-  await evaluate(`document.querySelector('#dess-stage').scrollIntoView({ block: 'center' })`)
-  const layout0 = await layoutOf()
-  check(layout0.scrolls.some(([x, y]) => y > 0), `the page is scrolled, so that a scroll that moved would show (${JSON.stringify(layout0.scrolls.filter(([x, y]) => x || y))})`)
+    // The scene is brought into view, and where it is and how far the page is scrolled are kept, since neither may move while another scene is staged.
+    await evaluate(`document.querySelector('#dess-stage').scrollIntoView({ block: 'center' })`)
+    const layout0 = await layoutOf()
+    check(
+      layout0.scrolls.some(([x, y]) => y > 0),
+      `the page is scrolled, so that a scroll that moved would show (${JSON.stringify(layout0.scrolls.filter(([x, y]) => x || y))})`
+    )
     check(
       zoomed !== null && !/scale\(1\)|matrix\(1,0,0,1,0,0\)/.test(zoomed),
       `the scene was zoomed by real wheel input (${zoomed})`
@@ -1532,7 +1548,7 @@ await test(
         `${id}: ${state.servers} servers, ${state.snapshot}`
       )
       check(state.transform === zoomed, `${id}: the zoom went with it (${state.transform})`)
-    check(unmoved(layout0, await layoutOf()), `${id}: the scene did not move and the page did not scroll`)
+      check(unmoved(layout0, await layoutOf()), `${id}: the scene did not move and the page did not scroll`)
       check(
         focused === 'S0' && (await evaluate('document.activeElement.id')) === 'dess-scenario',
         `${id}: a focus that was inside the old scene is on the scenario list`
@@ -1590,7 +1606,11 @@ await test(
       rolled++
       {
         const layoutAfter = await layoutOf()
-        if (!unmoved(layoutBefore, layoutAfter)) check(false, `a failure at write ${at} moved the scene or scrolled the page: ${JSON.stringify(layoutBefore)} then ${JSON.stringify(layoutAfter)}`)
+        if (!unmoved(layoutBefore, layoutAfter))
+          check(
+            false,
+            `a failure at write ${at} moved the scene or scrolled the page: ${JSON.stringify(layoutBefore)} then ${JSON.stringify(layoutAfter)}`
+          )
       }
       stages.add(/(Build|Validate|Publish) failed/.exec(state.error)?.[1] ?? 'other')
       const exposed = await scenes()
@@ -1693,7 +1713,10 @@ await test('G16F', 'a switch that fails at the handoff gives the focus back to w
     check((await evaluate(read)) === expected, `and the focus is back on ${name} (${await evaluate(read)})`)
     {
       const after = await layoutOf()
-      check(unmoved(layout, after), `and giving the focus back did not scroll the page or move the scene (${JSON.stringify(layout)} then ${JSON.stringify(after)})`)
+      check(
+        unmoved(layout, after),
+        `and giving the focus back did not scroll the page or move the scene (${JSON.stringify(layout)} then ${JSON.stringify(after)})`
+      )
     }
     check(
       await evaluate('document.getElementById("dess-next").closest("#' + hostId + '") !== null'),
@@ -1710,17 +1733,35 @@ await test('G16F', 'a switch that fails at the handoff gives the focus back to w
   )
 })
 
-await test('G16R', 'a handoff that fails the controller\'s check, or whose focus move does nothing, is undone with the focus where it was', async () => {
-  await fresh()
-  const focusCases = [
-    ['the scenario list', `(document.getElementById('dess-scenario').focus(), document.activeElement.id)`, 'document.activeElement.id', 'dess-scenario'],
-    ['the Next button', `(document.getElementById('dess-next').focus(), document.activeElement.id)`, 'document.activeElement.id', 'dess-next'],
-    ['a node inside the old scene', `(document.querySelector('#dess-stage [data-ss-key="S0"]').focus(), document.activeElement.getAttribute('data-ss-key'))`, 'document.activeElement.getAttribute("data-ss-key")', 'S0']
-  ]
-  const restoreAll = () => evaluate('(window.__restoreAll?.(), 0)')
-  // 1. The host's readback passes and the controller's own check then fails, because the document reads as hidden at the last step of the handoff, which leaves the focus alone.
-  const hideAfterShowing = shown =>
-    evaluate(`(() => {
+await test(
+  'G16R',
+  "a handoff that fails the controller's check, or whose focus move does nothing, is undone with the focus where it was",
+  async () => {
+    await fresh()
+    const focusCases = [
+      [
+        'the scenario list',
+        `(document.getElementById('dess-scenario').focus(), document.activeElement.id)`,
+        'document.activeElement.id',
+        'dess-scenario'
+      ],
+      [
+        'the Next button',
+        `(document.getElementById('dess-next').focus(), document.activeElement.id)`,
+        'document.activeElement.id',
+        'dess-next'
+      ],
+      [
+        'a node inside the old scene',
+        `(document.querySelector('#dess-stage [data-ss-key="S0"]').focus(), document.activeElement.getAttribute('data-ss-key'))`,
+        'document.activeElement.getAttribute("data-ss-key")',
+        'S0'
+      ]
+    ]
+    const restoreAll = () => evaluate('(window.__restoreAll?.(), 0)')
+    // 1. The host's readback passes and the controller's own check then fails, because the document reads as hidden at the last step of the handoff, which leaves the focus alone.
+    const hideAfterShowing = shown =>
+      evaluate(`(() => {
       const remove = Element.prototype.removeAttribute
       window.__restoreAll = () => { Element.prototype.removeAttribute = remove; delete document.hidden }
       Element.prototype.removeAttribute = function (name) {
@@ -1731,9 +1772,9 @@ await test('G16R', 'a handoff that fails the controller\'s check, or whose focus
       }
       return 0
     })()`)
-  // 2. A call of focus that returns normally and does nothing, once, which is a handoff whose focus move silently failed. The undo's call works.
-  const failFocusOnce = id =>
-    evaluate(`(() => {
+    // 2. A call of focus that returns normally and does nothing, once, which is a handoff whose focus move silently failed. The undo's call works.
+    const failFocusOnce = id =>
+      evaluate(`(() => {
       const focus = HTMLElement.prototype.focus
       let skipped = 0
       window.__restoreAll = () => { HTMLElement.prototype.focus = focus }
@@ -1743,26 +1784,53 @@ await test('G16R', 'a handoff that fails the controller\'s check, or whose focus
       }
       return 0
     })()`)
-  const scenarios = [
-    ['the controller\'s check fails after the readback passes', async hostId => hideAfterShowing(hostId), /Hidden/, ['the scenario list', 'the Next button', 'a node inside the old scene']],
-    ['the focus move silently does nothing', async () => failFocusOnce('dess-scenario'), /focus did not reach/, ['a node inside the old scene']],
-    ['the return of the focus to a control silently does nothing', async () => failFocusOnce('dess-next'), /focus did not reach/, ['the Next button']]
-  ]
-  for (const [what, arm, pattern, cases] of scenarios) {
-    for (const [name, focusIt, read, expected] of focusCases.filter(c => cases.includes(c[0]))) {
-      const before = await scenarioState()
-      const hostId = before.hosts[0].id
-      check((await evaluate(focusIt)) === expected, `${what}, with the focus on ${name}: it is there to begin with`)
-      await arm(hostId)
-      await chooseScenario('E3-NOOP')
-      await restoreAll()
-      const state = await scenarioState()
-      check(state.errorShown && /Publish failed/.test(state.error) && pattern.test(state.error), `the switch is refused at the handoff (${state.error.slice(0, 100)})`)
-      check(state.select === 'E0' && state.hosts.length === 1 && state.hosts[0].id === hostId && !state.hosts[0].staged && state.snapshot === before.snapshot && (await scenes()) === 1, 'and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree')
-      check((await evaluate(read)) === expected, `and the focus is back on ${name} (${await evaluate(read)})`)
+    const scenarios = [
+      [
+        "the controller's check fails after the readback passes",
+        async hostId => hideAfterShowing(hostId),
+        /Hidden/,
+        ['the scenario list', 'the Next button', 'a node inside the old scene']
+      ],
+      [
+        'the focus move silently does nothing',
+        async () => failFocusOnce('dess-scenario'),
+        /focus did not reach/,
+        ['a node inside the old scene']
+      ],
+      [
+        'the return of the focus to a control silently does nothing',
+        async () => failFocusOnce('dess-next'),
+        /focus did not reach/,
+        ['the Next button']
+      ]
+    ]
+    for (const [what, arm, pattern, cases] of scenarios) {
+      for (const [name, focusIt, read, expected] of focusCases.filter(c => cases.includes(c[0]))) {
+        const before = await scenarioState()
+        const hostId = before.hosts[0].id
+        check((await evaluate(focusIt)) === expected, `${what}, with the focus on ${name}: it is there to begin with`)
+        await arm(hostId)
+        await chooseScenario('E3-NOOP')
+        await restoreAll()
+        const state = await scenarioState()
+        check(
+          state.errorShown && /Publish failed/.test(state.error) && pattern.test(state.error),
+          `the switch is refused at the handoff (${state.error.slice(0, 100)})`
+        )
+        check(
+          state.select === 'E0' &&
+            state.hosts.length === 1 &&
+            state.hosts[0].id === hostId &&
+            !state.hosts[0].staged &&
+            state.snapshot === before.snapshot &&
+            (await scenes()) === 1,
+          'and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree'
+        )
+        check((await evaluate(read)) === expected, `and the focus is back on ${name} (${await evaluate(read)})`)
+      }
     }
   }
-})
+)
 
 await test(
   'G16P',
@@ -1948,12 +2016,15 @@ await test(
   }
 )
 
-await test('L02', 'a server box is green while it runs a job, red while it is down, and blue while it is idle', async () => {
-  await fresh()
-  const COLOURS = { idle: 'rgb(238, 244, 255)', busy: 'rgb(187, 247, 208)', down: 'rgb(254, 202, 202)' }
-  const seen = new Set()
-  const boxes = () =>
-    evaluate(`(() => {
+await test(
+  'L02',
+  'a server box is green while it runs a job, red while it is down, and blue while it is idle',
+  async () => {
+    await fresh()
+    const COLOURS = { idle: 'rgb(238, 244, 255)', busy: 'rgb(187, 247, 208)', down: 'rgb(254, 202, 202)' }
+    const seen = new Set()
+    const boxes = () =>
+      evaluate(`(() => {
       const svg = document.querySelector('#dess-stage svg')
       return [...svg.querySelectorAll('[data-ss-key^="S"]')].filter(g => /^S\\d+$/.test(g.getAttribute('data-ss-key'))).map(g => {
         const key = g.getAttribute('data-ss-key')
@@ -1962,22 +2033,37 @@ await test('L02', 'a server box is green while it runs a job, red while it is do
         return { key, state, fill: getComputedStyle(rect).fill, text: g.querySelector('text')?.textContent }
       })
     })()`)
-  for (let k = 0; k <= E0_SLICES; k++) {
-    if (k > 0) await click('#dess-next')
-    for (const box of await boxes()) {
-      seen.add(box.state)
-      if (box.fill !== COLOURS[box.state]) check(false, `snapshot ${k}: ${box.key} is ${box.state} and its box is ${box.fill}, not ${COLOURS[box.state]}`)
-      if (box.state === 'down' && box.text !== 'down') check(false, `snapshot ${k}: ${box.key} is down and says ${box.text}`)
+    for (let k = 0; k <= E0_SLICES; k++) {
+      if (k > 0) await click('#dess-next')
+      for (const box of await boxes()) {
+        seen.add(box.state)
+        if (box.fill !== COLOURS[box.state])
+          check(
+            false,
+            `snapshot ${k}: ${box.key} is ${box.state} and its box is ${box.fill}, not ${COLOURS[box.state]}`
+          )
+        if (box.state === 'down' && box.text !== 'down')
+          check(false, `snapshot ${k}: ${box.key} is down and says ${box.text}`)
+      }
     }
+    check(
+      seen.has('idle') && seen.has('busy') && seen.has('down'),
+      `the walkthrough shows all three states (${[...seen]}), and each box was the colour of its state at every snapshot`
+    )
+    // The five-server scenario, where the fifth box is the one that the old layout had no room for.
+    await chooseScenario('five')
+    for (let i = 0; i < 6; i++) await click('#dess-next')
+    const five = await boxes()
+    check(
+      five.length === 5 && five.every(b => b.fill === COLOURS[b.state]),
+      `five servers, each box the colour of its state (${five.map(b => b.state)})`
+    )
+    check(
+      matchesOracle(await read(), 6, SCENARIOS.five).length === 0,
+      "and snapshot 6 of that scenario is the independent engine's"
+    )
   }
-  check(seen.has('idle') && seen.has('busy') && seen.has('down'), `the walkthrough shows all three states (${[...seen]}), and each box was the colour of its state at every snapshot`)
-  // The five-server scenario, where the fifth box is the one that the old layout had no room for.
-  await chooseScenario('five')
-  for (let i = 0; i < 6; i++) await click('#dess-next')
-  const five = await boxes()
-  check(five.length === 5 && five.every(b => b.fill === COLOURS[b.state]), `five servers, each box the colour of its state (${five.map(b => b.state)})`)
-  check(matchesOracle(await read(), 6, SCENARIOS.five).length === 0, 'and snapshot 6 of that scenario is the independent engine\'s')
-})
+)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // P4: the long paths, and the cycles that show that nothing is left behind.
@@ -1995,10 +2081,15 @@ const seeded = seed => {
 /** A hash of what the page shows of the simulation: every slot of the overlay and the cells of the data node. */
 const domHash = async () => {
   const page = await read()
-  return crypto.createHash('sha256').update(JSON.stringify([page.slots, page.data])).digest('hex')
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify([page.slots, page.data]))
+    .digest('hex')
 }
 const seekTo = async target => {
-  await evaluate(`(() => { const s = document.getElementById('dess-seek'); s.value = '${target}'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+  await evaluate(
+    `(() => { const s = document.getElementById('dess-seek'); s.value = '${target}'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`
+  )
   return until(`document.getElementById('dess-seek-text').textContent === 'Committed ${target}'`, 30000)
 }
 
@@ -2027,8 +2118,14 @@ await test(
       await click('#dess-next')
       if (k % 25 === 0 || k === S.slices) await confirm(k, 'by Next')
     }
-    check(bad === 0, `all 487 snapshots were walked by Next, and each of the ${Math.floor(S.slices / 25) + 1} that were read matched the independent engine and its own full redraw`)
-    check((await inStage()) === elements, `and no element was added to the scene by 487 draws (${elements} then ${await inStage()})`)
+    check(
+      bad === 0,
+      `all 487 snapshots were walked by Next, and each of the ${Math.floor(S.slices / 25) + 1} that were read matched the independent engine and its own full redraw`
+    )
+    check(
+      (await inStage()) === elements,
+      `and no element was added to the scene by 487 draws (${elements} then ${await inStage()})`
+    )
     const random = seeded(20261106)
     bad = 0
     for (let i = 0; i < 30; i++) {
@@ -2036,7 +2133,10 @@ await test(
       if (!(await seekTo(k))) report(`the seek to ${k} did not arrive`)
       else await confirm(k, 'by seek')
     }
-    check(bad === 0, 'thirty random seeks, in a fixed order, each matched the independent engine and its own full redraw')
+    check(
+      bad === 0,
+      'thirty random seeks, in a fixed order, each matched the independent engine and its own full redraw'
+    )
     // The rate is changed while playing, and each tick is one slice.
     await seekTo(100)
     await hold(true)
@@ -2047,7 +2147,8 @@ await test(
       await setSpeed(ms)
       for (let i = 0; i < 4; i++) {
         const p = await pending()
-        if (p.timers.length !== 1 || p.timers[0].delay !== ms) report(`at ${ms} ms there are ${JSON.stringify(p.timers)} timers`)
+        if (p.timers.length !== 1 || p.timers[0].delay !== ms)
+          report(`at ${ms} ms there are ${JSON.stringify(p.timers)} timers`)
         await evaluate(`__timers.fire(${p.timers[0]?.id})`)
         at++
         if ((await slice()) !== at) report(`a tick at ${ms} ms did not commit slice ${at}`)
@@ -2056,9 +2157,15 @@ await test(
     await confirm(at, 'after the rate changes')
     await click('#dess-play')
     await hold(false)
-    check(bad === 0, 'six rates in turn, four ticks at each, were one slice a tick with one timer waiting, and the data node followed each commit')
+    check(
+      bad === 0,
+      'six rates in turn, four ticks at each, were one slice a tick with one timer waiting, and the data node followed each commit'
+    )
     const final = await read()
-    check(Number(final.data[0]) === at && final.iSnapshot === `${at} of ${S.slices}`, `the data node's ordinal is the snapshot (${final.data[0]}, ${final.iSnapshot})`)
+    check(
+      Number(final.data[0]) === at && final.iSnapshot === `${at} of ${S.slices}`,
+      `the data node's ordinal is the snapshot (${final.data[0]}, ${final.iSnapshot})`
+    )
   },
   { long: true }
 )
@@ -2102,7 +2209,10 @@ await test(
       const problems = matchesOracle(page, k, S)
       if (problems.length) report(`after ${k} commits: ${problems.join('; ')}`)
     }
-    check(bad === 0, 'a thousand ticks were a thousand commits, one timer at a time, and every hundredth matched the independent engine')
+    check(
+      bad === 0,
+      'a thousand ticks were a thousand commits, one timer at a time, and every hundredth matched the independent engine'
+    )
     await click('#dess-play')
     await hold(false)
     check((await slice()) === 1000 && (await read()).play.pressed === 'false', 'and Pause stopped it at snapshot 1,000')
@@ -2121,72 +2231,115 @@ await test(
       await click('#dess-repair')
       if ((await domHash()) !== before) report(`the seek to ${k} is not its own full redraw`)
     }
-    check(bad === 0, `${targets.length} seeks, to the end and the start and at random, each matched the independent engine and its own full redraw`)
-    current.limits = ['Nothing here is a measurement of speed. The advanced scenario is a long run to check, and it is not a benchmark.']
+    check(
+      bad === 0,
+      `${targets.length} seeks, to the end and the start and at random, each matched the independent engine and its own full redraw`
+    )
+    current.limits = [
+      'Nothing here is a measurement of speed. The advanced scenario is a long run to check, and it is not a benchmark.'
+    ]
   },
   { long: true }
 )
 
-await test('G20', `${CYCLES} cycles of switching, hiding, taking the panel down and building it again leave nothing behind`, async () => {
-  await fresh()
-  const counts = () => evaluate('__counts()')
-  const keepElements = () =>
-    evaluate(`(window.__byId = Object.fromEntries([...document.querySelectorAll('#dess-toolbar [id], #dess-side [id]')].map(e => [e.id, e])), 0)`)
-  const ready = () => until(`document.getElementById('${PANEL}').dataset.panelState === 'ready'`, 10000)
-  const module = `import('/pkg/svg_dom_graph_demo.js')`
-  const cycle = async () => {
-    for (const id of ['E3-NOOP', 'scaled', 'five', 'E0']) {
-      await chooseScenario(id)
-      await click('#dess-next')
-    }
-    await routeAway()
-    await routeBack()
-    await hold(true)
-    await setSpeed(500)
-    await click('#dess-play')
-    const p = await pending()
-    const firstFrame = await evaluate('__seen.captured.frames.length')
-    await evaluate(`(() => { const s = document.getElementById('dess-seek'); s.value = '9'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`)
-    // A timer and a frame are waiting when the panel is taken down, and the page's copies of them are kept.
-    const callbacks = await evaluate(`(window.__kept = { timers: __seen.captured.timers.slice(-3), frames: __seen.captured.frames.slice(${firstFrame}) }, 0)`)
-    const before = await evaluate('document.getElementsByTagName("*").length')
-    await evaluate(`${module}.then(m => (m.dispose_panel('${PANEL}'), m.dispose_panel('${PANEL}'), 0))`)
-    await hold(false)
-    const gone = await evaluate(`({ hosts: document.querySelectorAll('[id^="dess-host-"]').length, observers: [...window.__liveObservers].filter(o => o).length, state: document.getElementById('${PANEL}').dataset.panelState ?? null,
+await test(
+  'G20',
+  `${CYCLES} cycles of switching, hiding, taking the panel down and building it again leave nothing behind`,
+  async () => {
+    await fresh()
+    const counts = () => evaluate('__counts()')
+    const keepElements = () =>
+      evaluate(
+        `(window.__byId = Object.fromEntries([...document.querySelectorAll('#dess-toolbar [id], #dess-side [id]')].map(e => [e.id, e])), 0)`
+      )
+    const ready = () => until(`document.getElementById('${PANEL}').dataset.panelState === 'ready'`, 10000)
+    const module = `import('/pkg/svg_dom_graph_demo.js')`
+    const cycle = async () => {
+      for (const id of ['E3-NOOP', 'scaled', 'five', 'E0']) {
+        await chooseScenario(id)
+        await click('#dess-next')
+      }
+      await routeAway()
+      await routeBack()
+      await hold(true)
+      await setSpeed(500)
+      await click('#dess-play')
+      const p = await pending()
+      const firstFrame = await evaluate('__seen.captured.frames.length')
+      await evaluate(
+        `(() => { const s = document.getElementById('dess-seek'); s.value = '9'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`
+      )
+      // A timer and a frame are waiting when the panel is taken down, and the page's copies of them are kept.
+      const callbacks = await evaluate(
+        `(window.__kept = { timers: __seen.captured.timers.slice(-3), frames: __seen.captured.frames.slice(${firstFrame}) }, 0)`
+      )
+      const before = await evaluate('document.getElementsByTagName("*").length')
+      // These are awaited by the browser: `evaluate` would stringify the promise, and not wait for it.
+      await chrome.evaluate(`${module}.then(m => (m.dispose_panel('${PANEL}'), m.dispose_panel('${PANEL}'), 0))`)
+      await hold(false)
+      const gone =
+        await evaluate(`({ hosts: document.querySelectorAll('[id^="dess-host-"]').length, observers: [...window.__liveObservers].filter(o => o).length, state: document.getElementById('${PANEL}').dataset.panelState ?? null,
       controlsHome: document.getElementById('dess-toolbar').parentElement.classList.contains('dess-holder'), frames: document.querySelectorAll('#${PANEL} details.source').length, svgs: document.querySelectorAll('#${PANEL} svg').length })`)
-    // The kept callbacks are called as a browser that still held them would call them.
-    const retained = await evaluate(`(() => {
+      // The kept callbacks are called as a browser that still held them would call them.
+      const retained = await evaluate(`(() => {
       const outcome = { ran: 0, threw: 0 }
       const elements = document.getElementsByTagName('*').length
       for (const f of [...window.__kept.timers, ...window.__kept.frames]) { try { f(performance.now()); outcome.ran++ } catch { outcome.threw++ } }
       outcome.elementsMoved = document.getElementsByTagName('*').length !== elements
       return outcome
     })()`)
-    await evaluate(`${module}.then(m => (m.init_panel('${PANEL}'), 0))`)
-    await ready()
-    await keepElements()
-    return { p, gone, retained, callbacks, before }
+      await chrome.evaluate(`${module}.then(m => (m.init_panel('${PANEL}'), 0))`)
+      await ready()
+      await keepElements()
+      return { p, gone, retained, callbacks, before }
+    }
+    const warm = await cycle()
+    const baseline = await counts()
+    check(
+      baseline.externrefs !== null && baseline.externrefs.held > 4,
+      `the table of externrefs can be read: ${baseline.externrefs?.held} of ${baseline.externrefs?.capacity} slots hold an object, and ${baseline.externrefs?.undefinedSlots} were lost to a failed import`
+    )
+    check(
+      warm.gone.hosts === 0 &&
+        warm.gone.observers === 0 &&
+        warm.gone.svgs === 0 &&
+        warm.gone.state === null &&
+        warm.gone.controlsHome &&
+        warm.gone.frames === 0,
+      `taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written (${JSON.stringify(warm.gone)})`
+    )
+    check(
+      !warm.retained.elementsMoved,
+      `callbacks that were kept and are called afterwards change nothing in the page (${warm.retained.ran} ran, ${warm.retained.threw} refused)`
+    )
+    let drift = null
+    for (let n = 1; n <= CYCLES && !drift; n++) {
+      const done = await cycle()
+      const now = await counts()
+      if (!same(now, baseline)) drift = { n, baseline, now }
+      if (done.gone.hosts !== 0 || done.gone.observers !== 0 || done.retained.elementsMoved)
+        drift = { n, gone: done.gone, retained: done.retained }
+    }
+    check(
+      drift === null,
+      drift
+        ? `after cycle ${drift.n} the counts are not the baseline: ${JSON.stringify(drift)}`
+        : `after ${CYCLES} further cycles the elements, listeners, observers, held externref slots, lost externref slots, table capacity and waiting callbacks are exactly the baseline (${JSON.stringify(baseline)})`
+    )
+    const page = await read()
+    check(
+      page.iSnapshot === '0 of 12' && matchesOracle(page, 0).length === 0,
+      'and the panel that was built last works: it is at snapshot 0 of the walkthrough'
+    )
+    await click('#dess-next')
+    check(matchesOracle(await read(), 1).length === 0, "and steps to the independent engine's snapshot 1")
+    const errors = exceptions.filter(e => !/favicon/.test(e))
+    check(
+      errors.length === 0,
+      `and the page raised no exception (${errors.length}: ${errors.join(' | ').slice(0, 200)})`
+    )
   }
-  const warm = await cycle()
-  const baseline = await counts()
-  check(baseline.externrefs !== null, `the table of externrefs can be read (${baseline.externrefs} slots)`)
-  check(warm.gone.hosts === 0 && warm.gone.observers === 0 && warm.gone.svgs === 0 && warm.gone.state === null && warm.gone.controlsHome && warm.gone.frames === 0, `taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written (${JSON.stringify(warm.gone)})`)
-  check(!warm.retained.elementsMoved, `callbacks that were kept and are called afterwards change nothing in the page (${warm.retained.ran} ran, ${warm.retained.threw} refused)`)
-  let drift = null
-  for (let n = 1; n <= CYCLES && !drift; n++) {
-    const done = await cycle()
-    const now = await counts()
-    if (!same(now, baseline)) drift = { n, baseline, now }
-    if (done.gone.hosts !== 0 || done.gone.observers !== 0 || done.retained.elementsMoved) drift = { n, gone: done.gone, retained: done.retained }
-  }
-  check(drift === null, drift ? `after cycle ${drift.n} the counts are not the baseline: ${JSON.stringify(drift)}` : `after ${CYCLES} further cycles the elements, listeners, observers, externref slots and waiting callbacks are exactly the baseline (${JSON.stringify(baseline)})`)
-  const page = await read()
-  check(page.iSnapshot === '0 of 12' && matchesOracle(page, 0).length === 0, 'and the panel that was built last works: it is at snapshot 0 of the walkthrough')
-  await click('#dess-next')
-  check(matchesOracle(await read(), 1).length === 0, 'and steps to the independent engine\'s snapshot 1')
-  const errors = exceptions.filter(e => !/favicon/.test(e))
-  check(errors.length === 0, `and the page raised no exception (${errors.length}: ${errors.join(' | ').slice(0, 200)})`)
-})
+)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const first = (command, args) => spawnSync(command, args, { cwd: root, encoding: 'utf8' }).stdout.trim().split('\n')[0]

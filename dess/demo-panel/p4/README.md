@@ -24,21 +24,25 @@ A later `init_panel` then builds the panel again, as if for the first time.
 | --- | --- | --- |
 | G18 | nightly | The scaled scenario. A walk of all 487 snapshots by Next, 30 seeks in a fixed order, and six rates with four ticks at each. The page matches the independent engine and its own full redraw, and no element is added by 487 draws |
 | G19 | nightly | The advanced scenario. A thousand commits by Play, one timer at a time, and 14 seeks across the 5,464 snapshots including the first and the last. Nothing in it is a timing, and it is not a benchmark |
-| G20 | every commit with 3 cycles, nightly with 40 | Cycles of switching through every size, hiding and showing, a seek and a timer left waiting, and then taking the panel down and building it again. The elements, listeners, observers, externref slots and waiting callbacks are exactly what they were after the first cycle |
+| G20 | every commit with 3 cycles, nightly with 40 | Cycles of switching through every size, hiding and showing, a seek and a timer left waiting, and then taking the panel down and building it again. The elements, listeners, observers, held and lost externref slots, table capacity and waiting callbacks are exactly what they were after the first cycle |
 
 The random seeks use a seeded generator, so a run is the same every time and a failure can be repeated.
 G18 and G19 run with `--nightly`, and so does the long G20, which `--cycles N` can set.
 
 G20 reads the table of externref slots that wasm-bindgen keeps, from the wasm instance, which the test page captures when it is made.
 Nothing in the gallery is changed for that.
-The table did not grow over 40 cycles, and held 2,052 slots throughout.
+The length of the table is its capacity, which stays the same while a slot is free, so it cannot show a leak by itself.
+So G20 counts the slots that hold an object, and the slots that hold `undefined`, which a failed import leaves for good.
+A free slot holds `null`, and the first four hold constants.
+After the first cycle the table held 532 objects in 2,052 slots, with 2 lost, and it was exactly that after each of 40 further cycles.
 
 Callbacks that were kept and called after the panel was taken down do not run.
 The page's scheduler frees a closure that was taken back, so a browser that still held one gets a refusal and not a call.
 The test shows that calling them changes nothing in the page.
 
-`dess/demo-panel/p4/mutation-check.mjs` breaks the taking down in six ways, and the stale and no-op counters once, and a test has to fail for each.
-All seven are caught.
+`dess/demo-panel/p4/mutation-check.mjs` breaks the taking down in six ways, leaks one object in each, and swaps the stale and no-op counters, and a test has to fail for each.
+All eight are caught.
+The leak is the case that matters: the table's capacity stays at 2,052, and only the count of held slots shows it.
 It runs the tests with `--nightly --cycles 3`.
 
 ## The nightly job
