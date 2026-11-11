@@ -121,12 +121,22 @@ It builds the real simulator surface and controller into a connected host under 
 
 | Candidate | CSS and attributes | Result |
 |---|---|---|
-| `opacity_inert` | `opacity:0; pointer-events:none` and `inert`, in the flow of the panel | Passes S1 to S4 |
-| `offscreen_inert` | `position:absolute; left:-20000px; width:1000px` and `inert` | Passes S1 to S4 |
+| `opacity_inert` | `opacity:0; pointer-events:none` and `inert`, in the flow of the panel | Passes S1 to S4, fails S5 |
+| `opacity_inert_absolute` | The same, with `position:absolute; left:0; top:0; width:1000px` | Passes S1 to S5 |
+| `offscreen_inert` | `position:absolute; left:-20000px; width:1000px` and `inert` | Passes S1 to S5 |
 
-The strategy that is selected is `opacity_inert`, the first candidate, so the fallback is not needed.
+S5 is a gate that a review added: the staged host must not move the live scene, what follows it, or the height of the page.
+A host in the flow of the panel occupies its own height even when nobody can see it.
+The probe measured it pushing what follows it down by 505 pixels.
+The same host taken out of the flow moves nothing.
 
-What was observed for the selected candidate:
+The strategy that is selected is `opacity_inert_absolute`, the first candidate that passes every gate.
+The specification's first candidate, `opacity_inert` in the flow, is not selected.
+The P1 coordinator must stage the host out of the flow.
+A test of a cross-size switch must show that the live scene's geometry and the page's scroll position are unchanged throughout the switch and a rollback.
+The off-screen fallback also passes, and is not needed.
+
+What was observed for the selected candidate, which is the same for the in-flow one except for S5:
 
 - **Presence:** the host is connected, `checkVisibility()` is true, and the host's own presence test says `Live`, with a clean controller.
 - **Geometry:** the surface was built under the staging and drew, with a finite 1000 by 480 box and one content group.
@@ -166,8 +176,22 @@ It is off until it is armed, it is one-shot, and it is refused while an exceptio
 | Cleanup | No arm state, timer, frame or listener is left, and the counting afterwards is the prior vector again |
 | Shared injector | The graph recovery self-test, `selftest-recovery.mjs`, still passes |
 
-The self-test fails for the right reasons.
-A detach that fires at the wrong ordinal, and an injector that stops counting while a detach is armed, were each made on purpose, and each was caught.
+The self-test fails for the right reasons, and that is repeatable.
+`node dess/demo-panel/p0/injector-mutation-check.mjs` changes a copy of the injector in six small ways, one at a time, and the self-test has to notice each.
+The repository's injector is never touched.
+
+| Mutation | What the self-test notices |
+|---|---|
+| The detach fires one call late | The firing ordinal is wrong |
+| The detach never fires | The report says not fired |
+| The detach fires more than once | The one-shot check, and the reattachment that it breaks |
+| Counting is skipped while a detach is armed | Recording sees fewer calls than without it |
+| An exception armed beside a detach is ignored | The exception does not fail its call |
+| Disarming does not forget the detach | A second disarm still reports an arm |
+
+The first version of the check missed two of these, so it was tightened.
+The one-shot check and the disarm check were added.
+A crash of the self-test now counts as a failure that names itself.
 
 The detach interrupts a real `Surface` draw through the harness fixture, as P0-C requires, and no temporary gallery panel was built.
 G14 repeats it on the finished gallery in P2.
@@ -198,6 +222,13 @@ Then the absence of the hook is a fact about a dependency that exists.
 
 The check reads the demo package's own resolution, which is what the demo's wasm build uses.
 A build of the whole workspace at once would unify the feature with the harness's, and the demo is not built that way.
+
+## Running P0 for acceptance
+
+`node dess/demo-panel/p0/run-all.mjs` runs every P0 script and refuses to run on a tree with uncommitted changes.
+The evidence records the commit that it measured, so evidence from a dirty tree does not say what was measured.
+Run it from a clean checkout, then review and commit what it writes under `evidence/`.
+That run is the one remaining formal acceptance condition for P0.
 
 ## P0 status
 

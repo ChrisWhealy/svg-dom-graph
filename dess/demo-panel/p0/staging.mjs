@@ -6,7 +6,8 @@
 // into (it has to be connected, laid out and measurable) and that a person cannot see, focus, click or hear until the switch commits. This probe tries
 // two candidates, with the real simulator surface and controller built into each under its CSS:
 //
-//   opacity_inert    `opacity:0; pointer-events:none` and the `inert` attribute, in the flow of the panel.
+//   opacity_inert           `opacity:0; pointer-events:none` and the `inert` attribute, in the flow of the panel.
+//   opacity_inert_absolute  the same, taken out of the flow with `position:absolute`, so that it occupies no room.
 //   offscreen_inert  the same container moved far off the screen, with `inert`, and a fixed width so that it keeps its geometry.
 //
 // and a control with no staging, which has to be found by every check below. A check that the control does not pass is a probe that cannot see, and
@@ -18,6 +19,8 @@
 //                  called and the page equal to the projection.
 //   S3  isolation  Tab never reaches the candidate, scripted focus on it does not take, a real click reaches none of it, and the browser's
 //                  accessibility tree holds none of its names.
+//   S5  layout     the staged host does not move the live scene, what follows it or the height of the page, since a host in the flow of the panel
+//                  occupies its own height even when nobody can see it.
 //   S4  publish    removing the staging exposes the scene to Tab, a click and the accessibility tree, with presence still Live, and staging it again
 //                  isolates it as before, so that a publication can be undone.
 //
@@ -39,6 +42,7 @@ const SEED = '20261106'
 // The CSS that each mode puts on the container, which is also what a publication removes and a rollback puts back.
 const STAGING_STYLE = {
   opacity_inert: 'opacity:0;pointer-events:none',
+  opacity_inert_absolute: 'position:absolute;left:0;top:0;width:1000px;opacity:0;pointer-events:none',
   opacity_aria_hidden: 'opacity:0;pointer-events:none',
   offscreen_inert: 'position:absolute;left:-20000px;top:0;width:1000px'
 }
@@ -204,6 +208,43 @@ const setStaging = (mode, on) =>
 
 // The accessibility tree is read first, before anything takes focus: Chrome exposes content that has the focus even under `aria-hidden`, so a reading
 // taken after the keyboard has been into the scene would say that the scene was never hidden.
+/**
+ * Whether a staged host moves the live scene or what follows it. Two stand-ins sit around the container in the panel's flow: a block as tall as the
+ * scene, for the live scene, and one after, for the rest of the page. Their positions and the height of the page are measured with the staged host
+ * shown to layout and with it taken out of layout for the length of the measurement only (nothing is built while it is out). A host in the flow
+ * pushes what follows it down by its own height, and one out of the flow does not.
+ */
+const layout = () =>
+  evaluate(`(() => {
+    const c = document.getElementById('perf-sim-container')
+    const stage = c.parentElement
+    const live = document.createElement('div')
+    live.id = 'p0-live'
+    live.style.height = '480px'
+    stage.insertBefore(live, c)
+    const below = document.createElement('div')
+    below.id = 'p0-below'
+    below.style.height = '40px'
+    stage.appendChild(below)
+    const measure = () => ({
+      liveY: live.getBoundingClientRect().y + scrollY,
+      belowY: below.getBoundingClientRect().y + scrollY,
+      pageHeight: document.documentElement.scrollHeight
+    })
+    const shown = measure()
+    const display = c.style.display
+    c.style.display = 'none'
+    const without = measure()
+    c.style.display = display
+    live.remove()
+    below.remove()
+    return {
+      liveShift: shown.liveY - without.liveY,
+      belowShift: shown.belowY - without.belowY,
+      pageHeightShift: shown.pageHeight - without.pageHeight
+    }
+  })()`)
+
 const exposure = async () => {
   const ax = await hearing()
   return { ax, tab: await tabbing(), focus: await scriptedFocus(), clicks: await clicking() }
@@ -229,6 +270,7 @@ const run = async mode => {
   await addProbes()
   const result = { mode: mode ?? 'none (control)', built: true, elements: built.elements }
   result.observed = await observe()
+  if (mode) result.layout = await layout()
   result.staged = await exposure()
   if (mode) {
     // The publication: the staging comes off, and the scene has to be live and reachable. Then it goes back on, and it has to be isolated again.
@@ -256,6 +298,8 @@ const gates = (r, control) => {
       o.dataCells === 8 &&
       o.pageIsProjection,
     S3_isolation: isolated(r.staged),
+    // The staged host does not move the live scene, what follows it, or the height of the page.
+    S5_no_layout_shift: Boolean(r.layout) && r.layout.liveShift === 0 && Math.abs(r.layout.belowShift) < 1 && Math.abs(r.layout.pageHeightShift) < 1,
     S4_publish: Boolean(r.published) && exposed(r.published) && isolated(r.restaged)
   }
 }
@@ -265,7 +309,8 @@ try {
   // The control is the scene as it is shown. If the probes do not find it, they would not have found a leak, and nothing that follows means anything.
   const controlSees = control.built && exposed(control.staged)
   const results = {}
-  for (const mode of ['opacity_inert', 'offscreen_inert']) {
+  const CANDIDATES = ['opacity_inert', 'opacity_inert_absolute', 'offscreen_inert']
+  for (const mode of CANDIDATES) {
     const r = await run(mode)
     results[mode] = r.built ? { ...r, gates: gates(r) } : r
     results[mode].passes = r.built && Object.values(results[mode].gates).every(Boolean)
@@ -275,7 +320,7 @@ try {
   const negative = await run('opacity_aria_hidden')
   const negativeLeaks =
     negative.built && !isolated(negative.staged) && negative.staged.tab.reachedScene && negative.staged.ax.exposed === 0
-  const selected = ['opacity_inert', 'offscreen_inert'].find(m => results[m].passes) ?? null
+  const selected = CANDIDATES.find(m => results[m].passes) ?? null
   const evidence = {
     identity: {
       measured_at: new Date().toISOString(),

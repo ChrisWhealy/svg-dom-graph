@@ -159,8 +159,9 @@ struct Config {
     product: bool,
     /// How the container of the scene is staged while the surface is built into it, for the gallery's staging probe
     /// (dess/demo-panel/p0). `opacity_inert` is a connected, laid-out container with `opacity:0`, `pointer-events:none`
-    /// and `inert`. `offscreen_inert` is a connected container moved far off the screen with `inert`.
-    /// `opacity_aria_hidden` is the probe's negative control. Absent means a container that is shown and live.
+    /// and `inert`, in the flow of the page. `opacity_inert_absolute` is the same taken out of the flow.
+    /// `offscreen_inert` is a connected container moved far off the screen with `inert`. `opacity_aria_hidden` is the
+    /// probe's negative control. Absent means a container that is shown and live.
     #[serde(default)]
     staging: Option<String>,
 }
@@ -203,6 +204,17 @@ fn make_page(document: &web_sys::Document, staging: Option<&str>) -> Result<Page
         Some("opacity_inert") => {
             container
                 .set_attribute("style", "opacity:0;pointer-events:none")
+                .map_err(js("staging"))?;
+            container.set_attribute("inert", "").map_err(js("staging"))?;
+        },
+        // The same, taken out of the flow of the page, so that a staged host does not move the live scene or what
+        // follows it.
+        Some("opacity_inert_absolute") => {
+            container
+                .set_attribute(
+                    "style",
+                    "position:absolute;left:0;top:0;width:1000px;opacity:0;pointer-events:none",
+                )
                 .map_err(js("staging"))?;
             container.set_attribute("inert", "").map_err(js("staging"))?;
         },

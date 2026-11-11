@@ -344,6 +344,7 @@ jobs:
             run: |
               node dess/demo-panel/p0/staging.mjs
               node dess/demo-panel/p0/injector.mjs
+              node dess/demo-panel/p0/injector-mutation-check.mjs
               node dess/demo-panel/p0/features.mjs
     env:
       PERF_RUNNER_CLASS: github-ubuntu-24.04

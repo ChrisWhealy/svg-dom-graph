@@ -45,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `perf/runner/promote-from-run.mjs` script to download CI workload data to `perf/baselines` for a given run id (`f4990cb`)
 - Promote initial CI workload data to `perf/baselines` (`7ba9852`)
 - Promote second and third CI workload data to `perf/baselines` (`2fa97ae`)
+- DESS Demo P0: Staging and injector proof (`ebf90a8`)
 
 ### Changed
 
@@ -67,7 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: Adjust W4 interaction runner to count `frames_unattributed` and continue. Only fails if count > 15 (`03b698a`)
 - DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (`685cac3`)
 - Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
-- DESS Demo P0: Staging and injector proof (``)
+- DESS Demo P0: Gather P0 acceptance evidence (``)
 
 ### Fixed
 

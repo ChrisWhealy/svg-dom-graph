@@ -12,8 +12,9 @@ const root = path.resolve(import.meta.dirname, '../../..')
 export const wasmPackage = path.join(root, 'perf-harness-wasm/pkg')
 
 // `faults` puts the fault injector in the page. It wraps the DOM calls that the library makes, so it is only there when a run is
-// meant to break something, and never in a run that is timed.
-export const openHarnessPage = async ({ isolated = true, faults = false } = {}) => {
+// meant to break something, and never in a run that is timed. `injector` is the injector's own path, for the test of the injector itself, which
+// runs a changed copy of it. It is the repository's file when absent.
+export const openHarnessPage = async ({ isolated = true, faults = false, injector = null } = {}) => {
   if (!fs.existsSync(path.join(wasmPackage, 'perf_harness_wasm.js'))) {
     throw new Error(
       'the wasm package is not built: run `wasm-pack build perf-harness-wasm --target web --release --out-dir pkg`'
@@ -31,7 +32,7 @@ export const openHarnessPage = async ({ isolated = true, faults = false } = {}) 
   })
   if (faults) {
     await chrome.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: fs.readFileSync(path.join(root, 'perf/page/fault-injector.js'), 'utf8')
+      source: fs.readFileSync(injector ?? path.join(root, 'perf/page/fault-injector.js'), 'utf8')
     })
   }
   await chrome.send('Page.navigate', { url: `http://127.0.0.1:${port}/` })

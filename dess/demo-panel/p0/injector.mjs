@@ -32,10 +32,9 @@ const out = path.resolve(argument('--out') ?? path.join(root, 'dess/demo-panel/p
 const baseline = JSON.parse(
   fs.readFileSync(path.join(root, 'dess/demo-panel/p0/evidence/injector-baseline.json'), 'utf8')
 )
-const injectorHash = crypto
-  .createHash('sha256')
-  .update(fs.readFileSync(path.join(root, 'perf/page/fault-injector.js')))
-  .digest('hex')
+// The injector under test. It is the repository's, unless the mutation check (injector-mutation-check.mjs) names a changed copy of it.
+const injectorPath = process.env.P0_INJECTOR ?? path.join(root, 'perf/page/fault-injector.js')
+const injectorHash = crypto.createHash('sha256').update(fs.readFileSync(injectorPath)).digest('hex')
 
 let failures = 0
 const check = (ok, text) => {
@@ -51,7 +50,7 @@ export const assertFired = report => {
   return report
 }
 
-const page = await openHarnessPage({ faults: true })
+const page = await openHarnessPage({ faults: true, injector: injectorPath })
 const run = async expression => JSON.parse(await page.evaluate(`JSON.stringify(${expression})`))
 // The wasm functions answer in JSON text, which `evaluate` returns as it is.
 const call = async (fn, ...args) =>
@@ -98,6 +97,7 @@ try {
     await page.evaluate(`window.__faults.armDetach({ svgId: 'perf-sim-svg', method: 'setAttribute', nth: ${nth} })`)
     const stepped = await call('sim_step', 1)
     const report = await run('window.__faults.disarmDetach()')
+    const forgotten = await run('window.__faults.disarmDetach()')
     const interrupted = await state()
     let fired = false
     try {
@@ -110,6 +110,7 @@ try {
     } catch {
       fired = false
     }
+    check(forgotten === null, `disarming forgets the detach at call ${nth}, so that nothing is left armed`)
     check(
       fired,
       `armed at call ${nth} of ${eligible}: it fires once, at call ${nth}, as ${report?.site?.method} on a <${report?.site?.tag}> for ${report?.site?.name}, and the host has left`
@@ -172,6 +173,19 @@ try {
   )
   check(quiet.last === 'done', 'the slice that it did not interrupt committed normally')
   evidence.cases.push({ nth: eligible + 5, report: none, stepped: quiet.last })
+
+  // Once fired, it is done. Writes that go on after the host has left, as a draw's would if it did not check, do not fire it again.
+  await build()
+  const oneShot = await run(`(() => {
+    const f = window.__faults
+    const node = document.getElementById('perf-sim-svg').querySelector('g')
+    f.armDetach({ svgId: 'perf-sim-svg', method: 'setAttribute', nth: 1 })
+    for (let i = 0; i < 4; i++) node.setAttribute('data-p0', String(i))
+    const report = f.disarmDetach()
+    f.reattach()
+    return report
+  })()`)
+  check(oneShot.fired === true && oneShot.firings === 1 && oneShot.eligibleSeen === 1, `armed at the first call and followed by three more writes, it fires once (${oneShot.firings}) and stops counting (${oneShot.eligibleSeen} seen)`)
 
   // The counting while a detach is armed. A detach that cannot fire (an ordinal that is never reached) must not change what is recorded or what an
   // exception does, since a test that arms both modes at different calls would otherwise be measuring the injector.
@@ -240,6 +254,9 @@ try {
     after.calls === baseline.calls && same(after.trace, baseline.trace) && same(after.arms, baseline.arms),
     'the counting after all of it is the prior vector again, call for call'
   )
+} catch (error) {
+  // A crash is a failure that names itself, and not a silent end that a caller could take for a pass.
+  check(false, `the self-test stopped before it finished: ${String(error.message).split('\n')[0]}`)
 } finally {
   await page.close()
 }
