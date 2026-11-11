@@ -1,9 +1,9 @@
 # P0-D: the feature graphs of the demo build and the harness build
 # cargo 1.99.1 (5f94df478 2026-08-27)
-# measured 2026-11-11T09:36:38.061Z
-# demo has service-sim: false; demo has fault-hook: false; harness has fault-hook: true
+# measured 2026-11-11T16:01:06.219Z
+# demo has service-sim: true; demo has fault-hook: false; harness has fault-hook: true
 
-## cargo tree -p svg-dom-graph-demo --target wasm32-unknown-unknown -e features
+## cargo tree -p svg-dom-graph-demo --target wasm32-unknown-unknown -e features --charset utf8 --color never
 svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
 ├── demo-common feature "default"
 │   └── demo-common v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-common)
@@ -322,8 +322,29 @@ svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
 ├── web-sys feature "console" (*)
 ├── web-sys feature "default" (*)
 ├── svg-dom-graph feature "default" (*)
-├── spmv-core feature "default"
-│   └── spmv-core v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-core)
+├── service-sim feature "default"
+│   └── service-sim v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim)
+│       ├── js-sys feature "default" (*)
+│       ├── wasm-bindgen feature "default" (*)
+│       ├── svg-dom feature "default" (*)
+│       ├── web-sys feature "Document" (*)
+│       ├── web-sys feature "Element" (*)
+│       ├── web-sys feature "Event" (*)
+│       ├── web-sys feature "EventTarget" (*)
+│       ├── web-sys feature "HtmlElement" (*)
+│       ├── web-sys feature "MutationObserver"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "MutationObserverInit"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "MutationRecord"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "Node" (*)
+│       ├── web-sys feature "NodeList" (*)
+│       ├── web-sys feature "SvgElement" (*)
+│       ├── web-sys feature "Window" (*)
+│       ├── web-sys feature "console" (*)
+│       ├── web-sys feature "default" (*)
+│       ├── svg-dom-graph feature "default" (*)
 │       ├── serde_json feature "default"
 │       │   ├── serde_json v1.0.154
 │       │   │   ├── memchr v2.8.3
@@ -340,34 +361,42 @@ svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
 │       │       │       └── memchr v2.8.3
 │       │       └── serde_core feature "std"
 │       │           └── serde_core v1.0.229
-│       └── sha2 feature "default"
-│           ├── sha2 v0.11.0
-│           │   ├── cfg-if feature "default" (*)
-│           │   └── digest feature "default"
-│           │       ├── digest v0.11.3
-│           │       │   ├── block-buffer feature "default"
-│           │       │   │   └── block-buffer v0.12.1
-│           │       │   │       └── hybrid-array feature "default"
-│           │       │   │           └── hybrid-array v0.4.15
-│           │       │   │               ├── typenum feature "const-generics"
-│           │       │   │               │   └── typenum v1.20.1
-│           │       │   │               └── typenum feature "default"
-│           │       │   │                   └── typenum v1.20.1
-│           │       │   ├── const-oid feature "default"
-│           │       │   │   └── const-oid v0.10.2
-│           │       │   └── crypto-common feature "default"
-│           │       │       └── crypto-common v0.2.2
-│           │       │           └── hybrid-array feature "default" (*)
-│           │       └── digest feature "block-api"
-│           │           └── digest v0.11.3 (*)
-│           ├── sha2 feature "alloc"
-│           │   ├── sha2 v0.11.0 (*)
-│           │   └── digest feature "alloc"
-│           │       └── digest v0.11.3 (*)
-│           └── sha2 feature "oid"
-│               ├── sha2 v0.11.0 (*)
-│               └── digest feature "oid"
-│                   └── digest v0.11.3 (*)
+│       └── service-sim-engine feature "default"
+│           └── service-sim-engine v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim-engine)
+│               ├── serde_json feature "default" (*)
+│               └── sha2 feature "default"
+│                   ├── sha2 v0.11.0
+│                   │   ├── cfg-if feature "default" (*)
+│                   │   └── digest feature "default"
+│                   │       ├── digest v0.11.3
+│                   │       │   ├── block-buffer feature "default"
+│                   │       │   │   └── block-buffer v0.12.1
+│                   │       │   │       └── hybrid-array feature "default"
+│                   │       │   │           └── hybrid-array v0.4.15
+│                   │       │   │               ├── typenum feature "const-generics"
+│                   │       │   │               │   └── typenum v1.20.1
+│                   │       │   │               └── typenum feature "default"
+│                   │       │   │                   └── typenum v1.20.1
+│                   │       │   ├── const-oid feature "default"
+│                   │       │   │   └── const-oid v0.10.2
+│                   │       │   └── crypto-common feature "default"
+│                   │       │       └── crypto-common v0.2.2
+│                   │       │           └── hybrid-array feature "default" (*)
+│                   │       └── digest feature "block-api"
+│                   │           └── digest v0.11.3 (*)
+│                   ├── sha2 feature "alloc"
+│                   │   ├── sha2 v0.11.0 (*)
+│                   │   └── digest feature "alloc"
+│                   │       └── digest v0.11.3 (*)
+│                   └── sha2 feature "oid"
+│                       ├── sha2 v0.11.0 (*)
+│                       └── digest feature "oid"
+│                           └── digest v0.11.3 (*)
+├── service-sim-engine feature "default" (*)
+├── spmv-core feature "default"
+│   └── spmv-core v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-core)
+│       ├── serde_json feature "default" (*)
+│       └── sha2 feature "default" (*)
 └── spmv-scene feature "default"
     └── spmv-scene v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-scene)
         ├── js-sys feature "default" (*)
@@ -387,10 +416,10 @@ svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
         ├── web-sys feature "console" (*)
         ├── web-sys feature "default" (*)
         ├── svg-dom-graph feature "default" (*)
-        ├── spmv-core feature "default" (*)
-        └── serde_json feature "default" (*)
+        ├── serde_json feature "default" (*)
+        └── spmv-core feature "default" (*)
 
-## cargo tree -p perf-harness-wasm --target wasm32-unknown-unknown -e features
+## cargo tree -p perf-harness-wasm --target wasm32-unknown-unknown -e features --charset utf8 --color never
 perf-harness-wasm v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness-wasm)
 ├── perf-harness v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness)
 │   ├── serde feature "default"
@@ -606,6 +635,7 @@ perf-harness-wasm v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness
 │   └── service-sim v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim)
 │       ├── js-sys feature "default" (*)
 │       ├── wasm-bindgen feature "default" (*)
+│       ├── serde_json feature "default" (*)
 │       ├── service-sim-engine feature "default"
 │       │   └── service-sim-engine v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim-engine)
 │       │       ├── serde_json feature "default" (*)
@@ -747,6 +777,8 @@ perf-harness-wasm v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness
 │       ├── web-sys feature "MutationObserver"
 │       │   └── web-sys v0.3.106 (*)
 │       ├── web-sys feature "MutationObserverInit"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "MutationRecord"
 │       │   └── web-sys v0.3.106 (*)
 │       ├── web-sys feature "Node" (*)
 │       ├── web-sys feature "NodeList" (*)

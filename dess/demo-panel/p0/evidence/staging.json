@@ -1,7 +1,7 @@
 {
   "identity": {
-    "measured_at": "2026-11-11T09:36:28.300Z",
-    "git_sha": "7f6df69501acd7f9a302550364601c2bc944fc09",
+    "measured_at": "2026-11-11T16:00:37.084Z",
+    "git_sha": "48fdeb2c7ee1c4fb7fff72b854c5c379d30e09ab",
     "git_dirty": false,
     "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
@@ -62,10 +62,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -218,10 +215,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -422,10 +416,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -624,10 +615,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -754,10 +742,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -832,10 +817,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
@@ -886,10 +868,7 @@
         },
         "tab": {
           "reachedScene": true,
-          "probesReached": [
-            "p0-html-probe",
-            "p0-svg-probe"
-          ],
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
           "stops": [
             "BUTTON#p0-html-probe*",
             "g#p0-svg-probe*",
