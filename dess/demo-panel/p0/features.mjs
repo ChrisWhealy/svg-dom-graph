@@ -24,11 +24,28 @@ const argument = name => (process.argv.includes(name) ? process.argv[process.arg
 const out = path.resolve(argument('--out') ?? path.join(root, 'dess/demo-panel/p0/evidence/features.txt'))
 const requireService = process.argv.includes('--require-service-sim')
 
-// The drawing characters are fixed to UTF-8, since a runner whose locale is not UTF-8 may otherwise draw the tree in ASCII, and the reading must not
-// depend on which it is.
+// The drawing characters are fixed to UTF-8, and the colour is switched off. CI sets `CARGO_TERM_COLOR=always`, which puts escape codes in front of the
+// crate names and so in front of the feature that the reading looks for, and a reading of text that has them finds nothing.
 const tree = pkg => {
-  const args = ['tree', '-p', pkg, '--target', 'wasm32-unknown-unknown', '-e', 'features', '--charset', 'utf8']
-  const ran = spawnSync('cargo', args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 })
+  const args = [
+    'tree',
+    '-p',
+    pkg,
+    '--target',
+    'wasm32-unknown-unknown',
+    '-e',
+    'features',
+    '--charset',
+    'utf8',
+    '--color',
+    'never'
+  ]
+  const ran = spawnSync('cargo', args, {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 1 << 26,
+    env: { ...process.env, CARGO_TERM_COLOR: 'never' }
+  })
   if (ran.status !== 0) throw new Error(`cargo ${args.join(' ')} failed:\n${ran.stderr}`)
   return { command: `cargo ${args.join(' ')}`, text: ran.stdout }
 }

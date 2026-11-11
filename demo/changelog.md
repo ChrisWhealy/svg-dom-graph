@@ -149,4 +149,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P1: Prevent coordinator state from remaining stale after an in-place switch (`40a4dd5`)
 - DESS Demo P1: Avoid tautological test assertion (`83b6851`)
 - DESS Demo P1: Verify engine server count during preflight (`e83b809`)
-- DESS Demo P0: Attempt to fix failing CI feature test (``)
+- DESS Demo P0: Attempt to fix failing CI feature test (`0020d9a`)
+- DESS Demo P0: Fix CI feature test, tell `cargo tree` not to use ANSI colours codes (``)
