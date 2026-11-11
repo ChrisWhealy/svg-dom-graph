@@ -147,6 +147,10 @@ pub(super) struct DomSessions {
     /// Where the focus was when a handoff began, which is part of what a rollback restores. Moving the controls loses
     /// the focus, so it cannot be found again from the page. It is kept until the handoff is known to have succeeded.
     saved_focus: Option<web_sys::Element>,
+    /// Where the focus has to be when the handoff is whole, if it began somewhere that the handoff moves: the control
+    /// that had it, or the control that takes it from a node of the old scene. The readback finds out whether it got
+    /// there.
+    expected_focus: Option<web_sys::Element>,
     /// The controllers that were built and have not been removed, so that the view of the old scene can be read when it
     /// is handed off.
     controllers: HashMap<u32, PanelController>,
@@ -171,6 +175,7 @@ impl DomSessions {
             controls,
             shown: None,
             saved_focus: None,
+            expected_focus: None,
             controllers: HashMap::new(),
         }
     }
@@ -317,6 +322,11 @@ impl DomSessions {
         if !in_new("toolbar", &self.controls.toolbar) || !in_new("side", &self.controls.side) {
             return Err("the controls are not in the new scene".to_owned());
         }
+        if let Some(expected) = &self.expected_focus {
+            if self.document.active_element().as_ref() != Some(expected) {
+                return Err("the focus did not reach where it belongs".to_owned());
+            }
+        }
         let Some(from) = from else { return Ok(()) };
         let old = self.host_element(*from)?;
         if !is_fully_staged(&old) {
@@ -396,23 +406,39 @@ impl SessionHost for DomSessions {
         }
         // The new scene is shown, so a control that had the focus can take it again.
         Self::restore_focus(focused);
+        // Where the focus has to be now, which the readback checks: a call that silently did nothing would leave it
+        // on the body, and nothing else would say so.
+        self.expected_focus = match &self.saved_focus {
+            Some(saved) if from.is_some_and(|f| self.host_element(*f).is_ok_and(|old| old.contains(Some(saved)))) => {
+                Some(self.focus_target.clone())
+            },
+            Some(saved) if self.controls.toolbar.contains(Some(saved)) || self.controls.side.contains(Some(saved)) => {
+                Some(saved.clone())
+            },
+            _ => None,
+        };
         self.shown = Some(*to);
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn verify_published(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
-        let checked = self.check_published(from, to);
-        // The handoff is whole, so there is nothing left to roll back to, and the focus is no longer the old one's.
-        if checked.is_ok() {
-            self.saved_focus = None;
-        }
-        checked
+        // Nothing is let go here. The coordinator still has its own check of the controller to make, and a handoff that
+        // fails it is undone, which needs to know where the focus was. It is let go when the handoff is confirmed.
+        self.check_published(from, to)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    fn publication_confirmed(&mut self, _from: Option<&u32>, _to: &u32) {
+        // Every check has passed, so there is nothing left to roll back to, and the focus is no longer the old one's.
+        self.saved_focus = None;
+        self.expected_focus = None;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn undo_publish(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
         self.shown = from.copied();
+        self.expected_focus = None;
         // The controls come back first, since a page without them cannot be used, and every step is tried whatever the
         // one before it did.
         let moved = self.place_controls(from.copied());

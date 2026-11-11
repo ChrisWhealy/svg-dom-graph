@@ -206,6 +206,15 @@ pub trait SessionHost {
     fn verify_published(&mut self, from: Option<&Self::Token>, to: &Self::Token) -> Result<(), String>;
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Says that every check of a handoff has passed, both the host's readback and the coordinator's own look at the
+    /// controller, so that whatever the host kept in order to undo the handoff can be let go.
+    ///
+    /// The coordinator calls this once, after [`verify_published`](Self::verify_published) and its own validation have
+    /// both succeeded, and just before the commit. A handoff that fails either check is undone, and then the host
+    /// still has what it needs to put the page back, such as where the focus was. A host must not let that go earlier.
+    fn publication_confirmed(&mut self, from: Option<&Self::Token>, to: &Self::Token);
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Puts the page back as `from` had it, after a [`publish`](Self::publish) that failed or was refused, whatever
     /// part of it was done.
     ///
@@ -473,6 +482,9 @@ impl<F: SessionHost> Coordinator<F> {
         if let Err(reason) = read_back.and_then(|()| Self::validate(&candidate)) {
             return self.rolled_back(Stage::Publish, reason, Some(candidate), true, &old);
         }
+        // Both checks have passed, so the host's means of undoing the handoff are let go, and not before.
+        self.host
+            .publication_confirmed(self.active.as_ref().map(|a| &a.token), &candidate.token);
         // The commit boundary: the target and the metadata change together, and only here.
         let replaced = self.active.replace(Active { token: candidate.token, spec });
         let previous = self.target.replace(Some(candidate.controller));

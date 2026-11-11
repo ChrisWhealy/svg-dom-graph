@@ -1710,6 +1710,60 @@ await test('G16F', 'a switch that fails at the handoff gives the focus back to w
   )
 })
 
+await test('G16R', 'a handoff that fails the controller\'s check, or whose focus move does nothing, is undone with the focus where it was', async () => {
+  await fresh()
+  const focusCases = [
+    ['the scenario list', `(document.getElementById('dess-scenario').focus(), document.activeElement.id)`, 'document.activeElement.id', 'dess-scenario'],
+    ['the Next button', `(document.getElementById('dess-next').focus(), document.activeElement.id)`, 'document.activeElement.id', 'dess-next'],
+    ['a node inside the old scene', `(document.querySelector('#dess-stage [data-ss-key="S0"]').focus(), document.activeElement.getAttribute('data-ss-key'))`, 'document.activeElement.getAttribute("data-ss-key")', 'S0']
+  ]
+  const restoreAll = () => evaluate('(window.__restoreAll?.(), 0)')
+  // 1. The host's readback passes and the controller's own check then fails, because the document reads as hidden at the last step of the handoff, which leaves the focus alone.
+  const hideAfterShowing = shown =>
+    evaluate(`(() => {
+      const remove = Element.prototype.removeAttribute
+      window.__restoreAll = () => { Element.prototype.removeAttribute = remove; delete document.hidden }
+      Element.prototype.removeAttribute = function (name) {
+        const result = remove.call(this, name)
+        // The document reads as hidden from here, which the controller's check of the host sees as Hidden and no focus is affected by.
+        if (name === 'inert' && /^dess-host-/.test(this.id) && this.id !== '${shown}') Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+        return result
+      }
+      return 0
+    })()`)
+  // 2. A call of focus that returns normally and does nothing, once, which is a handoff whose focus move silently failed. The undo's call works.
+  const failFocusOnce = id =>
+    evaluate(`(() => {
+      const focus = HTMLElement.prototype.focus
+      let skipped = 0
+      window.__restoreAll = () => { HTMLElement.prototype.focus = focus }
+      HTMLElement.prototype.focus = function (...args) {
+        if (this.id === '${id}' && skipped++ === 0) return undefined
+        return focus.apply(this, args)
+      }
+      return 0
+    })()`)
+  const scenarios = [
+    ['the controller\'s check fails after the readback passes', async hostId => hideAfterShowing(hostId), /Hidden/, ['the scenario list', 'the Next button', 'a node inside the old scene']],
+    ['the focus move silently does nothing', async () => failFocusOnce('dess-scenario'), /focus did not reach/, ['a node inside the old scene']],
+    ['the return of the focus to a control silently does nothing', async () => failFocusOnce('dess-next'), /focus did not reach/, ['the Next button']]
+  ]
+  for (const [what, arm, pattern, cases] of scenarios) {
+    for (const [name, focusIt, read, expected] of focusCases.filter(c => cases.includes(c[0]))) {
+      const before = await scenarioState()
+      const hostId = before.hosts[0].id
+      check((await evaluate(focusIt)) === expected, `${what}, with the focus on ${name}: it is there to begin with`)
+      await arm(hostId)
+      await chooseScenario('E3-NOOP')
+      await restoreAll()
+      const state = await scenarioState()
+      check(state.errorShown && /Publish failed/.test(state.error) && pattern.test(state.error), `the switch is refused at the handoff (${state.error.slice(0, 100)})`)
+      check(state.select === 'E0' && state.hosts.length === 1 && state.hosts[0].id === hostId && !state.hosts[0].staged && state.snapshot === before.snapshot && (await scenes()) === 1, 'and the old scenario, scene and cursor are as they were, with one scene in the accessibility tree')
+      check((await evaluate(read)) === expected, `and the focus is back on ${name} (${await evaluate(read)})`)
+    }
+  }
+})
+
 await test(
   'G16P',
   'a handoff that does nothing for one of the two staging writes is found, and rolled back',

@@ -86,6 +86,16 @@ const MUTATIONS = [
     '        if false {'
   ],
   [
+    'a handoff is confirmed before the controller has been checked',
+    '        let read_back = self\n            .host\n            .verify_published(self.active.as_ref().map(|a| &a.token), &candidate.token);',
+    '        self.host\n            .publication_confirmed(self.active.as_ref().map(|a| &a.token), &candidate.token);\n        let read_back = self\n            .host\n            .verify_published(self.active.as_ref().map(|a| &a.token), &candidate.token);'
+  ],
+  [
+    'a handoff is never confirmed',
+    '        self.host\n            .publication_confirmed(self.active.as_ref().map(|a| &a.token), &candidate.token);\n',
+    ''
+  ],
+  [
     'a hook never reaches the current controller',
     '        self.target.upgrade().and_then(|t| t.borrow().clone())',
     '        None'

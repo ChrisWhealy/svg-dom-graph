@@ -1,10 +1,10 @@
 {
-  "measured_at": "2026-11-11T16:27:16.678Z",
-  "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
+  "measured_at": "2026-11-11T16:40:45.544Z",
+  "git_sha": "0fd53946fd0ab2d45753a1e0b2d297d20c5e8fdb",
   "git_dirty": true,
   "file": "service-sim/src/session/mod.rs",
-  "caught": 15,
-  "total": 15,
+  "caught": 17,
+  "total": 17,
   "mutations": [
     {
       "name": "the new scene is not validated after the handoff",
@@ -22,7 +22,7 @@
       "name": "a rolled back candidate is not removed",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
+      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
     },
     {
       "name": "the old picture is not repaired after a failed handoff",
@@ -34,7 +34,7 @@
       "name": "a failed handoff is not undone",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+      "first_failure": "test session::unit_tests::a_candidate_that_is_not_live_after_the_handoff_is_rolled_back ... FAILED"
     },
     {
       "name": "the old playback is not invalidated at the start of a request",
@@ -91,10 +91,22 @@
       "first_failure": "test session::unit_tests::a_scenario_that_is_refused_is_refused_for_a_reason_and_without_building_anything ... FAILED"
     },
     {
+      "name": "a handoff is confirmed before the controller has been checked",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_candidate_that_is_not_live_after_the_handoff_is_rolled_back ... FAILED"
+    },
+    {
+      "name": "a handoff is never confirmed",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::a_handoff_that_passes_every_check_is_confirmed_once_and_lets_go_of_what_it_kept ... FAILED"
+    },
+    {
       "name": "a hook never reaches the current controller",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_hook_tells_the_current_controller_that_the_panel_was_hidden_and_shown ... FAILED"
+      "first_failure": "test session::unit_tests::a_hook_that_was_made_once_reaches_the_controller_that_is_current_after_a_replacement ... FAILED"
     }
   ]
 }

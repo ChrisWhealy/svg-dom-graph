@@ -71,6 +71,7 @@ So the cells are made with a six-digit number, and the first draw writes the rea
 | G16 | The sizes 2, 1, 3 and 2 each keep one scene in the document and the accessibility tree, the scene does not move and the page does not scroll, and 38 failures through the whole switch roll back |
 | G16F | A switch that fails at the handoff gives the focus back to the list, a button or a node of the old scene |
 | L02 | A server's box is green while it runs a job, red while it is down and blue while it is idle, at every snapshot of the walkthrough and in the five-server scenario |
+| G16R | A handoff that fails the controller's check after the readback passed, or whose focus move silently does nothing, is undone with the focus on the control or node that had it |
 | G16P | A handoff that silently skips the old scene's `inert` or its style is found at the handoff and rolled back |
 | G17 | The no-op scenario's nine slices match the independent engine, and its end commits nothing |
 | L01 | The controls and inspector are in the scene at any width, the nodes and connectors are laid out as designed, and the counters have room |
@@ -82,7 +83,7 @@ The writes that did not roll back fell after the commit, in the page's own refre
 The native coordinator tests add a matrix.
 Each way a replacement can go wrong, at each transition on the way 2, 1, 3, 2, leaves the old session on the page, shown and focused.
 
-`dess/demo-panel/p3/mutation-check.mjs` breaks the page in 21 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+`dess/demo-panel/p3/mutation-check.mjs` breaks the page in 23 ways, one at a time, in a copy of the tree, and a test has to fail for each.
 Its result is in `evidence/mutation-check.json`, and the run of the tests is in `evidence/gallery.json`.
 
 ## What P3 does not do

@@ -53,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P3: Script to accumulate `dess` evidence (`48fdeb2`)
 - DESS Demo P3: Evidence gathered by running script (`41beb8e`)
 - DESS Demo P4: Advance/Scale and release (`d652bae`)
-- DESS Demo P4: Evidence gathered by running script (``)
+- DESS Demo P4: Evidence gathered by running script (`0fd5394`)
 
 ### Changed
 
@@ -163,3 +163,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P2: Prevent the gallery observer from seeing SVG class mutations (`a929d35`)
 - DESS Demo P3: Distinguish `is_still_staged()` from `is_fully_staged()` (`115bd34`)
 - DESS Demo P3: Maintain the previously focused control after failed publication (`9603e0a`)
+- DESS Demo P4: Prevent publication from losing focus after the final controller check fails (``)

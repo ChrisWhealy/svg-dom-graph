@@ -11,8 +11,7 @@
     <li>Any jobs arriving while the wait queue is full are rejected.</li>
     <li>Servers can go down. This will terminate the current job and place it on a retry queue.</li>
     <li>A job has a retry limit.</li>
-    <li>A job that must finish before its deadline is reached.</li>
-    <li>A job that exceeds its deadline is terminated with a timeout.</li>
+    <li>A job must finish before its deadline is reached otherwise it is terminated with a timeout.</li>
     <li>A job can be cancelled at any time.</li>
   </ul>
   <p>
@@ -109,11 +108,10 @@
       waiting to retry, stale pops and no-op pops.
     </li>
     <li>
-      The <b>Snapshot</b> is a grid of eight cells that sums up the snapshot that you are on. Each row is
-      named beside it. The first row is the snapshot and the simulated tick, the second is how many jobs wait and how
-      many servers are busy, and the last two are the totals completed, timed out, cancelled and rejected. It is drawn
-      as one of the library's data nodes, which is rewritten once for each snapshot, and the same numbers are in the
-      inspector.
+      The <b>Snapshot</b> is a grid of eight cells that sums up the snapshot that you are on. Each row is named beside
+      it. The first row is the snapshot and the simulated tick, the second is how many jobs wait and how many servers
+      are busy, and the last two are the totals completed, timed out, cancelled and rejected. It is drawn as one of the
+      library's data nodes, which is rewritten once for each snapshot, and the same numbers are in the inspector.
     </li>
     <li>The <b>selected</b> job is outlined wherever it is, and its line at the bottom says where.</li>
   </ul>

@@ -13,7 +13,7 @@ Nothing in `demo-app` changes in this phase, and no simulator rule is added to t
 |---|---|
 | `Spec` | A scenario: its identity, its server count, how to make its engine and what it is known to come to |
 | `Spec::preflight` | Checks the engine's own server count, then runs it to its end, counting slices and pops, against exact totals and ceilings |
-| `SessionHost` | The one trait that touches the page: build a candidate, verify it, hand the page over, read the handoff back, undo it, discard and finalize |
+| `SessionHost` | The one trait that touches the page: build a candidate, verify it, hand the page over, read the handoff back, confirm it, undo it, discard and finalize |
 | `Coordinator` | The state machine: Idle, Staging, Publishing, then Committed or RolledBack |
 | `Target` and `TargetHook` | The one place the current controller is kept, and the weak handle that a page's hooks hold |
 
@@ -28,6 +28,7 @@ A gallery binds `SessionHost` to its DOM in P3, and the tests bind it to a fake.
    The candidate has to be clean, at slice 0, on a live host, and its page has to pass the host's own readback.
 4. **Publish.** The host hands the page over, and a failed handoff is undone.
    A handoff that reports success is then read back from the page, by `SessionHost::verify_published`, and the candidate has to be live and clean again afterwards.
+   Only when both have passed is the handoff confirmed, by `SessionHost::publication_confirmed`, and the host lets go of what it kept to undo it, such as where the focus was.
 5. **Commit.** Only now does the target point at the new controller, and the old one is disposed and its page removed, once.
 
 Any failure before the commit rolls back.
@@ -93,8 +94,8 @@ There are 22 tests, all native, with a fake host and a manual scheduler.
   One tells the current controller that the panel was hidden and shown.
 - **Ownership:** the old session is disposed and removed exactly once, no host is kept alive in a circle, and a timer and a frame that were on their way do nothing.
 
-`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 15 ways, one at a time, in a copy of the tree, and a test has to fail for each.
-All 15 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
+`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 17 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+All 17 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
 Each mutation is built on its own first, so one that does not compile is never counted as caught.
 The script exits with 2 if the coordinator's source file is not where it expects, so a move of the file cannot make it pass vacuously.
 CI runs it as one of the entries of the `perf-selftests` job.

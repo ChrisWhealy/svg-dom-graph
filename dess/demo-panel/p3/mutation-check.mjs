@@ -165,6 +165,14 @@ const MUTATIONS = [
   ['a running server is not green', [[STYLE, '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #bbf7d0;', '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
   ['a server that is down is not red', [[STYLE, '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #fecaca;', '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
   [
+    'the saved focus is let go as soon as the readback passes',
+    [[DOM, '        self.check_published(from, to)\n    }', '        let checked = self.check_published(from, to);\n        if checked.is_ok() {\n            self.saved_focus = None;\n        }\n        checked\n    }']]
+  ],
+  [
+    'where the focus has to be is not checked',
+    [[DOM, 'if self.document.active_element().as_ref() != Some(expected) {', 'if false {']]
+  ],
+  [
     'a refusal is not shown in the error area',
     [
       [

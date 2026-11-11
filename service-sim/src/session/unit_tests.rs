@@ -67,6 +67,11 @@ struct World {
     pages: BTreeMap<u32, Rc<RefCell<Page>>>,
     hosts_dropped: Rc<Cell<usize>>,
     undos: usize,
+    /// How many handoffs were confirmed, which is how many had every check pass.
+    confirmed: usize,
+    /// Where the focus was when a handoff began, which is what an undo puts back, and which the host keeps until the
+    /// handoff is confirmed.
+    saved_focus: Option<u32>,
     fail_build: bool,
     first_draw_fails: bool,
     fail_verify: bool,
@@ -123,6 +128,8 @@ impl SessionHost for Fake {
     }
 
     fn publish(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
+        let focus = self.0.borrow().focus;
+        self.0.borrow_mut().saved_focus = focus;
         let mut w = self.0.borrow_mut();
         let steps: [&dyn Fn(&mut World); 3] = [
             &|w| {
@@ -164,6 +171,12 @@ impl SessionHost for Fake {
         Ok(())
     }
 
+    fn publication_confirmed(&mut self, _from: Option<&u32>, _to: &u32) {
+        let mut w = self.0.borrow_mut();
+        w.confirmed += 1;
+        w.saved_focus = None;
+    }
+
     fn undo_publish(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
         let mut w = self.0.borrow_mut();
         w.undos += 1;
@@ -174,7 +187,7 @@ impl SessionHost for Fake {
         if let Some(from) = from {
             w.visible.insert(*from);
         }
-        w.focus = from.copied();
+        w.focus = w.saved_focus.take();
         Ok(())
     }
 
@@ -595,6 +608,25 @@ fn a_candidate_that_is_not_live_after_the_handoff_is_rolled_back() {
     assert!(rollback.reason.contains("Hidden"), "{}", rollback.reason);
     assert_eq!(world.borrow().undos, 1);
     assert_eq!(session.active_id(), Some("E0"));
+    // The host's readback passed, and the coordinator's own check of the controller then failed, so the handoff was
+    // never confirmed. The host still had where the focus was, and the undo put it back.
+    let w = world.borrow();
+    assert_eq!(
+        w.confirmed, 1,
+        "only the first scene was confirmed, and not the one that failed the controller's check"
+    );
+    assert_eq!(w.focus, Some(0), "and the focus is where it was");
+    assert_eq!(w.saved_focus, None, "with nothing left over from the undo");
+}
+
+/// A handoff that is confirmed is confirmed once, after both checks, and what was kept for an undo is let go.
+#[test]
+fn a_handoff_that_passes_every_check_is_confirmed_once_and_lets_go_of_what_it_kept() {
+    let (mut session, world) = started();
+    assert_eq!(world.borrow().confirmed, 1, "the first scene was confirmed");
+    assert_eq!(session.switch(noop()), SwitchOutcome::Replaced);
+    let w = world.borrow();
+    assert_eq!((w.confirmed, w.saved_focus), (2, None));
 }
 
 #[test]
