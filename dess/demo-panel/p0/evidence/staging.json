@@ -1,8 +1,8 @@
 {
   "identity": {
-    "measured_at": "2026-11-11T09:31:48.374Z",
-    "git_sha": "ebf90a849061cc7a449ac274441f79517bbe9683",
-    "git_dirty": true,
+    "measured_at": "2026-11-11T09:36:28.300Z",
+    "git_sha": "7f6df69501acd7f9a302550364601c2bc944fc09",
+    "git_dirty": false,
     "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
