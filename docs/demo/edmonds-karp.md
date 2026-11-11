@@ -212,4 +212,4 @@ The page then puts the old scene back.
 * `scheduler.rs` runs the ticks and the frames, with the browser's or with the clock that a test advances.
 * `mod.rs` builds the panel and attaches the listeners.
 
-The browser tests are in `cdp-integration-test/tests/cdp/edmonds_karp.rs`.
+The browser tests are in `cdp-integration-test/tests/cdp/edmonds_karp/unit_tests.rs`.

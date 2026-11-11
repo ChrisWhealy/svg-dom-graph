@@ -14,7 +14,7 @@
 //!
 //! Like [`crate::chacha20_walk`], these run against the built demo gallery's window page, not the fixture.
 
-use crate::common::{DemoTab, new_demo_tab};
+use crate::common::{demo_tab::DemoTab, new_demo_tab};
 use headless_chrome::Tab;
 use std::time::{Duration, Instant};
 

@@ -6,9 +6,9 @@
 //! own module doc comment for the scenario list. It also explains why this crate lives in its own on-demand workspace
 //! member. This mirrors `svg-dom`'s own `cdp-integration-test` crate, down to this file's structure.
 //!
-//! The functions below build the `cdp-test-fixture` wasm package, serve it, and launch Chrome. `tests/cdp/common.rs`
-//! calls them exactly once per test run, via a lazily-initialised `OnceLock`, and hands every scenario module its own
-//! [`Tab`](headless_chrome::Tab) from the one shared [`Browser`] instance.
+//! The functions below build the `cdp-test-fixture` wasm package, serve it, and launch Chrome.
+//! `tests/cdp/common/mod.rs` calls them exactly once per test run, via a lazily-initialised `OnceLock`, and hands every
+//! scenario module its own [`Tab`](headless_chrome::Tab) from the one shared [`Browser`] instance.
 
 mod cleanup;
 
@@ -60,9 +60,9 @@ fn require_prebuilt(dir: &Path, marker: &str) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the `cdp-test-fixture` wasm package so `serve`'s output is current.
 ///
-/// `tests/cdp/common.rs` calls this once per test run, from behind its own `OnceLock`, so within this crate's own `cdp`
-/// binary only one call is ever in flight. The exclusive cross-process file lock taken below still guards against a
-/// second, independent `cargo test`/`cargo nextest run` invocation racing this one. Two `wasm-pack build` invocations
+/// `tests/cdp/common/mod.rs` calls this once per test run, from behind its own `OnceLock`, so within this crate's own
+/// `cdp` binary only one call is ever in flight. The exclusive cross-process file lock taken below still guards against
+/// a second, independent `cargo test`/`cargo nextest run` invocation racing this one. Two `wasm-pack build` invocations
 /// running in the same `dir` at once would corrupt each other's intermediate states.
 pub fn build_fixture(dir: &PathBuf) {
     if prebuilt() {

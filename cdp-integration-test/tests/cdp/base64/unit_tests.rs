@@ -1,0 +1,222 @@
+//! The tests of [`super`], which holds the helpers they use.
+
+use super::*;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The panel opens on a sentence of 62 bytes: 20 whole groups and a last group of two, so one padding character.
+#[test]
+fn the_panel_opens_on_its_sentence_with_one_padding_character() -> Result<(), String> {
+    let tab = open()?;
+    check_eq(
+        result(&tab)?.as_str(),
+        "VGhpcyBpcyB3aGF0IHNvbWUgdGV4dCBsb29rcyBsaWtlIHdoZW4gZW5jb2RlZCB1c2luZyBCYXNlNjQuLi4=",
+    )?;
+    check_eq(nodes_named(&tab, "Six-bit values")?, 1)?;
+    check_eq(nodes_named(&tab, "Base64 text")?, 1)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Typing encodes the new text, with the padding that a last group of one byte, of two, and of three needs.
+#[test]
+fn typing_encodes_the_new_text_with_the_padding_each_final_group_needs() -> Result<(), String> {
+    let tab = open()?;
+    for (typed, expected) in [
+        ("f", "Zg=="),
+        ("fo", "Zm8="),
+        ("foo", "Zm9v"),
+        ("foob", "Zm9vYg=="),
+        ("foobar", "Zm9vYmFy"),
+    ] {
+        set_text(&tab, typed)?;
+        check_eq(result(&tab)?, expected.to_owned())?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The gap between the two hex dumps is the same as the margin to the left of the first, and the six-bit values are
+/// centred on the midline of the two together.
+#[test]
+fn the_hex_dumps_are_a_margin_apart_and_the_six_bit_values_are_centred_under_them() -> Result<(), String> {
+    let tab = open()?;
+    let (input_left, input_right, diagram_left) = edges(&tab, "Input bytes")?;
+    let (text_left, text_right, _) = edges(&tab, "Base64 text")?;
+    let (six_left, six_right, _) = edges(&tab, "Six-bit values")?;
+    let tolerance = 1.5;
+    let near = |a: f64, b: f64| (a - b).abs() <= tolerance;
+    check(
+        near(text_left - input_right, input_left - diagram_left),
+        &format!(
+            "the gap {} is not the margin {}",
+            text_left - input_right,
+            input_left - diagram_left
+        ),
+    )?;
+    let above = (input_left + text_right) / 2.0;
+    let below = (six_left + six_right) / 2.0;
+    check(
+        near(above, below),
+        &format!("the midline above is {above}, but the six-bit values' is {below}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An empty text has nothing to encode, so the six-bit values and the Base64 text are not drawn, and typing again
+/// brings them back.
+#[test]
+fn an_empty_text_draws_neither_the_six_bit_values_nor_the_base64_text() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "")?;
+    check_eq(result(&tab)?.as_str(), "")?;
+    check_eq(nodes_named(&tab, "Six-bit values")?, 0)?;
+    check_eq(nodes_named(&tab, "Base64 text")?, 0)?;
+    check_eq(nodes_named(&tab, "Input bytes")?, 1)?;
+    set_text(&tab, "f")?;
+    check_eq(nodes_named(&tab, "Six-bit values")?, 1)?;
+    check_eq(result(&tab)?.as_str(), "Zg==")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The URL-safe alphabet writes `-` and `_` where the standard one writes `+` and `/`, for the same text, and choosing
+/// either draws the same text again.
+#[test]
+fn the_url_safe_alphabet_changes_only_the_characters_for_62_and_63() -> Result<(), String> {
+    let tab = open()?;
+    // "???" is the six-bit values 15, 51, 60 and 63.
+    set_text(&tab, "???")?;
+    check_eq(result(&tab)?.as_str(), "Pz8/")?;
+    choose(&tab, "base64-alphabet-url")?;
+    check_eq(result(&tab)?.as_str(), "Pz8_")?;
+    check_eq(
+        text(&tab, "document.getElementById('base64-alphabet').textContent")?.ends_with("-_"),
+        true,
+    )?;
+    choose(&tab, "base64-alphabet-standard")?;
+    check_eq(result(&tab)?.as_str(), "Pz8/")?;
+    // The text box was not touched.
+    check_eq(
+        text(&tab, &format!("document.querySelector('{DIAGRAM} input').value"))?.as_str(),
+        "???",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Text that is one byte too long for the limit because its last character takes three bytes is cut before that
+/// character, not inside it, and the note beside the text box says so.
+#[test]
+fn a_character_that_straddles_the_256_byte_limit_is_left_out_whole() -> Result<(), String> {
+    let tab = open()?;
+    // 255 bytes and then a euro sign of three: 258 bytes, of which only 255 can be encoded without splitting it.
+    set_text(&tab, &format!("{}\u{20AC}", "a".repeat(255)))?;
+    // 255 bytes are 85 groups of three, which is 340 characters, with no padding.
+    check_eq(result(&tab)?.len(), 340)?;
+    check(!result(&tab)?.contains('='), "255 bytes need no padding")?;
+    let note = texts(&tab)?.join(" ");
+    check(
+        note.contains("258 bytes typed"),
+        &format!("the note does not say how much was typed: {note}"),
+    )?;
+    check(
+        note.contains("first 255"),
+        &format!("the note does not say how much was encoded: {note}"),
+    )?;
+    // 256 bytes exactly are all encoded, with the padding that 256 = 85 * 3 + 1 needs.
+    set_text(&tab, &"a".repeat(256))?;
+    check(result(&tab)?.ends_with("YQ=="), "256 bytes end in a group of one byte")?;
+    let note = texts(&tab)?.join(" ");
+    check(
+        note.contains("256 of 256 bytes"),
+        &format!("the note does not give the length: {note}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A change redraws the whole scene, and the text box that replaces the old one has the keyboard focus, with the caret
+/// where it was, so typing carries on.
+#[test]
+fn typing_keeps_the_focus_and_the_caret_across_the_redraw() -> Result<(), String> {
+    let tab = open()?;
+    tab.evaluate(
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); i.focus(); i.value = 'abcd'; \
+             i.setSelectionRange(2, 2); i.dispatchEvent(new Event('input', {{ bubbles: true }})); }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not edit the text box: {e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    let state = text(
+        &tab,
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); \
+             return i.selectionStart + ',' + i.selectionEnd + ',' + (document.activeElement === i); }})()"
+        ),
+    )?;
+    check_eq(state.as_str(), "2,2,true")?;
+    tab.type_str("X").map_err(|e| format!("{e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    check_eq(
+        text(&tab, &format!("document.querySelector('{DIAGRAM} input').value"))?.as_str(),
+        "abXcd",
+    )?;
+    check_eq(result(&tab)?.as_str(), "YWJYY2Q=")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// While text is being composed, the scene is not drawn again, so the text box is the same element and the composition
+/// goes on. When the composition is committed, the scene is drawn for the composed text and the text box has the focus.
+#[test]
+fn a_composition_in_progress_is_not_interrupted_by_a_redraw() -> Result<(), String> {
+    use headless_chrome::protocol::cdp::Input::{ImeSetComposition, InsertText};
+
+    let tab = open()?;
+    let before = result(&tab)?;
+    // Put the caret at the end of the text and remember which element is the text box.
+    tab.evaluate(
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); i.focus(); \
+             i.setSelectionRange(i.value.length, i.value.length); window.composingBox = i; }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not focus the text box: {e}"))?;
+
+    tab.call_method(ImeSetComposition {
+        text: "\u{306B}\u{307B}".to_owned(),
+        selection_start: 2,
+        selection_end: 2,
+        replacement_start: None,
+        replacement_end: None,
+    })
+    .map_err(|e| format!("could not start the composition: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    let still_there = text(
+        &tab,
+        &format!(
+            "String(window.composingBox.isConnected && \
+             document.querySelector('{DIAGRAM} input') === window.composingBox)"
+        ),
+    )?;
+    check_eq(still_there.as_str(), "true")?;
+    check_eq(result(&tab)?, before.clone())?;
+
+    tab.call_method(InsertText {
+        text: "\u{65E5}\u{672C}".to_owned(),
+    })
+    .map_err(|e| format!("could not commit the composition: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    let value = text(&tab, &format!("document.querySelector('{DIAGRAM} input').value"))?;
+    check(
+        value.ends_with("\u{65E5}\u{672C}"),
+        &format!("the composed text is not in the box: {value:?}"),
+    )?;
+    check(result(&tab)? != before, "the scene was not drawn for the composed text")?;
+    check_eq(
+        text(
+            &tab,
+            &format!("String(document.activeElement === document.querySelector('{DIAGRAM} input'))"),
+        )?
+        .as_str(),
+        "true",
+    )
+}

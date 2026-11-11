@@ -88,5 +88,5 @@ Every tick and every seek carries the playback epoch and the history generation,
 ## Tests
 
 The native tests are in `unit_tests.rs` beside each module and cover the net, the scripts, the history, the layout, the projection and the controller.
-The browser tests are in `cdp-integration-test/tests/cdp/petri_net.rs`.
+The browser tests are in `cdp-integration-test/tests/cdp/petri_net/unit_tests.rs`.
 They measure the real geometry, including the smallest clearance between a spoke and the hub it does not belong to, and drive the keyboard, the pointer, the playback, a failed write and the comparison of a diffed page with a full one.

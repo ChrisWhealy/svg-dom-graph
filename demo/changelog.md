@@ -80,7 +80,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P0: Gather P0 acceptance evidence (`7f6df69`)
 - DESS Demo P3: Update Service Simulator demo (`79e5efe`)
 - DESS Demo P4: Housekeeping updates (`9ecb935`)
-- Update top-level README (``)
+- Update top-level README (`7d25d1c`)
+- Refactor all the CDP Integration Test modules (``)
 
 ### Fixed
 

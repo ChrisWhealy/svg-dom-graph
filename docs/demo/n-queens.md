@@ -189,5 +189,5 @@ The board is right then, so the page is not dirty, and pressing Play again carri
 * `scheduler.rs` runs the playback's ticks, with the browser's timers or with the clock that a test advances.
 * `dom.rs` has the few helpers that make and write SVG elements.
 
-The CDP tests in `cdp-integration-test/tests/cdp/n_queens.rs` drive the built page with a real browser.
+The CDP tests in `cdp-integration-test/tests/cdp/n_queens/unit_tests.rs` drive the built page with a real browser.
 They check the layers and the grid, what each kind of step draws, the range, the buttons at their ends, playback on a manual clock, the keys and the ring, a new size, and writes that fail.

@@ -92,6 +92,6 @@ Each of the six, and the other arcs at vertex 62, can be picked one at a time by
 ## Tests
 
 The native tests are beside each module and cover the fixture, the solver, the condensation, the layout, the view rules, the projection and the controller.
-The browser tests are in `cdp-integration-test/tests/cdp/tarjan.rs`.
+The browser tests are in `cdp-integration-test/tests/cdp/tarjan/unit_tests.rs`.
 They drive real pointer and keyboard input, a pan by hand, the playback on a clock that the test advances, and a failed write, and the comparison of a diffed page with a full one.
 One test asks Chrome which listeners are on the page before and after it is left.
