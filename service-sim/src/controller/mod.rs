@@ -23,9 +23,11 @@ use std::rc::{Rc, Weak};
 
 pub use crate::projection::Projection;
 
-#[cfg(test)]
-mod unit_tests;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes a fresh engine at the first slice of a scenario, as often as it is asked.
+pub type Factory = Rc<dyn Fn() -> Result<Engine, Error>>;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether the host can be drawn on now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Presence {
@@ -39,6 +41,7 @@ pub enum Presence {
     Disposed,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a draw did not succeed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DrawFailure {
@@ -48,6 +51,7 @@ pub enum DrawFailure {
     Failed(String),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the controller draws on and says to a person, which in a page is the DOM.
 pub trait Host {
     /// Whether a draw is allowed now: a synchronous test of the connection and of the panel's visibility, which the
@@ -74,6 +78,7 @@ pub trait Host {
     fn playing_changed(&mut self, playing: bool);
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a request came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
@@ -89,6 +94,7 @@ pub enum Outcome {
     Failed,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the controller's own engine holds. The slice that its counters say is read from the engine, and the slice that
 /// the controller believes it is at is the controller's own record, so a disagreement between them is a defect of the
 /// bookkeeping.
@@ -102,6 +108,7 @@ pub struct LiveEngine {
     pub sha256: String,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A slice that has been worked out and has not been committed.
 struct Staged {
     slice: u64,
@@ -111,6 +118,7 @@ struct Staged {
     view: View,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A seek that is being replayed, a slice or a frame's worth at a time.
 struct SeekJob {
     target: u64,
@@ -118,8 +126,7 @@ struct SeekJob {
     at: u64,
 }
 
-type Factory = Rc<dyn Fn() -> Result<Engine, Error>>;
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 struct State {
     factory: Factory,
     /// The engine, which may be ahead of the committed slice after a draw that failed. It is only ever read at the
@@ -150,12 +157,21 @@ struct State {
     retry: Option<u64>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 struct Inner<H: Host, S: Scheduler> {
     host: RefCell<H>,
     scheduler: S,
     state: RefCell<State>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn model_and_projection(engine: &Engine, view: &View) -> (Model, Projection) {
+    let model = crate::projection::extract(engine, view);
+    let projection = project(&model, view);
+    (model, projection)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The controller. It is cheap to clone, and every clone is the same controller.
 pub struct Controller<H: Host + 'static, S: Scheduler + 'static> {
     inner: Rc<Inner<H, S>>,
@@ -165,12 +181,6 @@ impl<H: Host + 'static, S: Scheduler + 'static> Clone for Controller<H, S> {
     fn clone(&self) -> Self {
         Self { inner: Rc::clone(&self.inner) }
     }
-}
-
-fn model_and_projection(engine: &Engine, view: &View) -> (Model, Projection) {
-    let model = crate::projection::extract(engine, view);
-    let projection = project(&model, view);
-    (model, projection)
 }
 
 impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
@@ -227,12 +237,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.state.borrow().committed_slice
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the page should hold, which is the committed slice's projection.
     #[must_use]
     pub fn committed(&self) -> Projection {
         self.inner.state.borrow().committed.clone()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The model of the committed slice, which is what the controller holds and checks a draw against. It is read here
     /// as it is, and is not worked out again from the run.
     #[must_use]
@@ -240,6 +252,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.state.borrow().committed_model.clone()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the controller's own engine holds now. A slice is worked out before it is drawn, so after a draw that
     /// failed the engine is one slice ahead of the committed one, and that is a state that the controller keeps on
     /// purpose.
@@ -254,32 +267,52 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The time between the slices of playback, in milliseconds, which is kept while it is not playing.
+    #[must_use]
+    pub fn speed_ms(&self) -> u32 {
+        self.inner.state.borrow().speed_ms
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Whether [`dispose`](Self::dispose) has been called.
+    #[must_use]
+    pub fn is_disposed(&self) -> bool {
+        self.inner.state.borrow().disposed
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether the page may differ from the committed projection, because a draw failed or the host went.
     #[must_use]
     pub fn is_dirty(&self) -> bool {
         self.inner.state.borrow().dirty
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[must_use]
     pub fn is_playing(&self) -> bool {
         self.inner.state.borrow().playing
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[must_use]
     pub fn epoch(&self) -> u64 {
         self.inner.state.borrow().epoch
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[must_use]
     pub fn seek_token(&self) -> u64 {
         self.inner.state.borrow().seek_token
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[must_use]
     pub fn generation(&self) -> u64 {
         self.inner.state.borrow().generation
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The job that the committed projection has selected, if any. It changes only when a draw with that selection was
     /// committed.
     #[must_use]
@@ -287,23 +320,27 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.state.borrow().view.selected
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The number of the last slice of the run, once it has been reached.
     #[must_use]
     pub fn last_slice(&self) -> Option<u64> {
         self.inner.state.borrow().last_slice
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The seek that failed to ask for a frame, which [`retry`](Self::retry) asks for again.
     #[must_use]
     pub fn pending_retry(&self) -> Option<u64> {
         self.inner.state.borrow().retry
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs `f` on the host, which a test reads what was drawn from.
     pub fn with_host<R>(&self, f: impl FnOnce(&mut H) -> R) -> R {
         f(&mut self.inner.host.borrow_mut())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The scheduler, for a test that moves its clock.
     #[must_use]
     pub fn scheduler(&self) -> &S {
@@ -317,6 +354,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.state.borrow_mut().chunk = slices.map(|n| n.max(1));
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Changes the time between the slices of playback. If it is playing, the next slice is scheduled again at the new
     /// delay and the old timer is taken back, so that a slice does not come twice.
     pub fn set_speed(&self, ms: u32) -> Outcome {
@@ -337,6 +375,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.step_next()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows the slice before the committed one, by replaying the run to it at a frame.
     pub fn previous(&self) -> Outcome {
         self.inner.claim_navigation();
@@ -347,6 +386,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.start_seek(at - 1)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows the first slice, by replaying nothing at a frame.
     pub fn restart(&self) -> Outcome {
         self.inner.claim_navigation();
@@ -356,12 +396,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.start_seek(0)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows slice `target`, by replaying the run to it at a frame. A target past the end is the last slice.
     pub fn seek(&self, target: u64) -> Outcome {
         self.inner.claim_navigation();
         self.inner.start_seek(target)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Asks again for the frame of a seek that could not be asked for.
     pub fn retry(&self) -> Outcome {
         let target = self.inner.state.borrow().retry;
@@ -381,6 +423,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.play()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback, and a timer that was waiting is taken back.
     pub fn pause(&self) {
         self.inner.stop_playing();
@@ -392,11 +435,13 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.select_job(id)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the committed slice again in full, which is what a dirty page needs.
     pub fn repair(&self) -> Outcome {
         self.inner.repair()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Changes the history: a new engine, from its first slice. Everything that was scheduled is invalidated.
     ///
     /// # Errors
@@ -414,12 +459,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.presence_changed();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback and invalidates what was scheduled, as for a page that is being left. The page may still read as
     /// visible, so this does not ask. It never starts anything, and the page is not marked dirty.
     pub fn suspend(&self) {
         self.inner.stop_and_invalidate();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Works out the next `count` slices after the committed one, and keeps them, so that the `next` calls that follow
     /// draw and commit them and do not step the engine or build a projection. It exists so that a measurement of `next`
     /// can be the render and the commit alone. It changes no committed state, and a slice that is kept is used only if
@@ -434,6 +481,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.prepare_ahead(count).map(|checkpoints| checkpoints.len() as u64)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// As [`prepare_ahead`](Self::prepare_ahead), and gives the engine's own hash of its state after each slice that it
     /// worked out, in order. They are the hashes of the slices that the `next` calls then commit, taken from the engine
     /// as it stepped.
@@ -445,6 +493,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
         self.inner.prepare_ahead(count)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Ends the controller for good. What was scheduled is taken back, and a late callback does nothing.
     pub fn dispose(&self) {
         {
@@ -460,11 +509,13 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         Rc::downgrade(self)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether a draw is allowed now. This is the synchronous predicate, and it is asked of the host every time.
     fn live(&self) -> bool {
         !self.state.borrow().disposed && self.host.borrow().presence() == Presence::Live
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn announce_unavailable(&self) {
         let first = {
             let mut st = self.state.borrow_mut();
@@ -477,6 +528,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn report_once(&self, text: &str) {
         let first = {
             let mut st = self.state.borrow_mut();
@@ -501,6 +553,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         self.state.borrow_mut().retry = None;
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback and takes back everything that was scheduled, and makes every callback already on its way stale.
     fn stop_and_invalidate(&self) {
         let (timer, frame, was_playing) = {
@@ -521,6 +574,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback and nothing else, so that a seek that is on its way still arrives.
     fn stop_playing(&self) {
         let (timer, was_playing) = {
@@ -567,6 +621,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The commit of design section 6.1: check, draw, check, and only then move the cursor.
     fn render_then_commit(self: &Rc<Self>, target: Staged) -> Outcome {
         if !self.live() {
@@ -611,6 +666,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         Outcome::Done
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn unavailable(&self) -> Outcome {
         self.announce_unavailable();
         Outcome::Unavailable
@@ -631,6 +687,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         Outcome::AtBoundary
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replays the run from its first slice to `to`, into a new engine. Staging happens here and never touches the
     /// committed state.
     fn replay(&self, to: u64) -> Result<Engine, String> {
@@ -692,6 +749,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         outcome
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The slice `target` if it was worked out in advance for the view that is committed now, and `None` otherwise. A
     /// slice that was worked out for another view, or that the cursor has passed, is dropped with everything after it,
     /// since it would not be what stepping to it gives.
@@ -709,6 +767,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Works out the next `count` slices after the committed one and keeps them, so that the `next` calls that follow
     /// draw and commit them without working them out. The engine is stepped here, and what a later `next` costs is then
     /// the render and the commit.
@@ -747,6 +806,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         Ok(checkpoints)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Works out the slice after `committed`, from the engine, which is brought to `committed` first if it is not
     /// there.
     fn stage_after(&self, committed: u64) -> Result<Option<Staged>, String> {
@@ -797,6 +857,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         self.restart_timer()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Schedules the next slice of playback under the current epoch, taking back a timer that was waiting.
     fn restart_timer(self: &Rc<Self>) -> Outcome {
         let old = self.state.borrow_mut().timer.take();
@@ -810,6 +871,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         self.schedule_tick()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn schedule_tick(self: &Rc<Self>) -> Outcome {
         let (epoch, generation, delay) = {
             let st = self.state.borrow();
@@ -835,6 +897,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn on_tick(self: &Rc<Self>, epoch: u64, generation: u64) {
         {
             let mut st = self.state.borrow_mut();
@@ -898,6 +961,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         self.request_seek_frame()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn request_seek_frame(self: &Rc<Self>) -> Outcome {
         let (token, generation) = {
             let st = self.state.borrow();
@@ -928,6 +992,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn on_seek_frame(self: &Rc<Self>, token: u64, generation: u64) {
         {
             let mut st = self.state.borrow_mut();
@@ -1045,6 +1110,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn repair(&self) -> Outcome {
         if !self.live() {
             self.stop_and_invalidate();
@@ -1060,6 +1126,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Changes the history in a transaction. The new scenario is staged and drawn in full, and it replaces the old one
     /// only if that draw succeeded while the host was still there. Otherwise the old scenario is what is committed, and
     /// the page is repaired to it. A switch is a navigation, so playback and a pending seek are cancelled whether or
@@ -1102,6 +1169,7 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         Outcome::Done
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn presence_changed(self: &Rc<Self>) {
         if !self.live() {
             self.stop_and_invalidate();
@@ -1116,9 +1184,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn describe(failure: &DrawFailure) -> String {
     match failure {
         DrawFailure::Detached => "The simulator's host is not in the page.".to_owned(),
         DrawFailure::Failed(what) => format!("The simulator could not draw: {what}"),
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

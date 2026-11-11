@@ -46,7 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Promote initial CI workload data to `perf/baselines` (`7ba9852`)
 - Promote second and third CI workload data to `perf/baselines` (`2fa97ae`)
 - DESS Demo P0: Staging and injector proof (`ebf90a8`)
-- DESS Demo P0: Submit P0 acceptance evidence (``)
+- DESS Demo P0: Submit P0 acceptance evidence (`1d4cd4d`)
+- DESS Demo P1: Reusable session coordinator (``)
 
 ### Changed
 
