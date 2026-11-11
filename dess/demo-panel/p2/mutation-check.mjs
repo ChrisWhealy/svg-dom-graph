@@ -99,6 +99,16 @@ const MUTATIONS = [
     [[CONTROLS, 'controller.is_dirty() || controller.with_host(|host| host.controls_stale())', 'controller.is_dirty()']]
   ],
   [
+    'a failed write of a boundary attribute is not counted as needing repair',
+    [
+      [
+        CONTROLS,
+        ' || controller.with_host(|host| host.controls_stale()) || boundary_failed;',
+        ' || controller.with_host(|host| host.controls_stale());'
+      ]
+    ]
+  ],
+  [
     'a failure is never cleared from the page',
     [[CONTROLS, 'if !dirty && (committed || shared.repaired.replace(false)) {', 'if false {']]
   ]

@@ -152,4 +152,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P1: Verify engine server count during preflight (`e83b809`)
 - DESS Demo P0: Attempt to fix failing CI feature test (`0020d9a`)
 - DESS Demo P0: Fix CI feature test, tell `cargo tree` not to use ANSI colours codes (`871f3c2`)
-- DESS Demo P2: Ensure a failed play-control write does not leave inspector reporting an up-to-date display (``)
+- DESS Demo P2: Ensure a failed play-control write does not leave inspector reporting an up-to-date display (`8d9c778`)
+- DESS Demo P2: Do not ignore boundary-control attribute failures (``)

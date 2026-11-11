@@ -771,6 +771,40 @@ await test('G08', 'Repair redraws the committed snapshot and changes nothing els
   await hold(false)
   await click('#dess-restart')
   for (let i = 0; i < 5; i++) await click('#dess-next')
+  // A write of a boundary button that fails leaves Next saying that it can still go on, after the step to the last snapshot. The page says that it needs
+  // repair, though the slice committed, and a repair writes the attribute again. The injector fails the nth call of any kind, and a refresh writes the
+  // attribute twice, so the failure is put on that one attribute alone, in the page, and taken off again.
+  await evaluate(`(() => {
+    const set = Element.prototype.setAttribute
+    window.__restoreSet = () => { Element.prototype.setAttribute = set }
+    Element.prototype.setAttribute = function (name, value) {
+      if (window.__failBoundary && this.id === 'dess-next' && name === 'aria-disabled') throw new DOMException('an injected failure of the boundary write', 'InvalidStateError')
+      return set.call(this, name, value)
+    }
+    return 0
+  })()`)
+  await evaluate(
+    `(() => { const s = document.getElementById('dess-seek'); s.value = '11'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`
+  )
+  await until(`document.getElementById('dess-seek-text').textContent === 'Committed 11'`)
+  await evaluate('window.__failBoundary = true')
+  await click('#dess-next')
+  await evaluate('window.__failBoundary = false')
+  page = await read()
+  check(
+    page.iSnapshot === '12 of 12' && page.next.disabled !== 'true',
+    `the slice committed, and Next was not marked as the last (${page.iSnapshot}, ${page.next.disabled})`
+  )
+  check(page.display === 'Needs repair', `and the page says that it needs repair (${page.display})`)
+  await click('#dess-repair')
+  page = await read()
+  check(
+    page.next.disabled === 'true' && page.display === 'Up to date' && page.iSnapshot === '12 of 12',
+    `a repair marks Next again and clears the status (${page.next.disabled}, ${page.display})`
+  )
+  await evaluate('__restoreSet()')
+  await click('#dess-restart')
+  for (let i = 0; i < 5; i++) await click('#dess-next')
   // A failure that the controller recovers from by itself is still said, and the cursor did not move.
   await evaluate('__faults.arm(1)')
   await click('#dess-next')

@@ -141,14 +141,16 @@ fn set_text(element: &web_sys::Element, text: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Marks a button as one that has nowhere to go, with the reason that is read with it.
-fn mark_boundary(button: &web_sys::Element, reason: &web_sys::Element, at_boundary: bool, text: &str) {
-    if at_boundary {
-        let _ = button.set_attribute("aria-disabled", "true");
+/// Marks a button as one that has nowhere to go, with the reason that is read with it. It says whether the write of the
+/// attribute failed, in which case the button may advertise the wrong boundary until the next write succeeds.
+fn mark_boundary(button: &web_sys::Element, reason: &web_sys::Element, at_boundary: bool, text: &str) -> bool {
+    let written = if at_boundary {
+        button.set_attribute("aria-disabled", "true")
     } else {
-        let _ = button.remove_attribute("aria-disabled");
-    }
+        button.remove_attribute("aria-disabled")
+    };
     set_text(reason, if at_boundary { text } else { "" });
+    written.is_err()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -252,8 +254,8 @@ pub(super) fn sync(shared: &Shared) {
         },
     }
 
-    mark_boundary(&ui.previous, &ui.previous_reason, slice == 0, "Already at first snapshot");
-    mark_boundary(&ui.next, &ui.next_reason, slice >= end, "Already at last snapshot");
+    let boundary_failed = mark_boundary(&ui.previous, &ui.previous_reason, slice == 0, "Already at first snapshot")
+        | mark_boundary(&ui.next, &ui.next_reason, slice >= end, "Already at last snapshot");
 
     let visible = match controller.with_host(|host| host.presence()) {
         Presence::Live => "visible",
@@ -269,8 +271,11 @@ pub(super) fn sync(shared: &Shared) {
         "Paused"
     };
     set_text(&ui.i_state, &format!("{state} / {visible}"));
-    // A page needs repair if a draw failed, and also if the Play control could not be written, which leaves playback going under a button that says Play.
-    let dirty = controller.is_dirty() || controller.with_host(|host| host.controls_stale());
+    // A page needs repair if a draw failed, and also if the Play control could not be written, which leaves playback
+    // going under a button that says Play. A write of a boundary button that failed is the same: the controller drew
+    // what it should, and a control says something else. Every refresh writes them again, so a repair, which refreshes,
+    // puts them right.
+    let dirty = controller.is_dirty() || controller.with_host(|host| host.controls_stale()) || boundary_failed;
     set_text(&ui.i_display, if dirty { "Needs repair" } else { "Up to date" });
     let committed = shared.shown_slice.replace(slice) != slice;
     if !dirty && (committed || shared.repaired.replace(false)) {

@@ -72,11 +72,11 @@ One test lets the browser's own timer run once at 1 Hz, and says how long that t
 | G05 | Previous, Restart and seeks equal a full redraw, and five arrow keys are five requests with the last one winning |
 | G06 | One slice per timer at 1, 2, 5 and 10 Hz, rate replacement, and Play at the end of a clean and of a dirty page |
 | G07 | A timer or frame that was taken back is gone, and the last request wins |
-| G08 | Repair restores the picture, the overlay and the Play control, after a failure at each of five writes and after a failed write of the Play control itself |
+| G08 | Repair restores the picture, the overlay and the Play control, after a failure at each of five writes after a failed write of the Play control, and after a failed write of a boundary attribute |
 | G09 | Selecting and clearing a job agree across the scene, the inspector and the accessible names |
 | G10 | Names, roles, aria-disabled, Tab order, Enter, Space, arrow keys, focus retention and no shortcut |
 
-`dess/demo-panel/p2/mutation-check.mjs` breaks the page in 14 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+`dess/demo-panel/p2/mutation-check.mjs` breaks the page in 15 ways, one at a time, in a copy of the tree, and a test has to fail for each.
 Its result is in `evidence/mutation-check.json`, and the run of the ten tests that was measured is in `evidence/gallery.json`.
 It rebuilds the demo for each mutation and takes about half an hour, so CI does not run it on every commit.
 
