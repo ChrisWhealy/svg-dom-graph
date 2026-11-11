@@ -8,7 +8,7 @@ use service_sim::projection::View;
 use service_sim::surface::{FaultPoint, Surface};
 use service_sim_engine::trace::Scenario;
 use service_sim_engine::{Engine, Limits};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use svg_dom::SvgRoot;
 use svg_dom::root::utils::Size;
@@ -281,6 +281,40 @@ fn toggle(one: &web_sys::Element, two: &web_sys::Element, first_shown: bool) {
     } else {
         two.class_list().add_1("active")
     };
+}
+
+/// A class that a scene writes while it draws is not a change of the gallery, so it is not passed on, and a panel that
+/// is shown or hidden is. Both come from the same observer on the stage.
+#[wasm_bindgen_test]
+async fn the_gallery_hint_ignores_classes_inside_an_svg_and_hears_a_panel_toggle() -> Result<(), String> {
+    let (stage, one, two) = gallery("ct-hint-filter")?;
+    one.set_inner_html("<svg><g id=\"ct-hint-g\" class=\"a\"></g></svg>");
+    let calls = Rc::new(Cell::new(0_u32));
+    let seen = Rc::clone(&calls);
+    let _hint = GalleryHint::install(&stage, move || seen.set(seen.get() + 1))?;
+    let g = document().get_element_by_id("ct-hint-g").ok_or("no element inside the svg")?;
+    g.set_attribute("class", "b").map_err(|e| format!("{e:?}"))?;
+    g.class_list().add_1("c").map_err(|e| format!("{e:?}"))?;
+    sleep(50).await;
+    check(
+        calls.get() == 0,
+        &format!("a class inside an svg was passed on {} times", calls.get()),
+    )?;
+    toggle(&one, &two, false);
+    until("the toggle to be heard", || calls.get() >= 1).await?;
+    check(
+        calls.get() == 1,
+        &format!("one toggle was passed on {} times, not once", calls.get()),
+    )?;
+    // A scene's class writes beside a toggle in one task are still one hint, delivered once.
+    g.set_attribute("class", "d").map_err(|e| format!("{e:?}"))?;
+    toggle(&one, &two, true);
+    until("the second toggle to be heard", || calls.get() >= 2).await?;
+    sleep(50).await;
+    check(
+        calls.get() == 2,
+        &format!("a toggle and a class inside an svg made {} hints, not 2 in all", calls.get()),
+    )
 }
 
 /// A panel that is hidden is not live though its host is in the document, and a callback that was already queued is

@@ -384,17 +384,26 @@ impl Host for PageHost {
 /// made.
 pub struct GalleryHint {
     observer: web_sys::MutationObserver,
-    _callback: Closure<dyn FnMut()>,
+    _callback: Closure<dyn FnMut(js_sys::Array)>,
 }
 
 impl GalleryHint {
     /// Watches the `class` attribute of everything under `stage`, and calls `changed` when one changes.
     ///
+    /// A change inside an `<svg>` is not a change of the gallery: a scene writes classes as it draws, and each would
+    /// otherwise ask for a visibility check, and for a repair of a page that is dirty. Only a change of an element that
+    /// is not in an `<svg>` is passed on. The call is still made in the microtask that the observer delivers, so it
+    /// comes before a timer that was queued before the change.
+    ///
     /// # Errors
     ///
     /// Returns `Err` if the observer could not be made or started.
     pub fn install(stage: &web_sys::Element, changed: impl Fn() + 'static) -> Result<Self, String> {
-        let callback = Closure::<dyn FnMut()>::new(changed);
+        let callback = Closure::<dyn FnMut(js_sys::Array)>::new(move |records: js_sys::Array| {
+            if records.iter().any(|record| is_gallery_change(&record)) {
+                changed();
+            }
+        });
         let observer = web_sys::MutationObserver::new(callback.as_ref().unchecked_ref())
             .map_err(|e| format!("could not make an observer: {e:?}"))?;
         let options = web_sys::MutationObserverInit::new();
@@ -405,6 +414,19 @@ impl GalleryHint {
             .observe_with_options(stage, &options)
             .map_err(|e| format!("could not observe the stage: {e:?}"))?;
         Ok(Self { observer, _callback: callback })
+    }
+}
+
+/// Whether a mutation record is of an element that is outside every `<svg>`, which is what a gallery's own change of
+/// a panel's class is.
+fn is_gallery_change(record: &wasm_bindgen::JsValue) -> bool {
+    let target = record
+        .dyn_ref::<web_sys::MutationRecord>()
+        .and_then(web_sys::MutationRecord::target);
+    match target.and_then(|node| node.dyn_into::<web_sys::Element>().ok()) {
+        Some(element) => element.closest("svg").ok().flatten().is_none(),
+        // A record that cannot be read is passed on, since a hint that is missed is worse than one that is not needed.
+        None => true,
     }
 }
 

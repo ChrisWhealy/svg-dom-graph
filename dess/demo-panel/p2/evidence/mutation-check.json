@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T12:31:08.419Z",
-  "git_sha": "8645696af1f20d815597746b5f43fe8e713a22ff",
+  "measured_at": "2026-11-11T12:39:34.895Z",
+  "git_sha": "2cbeec8b5858e1ee2b3e954b11828263395aad67",
   "git_dirty": true,
-  "caught": 14,
-  "total": 14,
+  "caught": 15,
+  "total": 15,
   "mutations": [
     {
       "name": "Next is not marked as at the last snapshot when it is",
@@ -82,6 +82,12 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL and the inspector does not say Up to date (Up to date)"
+    },
+    {
+      "name": "a failed write of a boundary attribute is not counted as needing repair",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and the page says that it needs repair (Up to date)"
     },
     {
       "name": "a failure is never cleared from the page",
