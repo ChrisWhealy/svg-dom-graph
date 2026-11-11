@@ -277,9 +277,11 @@ fn assert_old_is_untouched(
     world: &Rc<RefCell<World>>,
     old: &Controller<FakeHost, ManualScheduler>,
     slice: u64,
+    selected: Option<u64>,
 ) {
     assert_eq!(session.active_id(), Some("E0"));
-    assert_eq!((old.committed_slice(), old.selected()), (slice, old.selected()));
+    assert_eq!((old.committed_slice(), old.selected()), (slice, selected));
+    assert_eq!(current(session).selected(), selected);
     assert_eq!(current(session).committed_slice(), slice);
     let w = world.borrow();
     assert_eq!(w.visible, BTreeSet::from([0]), "the old page is the one that is shown");
@@ -456,7 +458,7 @@ fn a_candidate_that_fails_before_the_handoff_leaves_the_old_session_as_it_was() 
         assert!(!rollback.undo_failed, "{what}: nothing was handed off, so nothing was undone");
         assert_eq!(rollback.repair, None, "{what}: a clean page is not repaired");
         assert_eq!(session.state(), State::RolledBack, "{what}");
-        assert_old_is_untouched(&session, &world, &old, 3);
+        assert_old_is_untouched(&session, &world, &old, 3, selected);
         assert_eq!(old.selected(), selected, "{what}: the selection is kept");
         assert!(
             !old.is_playing(),
@@ -491,6 +493,9 @@ fn a_handoff_that_fails_at_any_step_is_undone_and_the_old_page_is_repaired() {
         let old = current(&session);
         old.next();
         old.next();
+        old.select_job(Some(0));
+        let selected = old.selected();
+        assert!(selected.is_some(), "a selection exists to be kept");
         world.borrow_mut().fail_publish_step = Some(step);
         let SwitchOutcome::RolledBack(rollback) = session.switch(noop()) else {
             panic!("step {step}")
@@ -502,7 +507,7 @@ fn a_handoff_that_fails_at_any_step_is_undone_and_the_old_page_is_repaired() {
             Some(Outcome::Done),
             "step {step}: the old picture is drawn again, since the handoff may have disturbed it"
         );
-        assert_old_is_untouched(&session, &world, &old, 2);
+        assert_old_is_untouched(&session, &world, &old, 2, selected);
         let w = world.borrow();
         assert_eq!(
             (w.undos, w.discarded.clone()),
@@ -526,6 +531,9 @@ fn a_handoff_that_reports_success_and_is_incomplete_is_not_committed() {
         let (mut session, world) = started();
         let old = current(&session);
         old.next();
+        old.select_job(Some(0));
+        let selected = old.selected();
+        assert!(selected.is_some(), "a selection exists to be kept");
         world.borrow_mut().skipped_publish_step = Some(step);
         let SwitchOutcome::RolledBack(rollback) = session.switch(noop()) else {
             panic!("step {step}")
@@ -538,7 +546,7 @@ fn a_handoff_that_reports_success_and_is_incomplete_is_not_committed() {
             Some(Outcome::Done),
             "step {step}: the old page is repaired, since it was handed off"
         );
-        assert_old_is_untouched(&session, &world, &old, 1);
+        assert_old_is_untouched(&session, &world, &old, 1, selected);
         let w = world.borrow();
         assert_eq!(
             (w.undos, w.discarded.clone()),
