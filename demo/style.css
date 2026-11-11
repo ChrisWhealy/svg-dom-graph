@@ -2968,17 +2968,57 @@ svg.spmv-scene-svg rect.spmv-changed {
     flex: 0 0 1.5rem;
 }
 
-/* The service simulator panel: native controls above the scene, and the committed snapshot written out beside it. Every state is a word as well as a
-   style, and the dashed and thick outlines say what a colour would. */
+/* The service simulator panel. The controls and the inspector are `foreignObject`s of the scene's own <svg>, on its light ground, so they are drawn dark on
+   light and scale with the scene. Every state is a word as well as a style, and the dashed and thick outlines say what a colour would. */
+.dess-holder {
+    display: none;
+}
+
+#dess-stage {
+    position: relative;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#dess-stage > div > svg {
+    display: block;
+    width: 100%;
+    max-width: 1500px;
+    height: auto;
+}
+
+.dess-fo {
+    box-sizing: border-box;
+    padding: 6px 10px;
+    color: #1e293b;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.dess-fo p,
+.dess-fo h3 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: none;
+}
+
+.dess-fo h3 {
+    margin-top: 8px;
+    font-size: 15px;
+}
+
+.dess-fo label {
+    font-weight: 600;
+}
+
 .dess-head {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-}
-
-.dess-head p {
-    margin: 0.25rem 0;
+    align-items: center;
+    gap: 4px 16px;
 }
 
 .dess-transport,
@@ -2986,67 +3026,99 @@ svg.spmv-scene-svg rect.spmv-changed {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem 0.75rem;
-    margin: 0.5rem 0;
+    gap: 4px 10px;
+    margin: 6px 0;
 }
 
 .dess-seek input[type="range"] {
-    flex: 1 1 16rem;
-    max-width: 40rem;
+    flex: 1 1 320px;
+    min-width: 200px;
 }
 
-.dess-transport button,
-.dess-wrap button {
-    padding: 0.3rem 0.8rem;
-    border: 1px solid var(--border-strong);
+.dess-fo button {
+    padding: 4px 12px;
+    border: 1px solid #64748b;
     border-radius: 4px;
-    background: var(--surface);
-    color: var(--text);
+    background: #ffffff;
+    color: #1e293b;
     font: inherit;
     cursor: pointer;
 }
 
-.dess-transport button:hover {
-    border-color: var(--accent);
+.dess-fo button:hover {
+    border-color: #1d4ed8;
 }
 
-.dess-transport button:focus-visible,
-.dess-transport select:focus-visible,
-.dess-seek input:focus-visible,
-.dess-side select:focus-visible {
-    outline: 2px solid var(--accent-light);
-    outline-offset: 2px;
+.dess-fo button[aria-pressed="true"] {
+    border-color: #1d4ed8;
+    background: #dbeafe;
 }
 
-.dess-transport button[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: #0c2d6b;
-}
-
-.dess-transport select,
-.dess-side select {
-    padding: 0.25rem 0.4rem;
-    border: 1px solid var(--border-strong);
+.dess-fo select {
+    padding: 3px 6px;
+    border: 1px solid #64748b;
     border-radius: 4px;
-    background: var(--surface);
-    color: var(--text);
+    background: #ffffff;
+    color: #1e293b;
     font: inherit;
     max-width: 100%;
 }
 
-.dess-transport [aria-disabled="true"] {
+.dess-fo button:focus-visible,
+.dess-fo select:focus-visible,
+.dess-fo input:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.dess-fo [aria-disabled="true"] {
     opacity: 0.55;
     cursor: default;
 }
 
 .dess-reasons {
-    margin: 0;
     min-height: 1.4em;
-    color: var(--text-muted);
+    color: #475569;
 }
 
 .dess-reasons span:not(:empty) {
-    margin-right: 1.5rem;
+    margin-right: 16px;
+}
+
+.dess-side {
+    overflow: hidden;
+    border-left: 1px solid #94a3b8;
+}
+
+.section .dess-side .dess-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 1px 10px;
+    margin: 2px 0 4px;
+    font-size: 13px;
+}
+
+.section .dess-side .dess-status dt {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e3a8a;
+}
+
+.section .dess-side .dess-status dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 13px;
+    color: #1e293b;
+    overflow-wrap: anywhere;
+}
+
+.dess-side select {
+    display: block;
+    width: 100%;
+    margin: 2px 0 4px;
+    font-size: 13px;
 }
 
 .dess-notice {
@@ -3055,57 +3127,6 @@ svg.spmv-scene-svg rect.spmv-changed {
     border-left: 4px solid #b45309;
     background: #fef3c7;
     color: #451a03;
-}
-
-.dess-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin: 0.75rem 0;
-}
-
-.dess-wrap .canvas {
-    position: relative;
-    flex: 1 1 40rem;
-    max-width: 100%;
-    overflow-x: auto;
-}
-
-.dess-wrap .canvas > div > svg {
-    display: block;
-    width: 100%;
-    max-width: 1040px;
-    height: auto;
-}
-
-.dess-side {
-    flex: 1 1 16rem;
-    max-width: 36rem;
-}
-
-.dess-side > h3:first-child {
-    margin-top: 0;
-}
-
-.section .dess-status {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0.2rem 0.75rem;
-    margin: 0 0 0.75rem;
-}
-
-.section .dess-status dt {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.section .dess-status dd {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    overflow-wrap: anywhere;
 }
 
 .dess-legend {
@@ -3118,6 +3139,10 @@ svg.spmv-scene-svg rect.spmv-changed {
     pointer-events: none;
     fill: #1e293b;
     font-size: 15px;
+}
+
+.ss-overlay .ss-legend {
+    font-size: 10.5px;
 }
 
 .ss-overlay .ss-caption {

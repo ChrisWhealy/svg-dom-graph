@@ -617,7 +617,7 @@ jobs:
   # real clicks and keys. The oracle is the independent JavaScript engine, and failures are made by the page-level injector and not by a second build of
   # the wasm. It does not rebuild the demo, and it takes no part in the CDP shards or in perf-smoke. See dess/demo-panel/test-gallery.mjs.
   dess-gallery:
-    name: Service simulator gallery panel (G01 to G10 · feature gate)
+    name: Service simulator gallery panel (G01 to G17 · feature gate)
     needs: cdp-build
     runs-on: ubuntu-24.04
     env:
@@ -647,7 +647,7 @@ jobs:
       - name: The demo build does not hold the fault hook
         run: node dess/demo-panel/p0/features.mjs --require-service-sim
 
-      - name: The gallery panel passes G01 to G10
+      - name: The gallery panel passes G01 to G17
         run: node dess/demo-panel/test-gallery.mjs --out target/dess-gallery/gallery.json
 
       - name: Keep the results

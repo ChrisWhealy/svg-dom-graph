@@ -16,8 +16,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { launch, serve } from '../../perf/lib/chrome-session.mjs'
-import { press, release, move, pause } from '../../perf/lib/input.mjs'
+import { press, release, move, pause, wheel } from '../../perf/lib/input.mjs'
 import { run } from '../reference-js/oracle.mjs'
+import { MIXED_OUTAGE_7 } from '../reference-js/generator.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
@@ -53,32 +54,49 @@ const COUNTER_NAMES = [
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // The oracle: the state of E0 after k slices, from the independent engine, in the form that the page shows it.
 const fixtures = JSON.parse(fs.readFileSync(path.join(root, 'dess/s1/fixtures.json'), 'utf8'))
-const E0 = { configId: 'fixture/E0', seed: 0, config: fixtures.E0.config, script: fixtures.E0.script }
 const E0_SLICES = fixtures.E0.expect.slices
-const oracleAt = k => {
+/** The scenarios of the catalogue, as the independent engine runs them, with what the panel shows of their shape. */
+const SCENARIOS = {
+  E0: { servers: 2, capacity: 3, slices: 12, run: { configId: 'fixture/E0', seed: 0, config: fixtures.E0.config, script: fixtures.E0.script } },
+  'E3-NOOP': {
+    servers: 1,
+    capacity: 2,
+    slices: fixtures['E3-NOOP'].expect.slices,
+    run: { configId: 'fixture/E3-NOOP', seed: 0, config: fixtures['E3-NOOP'].config, script: fixtures['E3-NOOP'].script }
+  },
+  scaled: {
+    servers: 3,
+    capacity: MIXED_OUTAGE_7.queueCapacity,
+    slices: 487,
+    run: { configId: 'mixed_outage/7', seed: 20261106, config: MIXED_OUTAGE_7, params: { ...MIXED_OUTAGE_7, arrivals: 360 } }
+  },
+  W6: {
+    servers: 3,
+    capacity: MIXED_OUTAGE_7.queueCapacity,
+    slices: 5464,
+    run: { configId: 'mixed_outage/7', seed: 20261106, config: MIXED_OUTAGE_7, params: MIXED_OUTAGE_7 }
+  }
+}
+const E0S = SCENARIOS.E0
+const oracleCache = new Map()
+/** The state of a scenario after k slices, from the independent engine, in the form that the page shows it. */
+const oracleAt = (scenario, k) => {
   if (k === 0) return { overlay: Array(10).fill(0), data: Array(8).fill(0), tick: 0, waiting: 0, busy: 0 }
-  const r = run(E0, { stopAfterSlices: k })
+  const cached = oracleCache.get(`${scenario.run.configId}/${k}`)
+  if (cached) return cached
+  const r = run(scenario.run, { stopAfterSlices: k })
   const c = r.counters
   const s = r.slices[k - 1]
   const retry = r.jobs.filter(j => j[2].startsWith('retrywait')).length
-  return {
-    overlay: [
-      c.arrivals,
-      c.admitted,
-      c.rejected,
-      c.completed,
-      c.timedOut,
-      c.cancelled,
-      c.failedAttempts + c.failedDeferrals,
-      retry,
-      c.stale,
-      c.noops
-    ],
+  const state = {
+    overlay: [c.arrivals, c.admitted, c.rejected, c.completed, c.timedOut, c.cancelled, c.failedAttempts + c.failedDeferrals, retry, c.stale, c.noops],
     data: [k, s.tick, s.waiting, s.busy, c.completed, c.timedOut, c.cancelled, c.rejected],
     tick: s.tick,
     waiting: s.waiting,
     busy: s.busy
   }
+  oracleCache.set(`${scenario.run.configId}/${k}`, state)
+  return state
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -121,7 +139,11 @@ const fresh = async (hash = PANEL) => {
   await pause(50)
   await send('Page.navigate', { url: `${url}#${hash}` })
   for (let waited = 0; waited < 20000; waited += 50) {
-    if ((await evaluate(`document.getElementById('${PANEL}')?.dataset.panelState ?? null`)) === 'ready') return
+    if ((await evaluate(`document.getElementById('${PANEL}')?.dataset.panelState ?? null`)) === 'ready') {
+      // The controls are in the scene, so they leave the document with it. Their elements are kept, to be read while the scene is detached.
+      await evaluate(`(window.__byId = Object.fromEntries([...document.querySelectorAll('#dess-toolbar [id], #dess-side [id]')].map(e => [e.id, e])), 0)`)
+      return
+    }
     await pause(50)
   }
   throw new Error('the panel did not come up')
@@ -198,7 +220,8 @@ const read = () =>
       play: { text: text('dess-play'), pressed: attr('dess-play', 'aria-pressed') },
       prev: { disabled: attr('dess-prev', 'aria-disabled'), hasDisabled: document.getElementById('dess-prev').hasAttribute('disabled'), reason: text('dess-prev-reason') },
       next: { disabled: attr('dess-next', 'aria-disabled'), hasDisabled: document.getElementById('dess-next').hasAttribute('disabled'), reason: text('dess-next-reason') },
-      errorHidden: document.getElementById('dess-error').hidden, errorText: text('dess-error')
+      errorHidden: document.getElementById('dess-error').hidden, errorText: text('dess-error'),
+      notice: { hidden: document.getElementById('dess-notice').hidden, text: text('dess-notice') }
     }
   })()`.replace('COUNTER_KEYS', JSON.stringify(COUNTER_KEYS))
   )
@@ -213,6 +236,40 @@ const accessibility = async () => {
 }
 
 const pending = () => evaluate('({ timers: __timers.pending(), frames: __frames.pending() })')
+
+/** Chooses a scenario in the list, which is the request for it. The answer is read from the page afterwards. */
+const chooseScenario = id =>
+  evaluate(
+    `(() => { const s = document.getElementById('dess-scenario'); s.value = '${id}'; s.dispatchEvent(new Event('change', { bubbles: true })); return s.value })()`
+  )
+/** What the page says about the scenario that is on it, and what is in the DOM for it. */
+const scenarioState = () =>
+  evaluate(`(() => {
+    const hosts = [...document.querySelectorAll('[id^="dess-host-"]')]
+    return {
+      select: document.getElementById('dess-scenario').value,
+      hosts: hosts.map(h => ({ id: h.id, staged: h.hasAttribute('inert') || h.hasAttribute('style') })),
+      svgs: document.querySelectorAll('#dess-stage svg').length,
+      servers: [...document.querySelectorAll('#dess-stage [data-ss-key]')].filter(g => /^S\\d+$/.test(g.getAttribute('data-ss-key'))).length,
+      max: document.getElementById('dess-seek').max,
+      snapshot: document.getElementById('dess-i-snapshot').textContent,
+      errorShown: !document.getElementById('dess-error').hidden, error: document.getElementById('dess-error').textContent,
+      transform: document.querySelector('#dess-stage svg > g.svg-dom-graph-content')?.getAttribute('transform') ?? null
+    }
+  })()`)
+/** How many scenes the accessibility tree exposes: the overlay is a group named Service simulator, and there is one in each scene. */
+const scenes = async () =>
+  (await accessibility()).filter(n => n.role?.value === 'group' && n.name?.value === 'Service simulator').length
+const routeAway = () => click('#menu .menu-item[data-target="panel-petri-net"]')
+const routeBack = () => click(`#menu .menu-item[data-target="${PANEL}"]`)
+/** What the page says without reading the scene, for when the scene is not in the document. */
+const status = () =>
+  evaluate(`(() => {
+    const text = id => (document.getElementById(id) ?? window.__byId[id]).textContent
+    return { snapshot: text('dess-i-snapshot'), state: text('dess-i-state'), display: text('dess-i-display'), live: text('dess-live'), error: text('dess-error'), errorHidden: document.getElementById('dess-error').hidden }
+  })()`)
+const census = () =>
+  evaluate(`({ observers: __seen.observers.filter(o => o.id === 'stage').length, listeners: __listeners.snapshot().total, hosts: [...document.querySelectorAll('[id^="dess-host-"]')].map(e => e.id) })`)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const results = []
@@ -240,13 +297,13 @@ const test = async (id, title, body) => {
 }
 
 /** What the page shows for snapshot k, compared with what the independent engine says that it is. */
-const matchesOracle = (page, k) => {
-  const o = oracleAt(k)
+const matchesOracle = (page, k, scenario = E0S) => {
+  const o = oracleAt(scenario, k)
   const problems = []
-  if (page.iSnapshot !== `${k} of ${E0_SLICES}`) problems.push(`snapshot ${page.iSnapshot}`)
+  if (page.iSnapshot !== `${k} of ${scenario.slices}`) problems.push(`snapshot ${page.iSnapshot}`)
   if (page.tick !== String(o.tick)) problems.push(`tick ${page.tick} not ${o.tick}`)
-  if (page.waiting !== `${o.waiting} of 3`) problems.push(`waiting ${page.waiting} not ${o.waiting}`)
-  if (page.busy !== `${o.busy} of 2`) problems.push(`busy ${page.busy} not ${o.busy}`)
+  if (page.waiting !== `${o.waiting} of ${scenario.capacity}`) problems.push(`waiting ${page.waiting} not ${o.waiting}`)
+  if (page.busy !== `${o.busy} of ${scenario.servers}`) problems.push(`busy ${page.busy} not ${o.busy}`)
   if (!same(page.counters, o.overlay.map(String))) problems.push(`inspector counters ${page.counters} not ${o.overlay}`)
   const overlay = COUNTER_KEYS.map(k2 => page.slots[k2].text)
   if (!same(overlay, o.overlay.map(String))) problems.push(`overlay counters ${overlay} not ${o.overlay}`)
@@ -378,7 +435,7 @@ await test('G03', 'the first draw is the walkthrough at snapshot 0', async () =>
     counts.queue === 12 && counts.servers === 2,
     `twelve queue slots and two servers (${counts.queue}, ${counts.servers})`
   )
-  check(counts.viewBox === '0 0 1000 480', `the fixed view box (${counts.viewBox})`)
+  check(counts.viewBox === '0 -150 1340 630', `the fixed view box (${counts.viewBox})`)
   const problems = matchesOracle(page, 0)
   check(
     problems.length === 0,
@@ -513,8 +570,7 @@ await test('G05', 'Previous, Restart and a seek equal a full redraw, and each ar
     "Chrome's DevTools accessibility tree reports a range's value as its number and ignores aria-valuetext: a custom role=slider that has it is reported with an empty valuetext in the same Chrome (157). So what is announced is checked at the attribute, and a screen reader's own reading is a manual observation for P4."
   ]
   console.log(`  note ${current.limits[0]}`)
-  current.deferred =
-    'the same arrow keys on the 5,464 snapshots of the W6 reference trace need the scenario to be switched, which is P3'
+  current.deferred = 'the same arrow keys on the 5,464 snapshots of the W6 reference trace are G05W6, below'
   console.log(`  note ${current.deferred}`)
 })
 
@@ -996,6 +1052,352 @@ await test(
     )
   }
 )
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+await test('G05W6', 'five arrow keys on the 5,464 snapshots of the advanced scenario are five requests, and the last one wins', async () => {
+  await fresh()
+  await chooseScenario('W6')
+  const state = await scenarioState()
+  check(state.max === '5464' && state.snapshot === '0 of 5464', `the advanced scenario runs to the preflight's 5,464 (${state.max}, ${state.snapshot})`)
+  check(matchesOracle(await read(), 0, SCENARIOS.W6).length === 0, 'and starts at the independent engine\'s snapshot 0')
+  await focus('#dess-seek')
+  await evaluate('__seen.frames = 0')
+  await hold(true)
+  for (let i = 0; i < 5; i++) await key('ArrowRight')
+  const during = await read()
+  const held = await pending()
+  check(during.seek.value === '5' && during.seek.valuetext === 'Snapshot 5 of 5464', `the range asks for 5 and says ${during.seek.valuetext}`)
+  check(during.iSnapshot === '0 of 5464' && during.seek.text === 'Requested 5, committed 0', `while snapshot 0 is still the committed one (${during.seek.text})`)
+  check((await evaluate('__seen.frames')) === 5 && held.frames === 1, `each press asked for a frame, and only the last is waiting (${held.frames})`)
+  await evaluate('__frames.release()')
+  await hold(false)
+  await until(`document.getElementById('dess-seek-text').textContent === 'Committed 5'`)
+  check(matchesOracle(await read(), 5, SCENARIOS.W6).length === 0, 'the last request committed snapshot 5, which is the independent engine\'s')
+  // A long jump, to the end, and one step beyond it.
+  await evaluate(`(() => { const s = document.getElementById('dess-seek'); s.value = '5464'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+  const arrived = await until(`document.getElementById('dess-seek-text').textContent === 'Committed 5464'`, 20000)
+  check(arrived, 'a seek to the last snapshot arrives')
+  const end = await read()
+  const problems = matchesOracle(end, 5464, SCENARIOS.W6)
+  check(problems.length === 0, `and it is the independent engine's last snapshot ${problems.join('; ')}`)
+  await click('#dess-next')
+  check((await read()).live === 'End of scenario' && (await slice()) === 5464, 'and Next there is the end of the scenario, with nothing committed')
+})
+
+await test('G11', 'routing away with a held Play timer stops it through the one gallery observer, and routing back stays paused', async () => {
+  await fresh()
+  // The first visit to the other panel builds it, and its listeners are not this panel's.
+  await routeAway()
+  await until(`document.getElementById('panel-petri-net').dataset.panelState === 'ready'`)
+  await routeBack()
+  await hold(true)
+  await setSpeed(1000)
+  const baseline = await census()
+  await click('#dess-play')
+  let p = await pending()
+  const [timer] = p.timers
+  check(p.timers.length === 1 && timer.delay === 1000, `Play holds one 1 Hz timer (${JSON.stringify(p.timers)})`)
+  await routeAway()
+  p = await pending()
+  let page = await read()
+  check(p.timers.length === 0, 'the observer told the current controller, which took the timer back')
+  const late = await evaluate(`__timers.fire(${timer.id})`)
+  check(late.ran === false && (await slice()) === 0, `a timer that was taken back is gone and commits nothing (${JSON.stringify(late)})`)
+  check(page.play.pressed === 'false' && page.state === 'Paused / hidden', `the hidden panel says that it is paused and hidden (${page.state})`)
+  check(!page.notice.hidden && page.notice.text === 'Paused while hidden. Press Play to resume.', `and says why (${page.notice.text})`)
+  check(page.live === 'Paused while hidden. Press Play to resume.', 'and says it once, in the live region')
+  await routeBack()
+  page = await read()
+  p = await pending()
+  check(page.play.pressed === 'false' && page.state === 'Paused / visible' && p.timers.length === 0, `routing back does not resume (${page.state}, ${p.timers.length} timers)`)
+  check(!page.notice.hidden && page.iSnapshot === '0 of 12', 'and the reason is still shown, at the snapshot where it stopped')
+  const after = await census()
+  check(after.observers === baseline.observers && after.listeners === baseline.listeners && same(after.hosts, baseline.hosts), `with the same observer, listeners and host (${after.observers}, ${after.listeners})`)
+  await click('#dess-play')
+  p = await pending()
+  page = await read()
+  check(page.notice.hidden && p.timers.length === 1 && page.play.pressed === 'true', 'a deliberate Play clears the reason and starts one timer')
+  await click('#dess-play')
+  page = await read()
+  check(page.notice.hidden && page.play.pressed === 'false', 'and a Pause after it does not bring the reason back')
+  await hold(false)
+})
+
+await test('G12', 'a hidden page stops Play and stays stopped, and a hide and a show in one batch may continue', async () => {
+  await fresh()
+  await hold(true)
+  await setSpeed(1000)
+  const setHidden = hidden =>
+    evaluate(`(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => ${hidden} }); document.dispatchEvent(new Event('visibilitychange')); return 0 })()`)
+  await click('#dess-play')
+  await setHidden(true)
+  let p = await pending()
+  let page = await read()
+  check(p.timers.length === 0 && page.play.pressed === 'false', `a hidden transition of the document stops Play (${p.timers.length} timers)`)
+  check(!page.notice.hidden, 'and says that it paused')
+  await setHidden(false)
+  p = await pending()
+  check(p.timers.length === 0 && (await read()).play.pressed === 'false', 'a later visible event does not resume it')
+  // A hide and a show in one task are two events, and the first one stops Play.
+  await click('#dess-play')
+  await evaluate(`(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')) })()`)
+  p = await pending()
+  check(p.timers.length === 0 && (await read()).play.pressed === 'false', 'a hide and a show of the document in one task still stop it')
+  // The gallery's own hide and show of the section in one task are one batch for the observer, which sees only the panel that is shown.
+  await click('#dess-play')
+  const before = await census()
+  const start = await slice()
+  await evaluate(`(() => { const s = document.getElementById('${PANEL}'); s.classList.remove('active'); s.classList.add('active') })()`)
+  await pause(50)
+  p = await pending()
+  page = await read()
+  check(p.timers.length <= 1, `after a hide and a show in one batch at most one timer is waiting (${p.timers.length})`)
+  if (p.timers.length === 1) {
+    await evaluate(`__timers.fire(${p.timers[0].id})`)
+    const next = await pending()
+    check((await slice()) === start + 1 && next.timers.length === 1, `and one firing is one tick, with the next one asked for once (${await slice()}, ${next.timers.length})`)
+  } else check(page.play.pressed === 'false', 'or it stopped, and says so')
+  const after = await census()
+  check(after.observers === before.observers && after.listeners === before.listeners && same(after.hosts, before.hosts), 'with no new observer, listener or host')
+  await click('#dess-play')
+  await hold(false)
+  const errors = exceptions.filter(e => !/favicon/.test(e))
+  check(errors.length === 0, `and the page raised no exception (${errors.length})`)
+})
+
+await test('G13', 'hiding the panel during a seek that is waiting leaves no frame, and a later seek succeeds', async () => {
+  await fresh()
+  await hold(true)
+  await focus('#dess-seek')
+  await evaluate(`(() => { const s = document.getElementById('dess-seek'); s.value = '8'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+  let p = await pending()
+  check(p.frames === 1, `a seek is waiting for its frame (${p.frames})`)
+  await routeAway()
+  p = await pending()
+  let page = await read()
+  check(p.frames === 0 && page.iSnapshot === '0 of 12', `hiding the panel took the frame back, and nothing was committed (${p.frames}, ${page.iSnapshot})`)
+  await routeBack()
+  page = await read()
+  check(page.seek.text === 'Committed 0' && page.iSnapshot === '0 of 12', `routing back shows the committed snapshot and no request (${page.seek.text})`)
+  await focus('#dess-seek')
+  await evaluate(`(() => { const s = document.getElementById('dess-seek'); s.value = '6'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+  await evaluate('__frames.release()')
+  await hold(false)
+  await until(`document.getElementById('dess-seek-text').textContent === 'Committed 6'`)
+  page = await read()
+  check(page.iSnapshot === '6 of 12' && matchesOracle(page, 6).length === 0, 'a later seek commits the independent engine\'s snapshot 6')
+})
+
+await test('G14', 'a host detached before or in the middle of a draw commits nothing, and a full repair follows', async () => {
+  await fresh()
+  for (let i = 0; i < 3; i++) await click('#dess-next')
+  // In the middle of a draw: the injector detaches the host just after its second write.
+  await evaluate(`__faults.armDetach({ svgId: 'dess-svg-0', method: 'setAttribute', nth: 2 })`)
+  await click('#dess-next')
+  const report = await evaluate('__faults.disarmDetach()')
+  check(report?.fired === true && report.firings === 1 && report.detached === true, `the injection fired once, at ${report?.site}, and the host left (${JSON.stringify(report)})`)
+  let page = await status()
+  check(page.snapshot === '3 of 12', `no slice was committed (${page.snapshot})`)
+  check(page.state === 'Paused / detached' && page.display === 'Needs repair', `and the page says that it is detached and needs repair (${page.state}, ${page.display})`)
+  check(page.live === 'The panel is hidden or detached, so nothing changed.', `in words, as unavailable and not as a failed write (${page.live})`)
+  check(await evaluate('__faults.reattach()'), 'the host was put back')
+  await click('#dess-repair')
+  page = await read()
+  check(page.display === 'Up to date' && matchesOracle(page, 3).length === 0, `a full repair makes it the independent engine's snapshot 3 (${matchesOracle(page, 3).join('; ')})`)
+  await click('#dess-next')
+  check(matchesOracle(await read(), 4).length === 0, 'and the next slice then commits')
+  // Before a draw: the host is taken out of the document by the test.
+  await evaluate(`(() => { const svg = document.getElementById('dess-svg-0'); window.__svgEl = svg; window.__parent = svg.parentNode; window.__next = svg.nextSibling; svg.remove() })()`)
+  // The controls are in the scene, and went with it, so the request is made by the click handler directly.
+  await evaluate('(window.__byId["dess-next"].click(), 0)')
+  page = await status()
+  check(page.snapshot === '4 of 12' && page.live === 'The panel is hidden or detached, so nothing changed.', `a request on a host that is not in the document commits nothing (${page.snapshot})`)
+  await evaluate('(window.__parent.insertBefore(window.__svgEl, window.__next), 0)')
+  await click('#dess-repair')
+  page = await read()
+  check(page.display === 'Up to date' && matchesOracle(page, 4).length === 0, 'put back, a repair makes it snapshot 4 again')
+  current.checks.push({ ok: true, text: 'a native fake host covers the same boundaries without a browser, in the coordinator tests' })
+})
+
+await test('G15', 'a switch to a scenario of the same size publishes snapshot 0 whole, and a failure leaves the old one as it was', async () => {
+  await fresh()
+  await chooseScenario('scaled')
+  await evaluate(`(window.__svg = document.querySelector('#dess-stage svg'), 0)`)
+  for (let i = 0; i < 3; i++) await click('#dess-next')
+  const options = await evaluate(`[...document.getElementById('dess-job').options].map(o => ({ value: o.value, label: o.textContent }))`)
+  await evaluate(`(() => { const s = document.getElementById('dess-job'); s.value = '${options[1].value}'; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+  const before = await read()
+  check(before.selected !== 'none' && before.iSnapshot === '3 of 487', `a scenario of three servers, at snapshot 3, with a job selected (${before.iSnapshot}, ${before.selected})`)
+  // A failure at several writes of the draw: the prior scenario, selection and picture are kept, and a repair restores the picture exactly.
+  let failures = 0
+  for (const at of [1, 3, 8]) {
+    await evaluate(`__faults.arm(${at}, 100000)`)
+    await chooseScenario('W6')
+    const report = await evaluate('__faults.disarm()')
+    const state = await scenarioState()
+    const same_svg = await evaluate('document.querySelector("#dess-stage svg") === window.__svg')
+    if (report.fired === null) {
+      check(false, `the injection at write ${at} was not reached`)
+      continue
+    }
+    failures++
+    check(state.errorShown && state.error.startsWith('The scenario could not be changed'), `a failure at write ${at} is said, and says that the previous scenario is still shown (${state.error.slice(0, 70)})`)
+    check(state.select === 'scaled' && state.max === '487' && same_svg, `the list, the range and the scene are the old scenario's (${state.select}, ${state.max}, same scene ${same_svg})`)
+    await click('#dess-repair')
+    const after = await read()
+    check(same(after.slots, before.slots) && same(after.data, before.data) && after.selected === before.selected && after.iSnapshot === before.iSnapshot, `a repair restores the same selection, snapshot and projection (${after.iSnapshot})`)
+  }
+  check(failures === 3, `all three injections fired (${failures})`)
+  // The same switch, with nothing wrong: atomic, in place, at snapshot 0.
+  await chooseScenario('W6')
+  const state = await scenarioState()
+  const page = await read()
+  check(await evaluate('document.querySelector("#dess-stage svg") === window.__svg'), 'a scenario of the same size is shown in the same scene, which is not replaced')
+  check(state.select === 'W6' && state.max === '5464' && !state.errorShown && state.hosts.length === 1, `the list and the range are the new scenario's (${state.select}, ${state.max})`)
+  check(page.selected === 'none' && matchesOracle(page, 0, SCENARIOS.W6).length === 0, 'at snapshot 0 with nothing selected, as the independent engine has it')
+})
+
+await test('G16', 'the sizes 2, 1, 3 and 2 each keep one scene, and a failure at any write leaves the old one', async () => {
+  await fresh()
+  // A person's zoom is the scene's own state, and goes with the scene that replaces it.
+  const { x, y } = await centre('#dess-stage svg')
+  for (let i = 0; i < 3; i++) await wheel(chrome, x, y, -200, { ctrl: true })
+  const zoomed = (await scenarioState()).transform
+  check(zoomed !== null && !/scale\(1\)|matrix\(1,0,0,1,0,0\)/.test(zoomed), `the scene was zoomed by real wheel input (${zoomed})`)
+  for (const id of ['E3-NOOP', 'scaled', 'E0']) {
+    await evaluate(`document.querySelector('#dess-stage [data-ss-key="S0"]').focus()`)
+    const focused = await evaluate('document.activeElement.getAttribute("data-ss-key")')
+    await chooseScenario(id)
+    const state = await scenarioState()
+    const exposed = await scenes()
+    check(state.svgs === 1 && state.hosts.length === 1 && !state.hosts[0].staged && exposed === 1, `${id}: one scene in the document and one in the accessibility tree (${state.svgs}, ${state.hosts.length}, ${exposed})`)
+    check(state.servers === SCENARIOS[id].servers && state.snapshot === `0 of ${SCENARIOS[id].slices}` && state.max === String(SCENARIOS[id].slices), `${id}: ${state.servers} servers, ${state.snapshot}`)
+    check(state.transform === zoomed, `${id}: the zoom went with it (${state.transform})`)
+    check(focused === 'S0' && (await evaluate('document.activeElement.id')) === 'dess-scenario', `${id}: a focus that was inside the old scene is on the scenario list`)
+    check(matchesOracle(await read(), 0, SCENARIOS[id]).length === 0, `${id}: and its first draw is the independent engine's snapshot 0`)
+  }
+  // Failures, at writes through the whole of a switch from 2 servers to 1. The count of writes comes from a switch that succeeds.
+  await evaluate('__faults.record(true)')
+  await chooseScenario('E3-NOOP')
+  const writes = (await evaluate('__faults.take()')).length
+  await evaluate('__faults.record(false)')
+  await chooseScenario('E0')
+  check(writes > 50, `a switch of size makes ${writes} counted DOM writes`)
+  const points = [...new Set([1, 2, 3, 5, 10, 20, 40, Math.floor(writes / 2), writes - 8, writes - 6, writes - 4, writes - 3, writes - 2, writes - 1, writes])].filter(n => n >= 1 && n <= writes)
+  // The writes of the build come first, then those of the first draw, and then the handoff, so a stride through the middle reaches the draw as well.
+  for (let n = 60; n < writes - 8; n += 37) if (!points.includes(n)) points.push(n)
+  const stages = new Set()
+  let rolled = 0
+  let committed = 0
+  for (const at of points) {
+    const before = await scenarioState()
+    await evaluate(`__faults.arm(${at}, 3)`)
+    await chooseScenario('E3-NOOP')
+    await evaluate('__faults.disarm()')
+    const state = await scenarioState()
+    if (!state.errorShown) {
+      // The failure fell on a write that nothing depends on, so the switch committed. Back to where the next point starts.
+      committed++
+      await chooseScenario('E0')
+      continue
+    }
+    rolled++
+    stages.add(/(Build|Validate|Publish) failed/.exec(state.error)?.[1] ?? 'other')
+    const exposed = await scenes()
+    const ok =
+      state.select === 'E0' && state.svgs === 1 && state.hosts.length === 1 && state.hosts[0].id === before.hosts[0].id && !state.hosts[0].staged &&
+      exposed === 1 && state.snapshot === before.snapshot && state.max === before.max && state.transform === before.transform
+    if (!ok) check(false, `a failure at write ${at} did not leave the old scene as it was: ${JSON.stringify({ before, state, exposed })}`)
+    await click('#dess-repair')
+    const page = await read()
+    if (page.display !== 'Up to date' || matchesOracle(page, 0).length !== 0) check(false, `after a failure at write ${at} a repair did not give snapshot 0 (${page.display}, ${matchesOracle(page, 0).join('; ')})`)
+  }
+  check(rolled >= 6, `${rolled} of the ${points.length} injections rolled back, and each left the old scene, one scene in the accessibility tree, its zoom and a repaired picture (${committed} fell on a write that nothing depends on)`)
+  check(stages.has('Build') && stages.has('Validate') && stages.has('Publish'), `and the failures were at the stages ${[...stages].join(', ')}`)
+  await chooseScenario('E3-NOOP')
+  const last = await scenarioState()
+  check(last.select === 'E3-NOOP' && last.svgs === 1 && (await scenes()) === 1 && !last.errorShown, 'and an ordinary switch afterwards still works')
+})
+
+await test('G17', 'the no-op scenario is nine slices that match the independent engine, and its end commits nothing', async () => {
+  await fresh()
+  await chooseScenario('E3-NOOP')
+  const E3 = SCENARIOS['E3-NOOP']
+  const ordinals = [Number((await read()).data[0])]
+  for (let k = 1; k <= E3.slices; k++) {
+    await click('#dess-next')
+    const page = await read()
+    ordinals.push(Number(page.data[0]))
+    const problems = matchesOracle(page, k, E3)
+    if (problems.length) check(false, `snapshot ${k}: ${problems.join('; ')}`)
+  }
+  check(ordinals.every((n, i) => n === i), `the data node's ordinal advanced by one at each of nine commits (${ordinals})`)
+  let page = await read()
+  const expected = fixtures['E3-NOOP'].expect
+  check(page.counters[8] === String(expected.stale) && page.counters[9] === String(expected.noops), `the stale and no-op counts are the fixture's, ${expected.stale} and ${expected.noops} (${page.counters[8]}, ${page.counters[9]})`)
+  check(page.next.disabled === 'true' && page.next.reason === 'Already at last snapshot', 'Next is marked as at the last snapshot')
+  await click('#dess-next')
+  page = await read()
+  check(page.iSnapshot === '9 of 9' && page.data[0] === '9' && page.live === 'End of scenario', `Next at the end commits nothing (${page.iSnapshot}, ${page.data[0]})`)
+  check(matchesOracle(page, E3.slices, E3).length === 0, 'and the page is still the independent engine\'s snapshot 9')
+})
+
+await test('L01', 'the controls and the inspector are in the scene, the nodes are laid out as designed, and the counters and cells have room', async () => {
+  await fresh()
+  const geometry = () =>
+    evaluate(`(() => {
+      const svg = document.querySelector('#dess-stage svg')
+      const content = svg.querySelector(':scope > g.svg-dom-graph-content')
+      const box = e => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, centre: (r.top + r.bottom) / 2 } }
+      const nodes = {}
+      for (const g of content.querySelectorAll(':scope > g:not(.ss-overlay)')) {
+        const label = g.querySelector('text')?.textContent?.trim()
+        const rect = g.querySelector('rect')
+        if (label && rect && /^(Dispatch|S\\d+)$/.test(label)) nodes[label] = box(rect)
+      }
+      const ends = [...content.querySelectorAll('path')].filter(p => p.getAttribute('marker-end') || p.closest('[class*="edge"]')).map(p => {
+        const at = p.getPointAtLength(p.getTotalLength())
+        const m = p.getScreenCTM()
+        return { x: m.a * at.x + m.c * at.y + m.e, y: m.b * at.x + m.d * at.y + m.f }
+      })
+      const captions = [...content.querySelectorAll('.ss-overlay .ss-caption:not(.ss-legend)')].map(c => ({ text: c.textContent, ...box(c) }))
+      const values = Object.fromEntries(['arrived', 'retrying', 'no-op'].map(k => [k, box(content.querySelector('[data-ss-key="' + k + '"] text'))]))
+      const legend = [...content.querySelectorAll('.ss-legend')].map(c => c.textContent)
+      const probe = document.createElementNS('http://www.w3.org/2000/svg', 'text'); probe.textContent = '999999'; content.appendChild(probe)
+      const cellDigits = probe.getBoundingClientRect().width; probe.remove()
+      const dataGroup = [...content.querySelectorAll(':scope > g:not(.ss-overlay)')].at(-1)
+      const cells = [...dataGroup.querySelectorAll('rect')].map(r => ({ width: r.getBoundingClientRect().width }))
+      const inFo = id => { const e = document.getElementById(id); return Boolean(e && e.closest('foreignObject') && e.closest('svg') === svg) }
+      return { nodes, ends, captions, values, legend, cells, cellDigits, inFo: Object.fromEntries(['dess-prev', 'dess-next', 'dess-restart', 'dess-play', 'dess-speed', 'dess-repair', 'dess-seek', 'dess-scenario', 'dess-job', 'dess-snapshot', 'dess-i-snapshot', 'dess-counters'].map(id => [id, inFo(id)])),
+               toolbar: box(document.getElementById('dess-toolbar')), side: box(document.getElementById('dess-side')), svg: box(svg), outside: document.querySelectorAll('#panel-service-simulator > .dess-wrap, #panel-service-simulator > .dess-head, #panel-service-simulator > .dess-transport').length }
+    })()`)
+  const near = (a, b) => Math.abs(a - b) <= 1.5
+  for (const id of ['E0', 'E3-NOOP', 'scaled']) {
+    await chooseScenario(id)
+    const g = await geometry()
+    const servers = SCENARIOS[id].servers
+    const names = Array.from({ length: servers }, (_, i) => `S${i}`)
+    const w = g.nodes.Dispatch
+    const expected = (g.nodes.S0.top + g.nodes[names.at(-1)].bottom) / 2
+    check(near(w.centre, expected), `${id}: the dispatch node's midline is the common midline of the ${servers} servers (${w.centre.toFixed(1)}, ${expected.toFixed(1)})`)
+    const entering = names.map((n, i) => g.ends.some(e => near(e.x, g.nodes[n].left) && e.y >= g.nodes[n].top - 1 && e.y <= g.nodes[n].bottom + 1))
+    check(entering.every(Boolean), `${id}: every connector enters its server on the west side (${entering})`)
+    const widest = Math.max(...g.captions.filter(c => /^(Arrived|Admitted|Rejected|Completed|Timed out|Cancelled|Failed|Waiting to retry|Stale pops|No-op pops)$/.test(c.text)).map(c => c.right))
+    const narrowest = Math.min(...Object.values(g.values).map(v => v.left))
+    check(widest + 4 <= narrowest, `${id}: the longest counter name ends at ${widest.toFixed(1)}, before the values at ${narrowest.toFixed(1)}`)
+  }
+  const g = await geometry()
+  check(Object.values(g.inFo).every(Boolean), `every control and the inspector is in a foreignObject of the scene (${Object.entries(g.inFo).filter(([, v]) => !v).map(([k]) => k)})`)
+  check(g.outside === 0, 'and no control is left in the panel outside the scene')
+  check(g.legend.length === 4 && g.legend[0] === 'snapshot · tick' && g.legend[3] === 'cancelled · rejected', `each row of the eight cells is named beside it (${g.legend})`)
+  check(g.cells.every(c => c.width >= g.cellDigits), `and each cell is wide enough for six digits (${g.cells.map(c => c.width.toFixed(0))} of ${g.cellDigits.toFixed(0)})`)
+  // However narrow the window, the controls and the inspector stay with the scene and are not moved below it.
+  await send('Emulation.setDeviceMetricsOverride', { width: 640, height: 1000, deviceScaleFactor: 1, mobile: false })
+  await pause(150)
+  const narrow = await geometry()
+  await send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false })
+  check(narrow.side.left > narrow.toolbar.right - 1 && near(narrow.side.top, narrow.toolbar.top) && narrow.side.bottom <= narrow.svg.bottom + 1, `at 640 px wide the inspector is still beside the scene and inside it (${narrow.side.left.toFixed(0)} to ${narrow.side.bottom.toFixed(0)})`)
+})
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const first = (command, args) => spawnSync(command, args, { cwd: root, encoding: 'utf8' }).stdout.trim().split('\n')[0]

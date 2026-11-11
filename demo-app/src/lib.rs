@@ -45,7 +45,8 @@
 //! - `panel-service-simulator` / `#dess-stage` — [`service_sim::build_service_simulator_demo`]: a discrete-event service
 //!   simulator, with a queue, one to four servers, outages, retries and cancellations, on one long-lived scene with a
 //!   data node of eight counters. Native controls drive the simulator's own controller, and the page shows only what it
-//!   committed. Only the walkthrough is offered so far.
+//!   committed. A list of four scenarios replaces the scene when the number of servers changes, and keeps the old one if the
+//!   new one cannot be shown.
 //! - `panel-tarjan` / `#tj-open` — [`tarjan::build_tarjan_demo`]: Tarjan's strongly connected components on a fixed
 //!   graph of 64 vertices and 114 edges, one event at a time, in a window of its own. The graph, the stack, the roster
 //!   of components and the condensation are all in one scene.

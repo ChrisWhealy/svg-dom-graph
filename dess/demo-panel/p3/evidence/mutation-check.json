@@ -1,0 +1,93 @@
+{
+  "measured_at": "2026-11-11T14:16:56.463Z",
+  "git_sha": "a929d354139c45b7a26a1ba71f13eb62baab78c6",
+  "git_dirty": true,
+  "caught": 14,
+  "total": 14,
+  "mutations": [
+    {
+      "name": "a stop by hiding is not said",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and says why ()"
+    },
+    {
+      "name": "a refused scenario leaves the list on the scenario that was asked for",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the list, the range and the scene are the old scenario's (W6, 487, same scene true)"
+    },
+    {
+      "name": "the range keeps the maximum of the scenario before",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the advanced scenario runs to the preflight's 5,464 (12, 0 of 5464)"
+    },
+    {
+      "name": "the zoom is not carried to the new scene",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL E3-NOOP: the zoom went with it (null)"
+    },
+    {
+      "name": "a focus that was in the old scene is left there",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL E3-NOOP: 2 servers, 0 of 12"
+    },
+    {
+      "name": "the old scene is not staged when the new one is shown",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the advanced scenario runs to the preflight's 5,464 (12, 0 of 12)"
+    },
+    {
+      "name": "a deliberate Play does not clear the reason for the pause",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and a Pause after it does not bring the reason back"
+    },
+    {
+      "name": "a candidate that was refused is left in the page",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL a failure at write 940 did not leave the old scene as it was: {\"before\":{\"select\":\"E0\",\"hosts\":[{\"id\":\"dess-host-5\",\"staged\":false}],\"svgs\":1,\"servers\":2,\"max\":\"12\",\"snapshot\":\"0 of 12\",\"errorSho"
+    },
+    {
+      "name": "the scene that was replaced is left in the page",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the last request committed snapshot 5, which is the independent engine's"
+    },
+    {
+      "name": "the dispatch node is not at the common midline of the servers",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL E0: the dispatch node's midline is the common midline of the 2 servers (675.0, 634.5)"
+    },
+    {
+      "name": "a connector is not forced to enter the west side",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL scaled: every connector enters its server on the west side (false,true,false)"
+    },
+    {
+      "name": "the counter values are too close to the longest name",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL E0: the longest counter name ends at 1042.4, before the values at 1026.1"
+    },
+    {
+      "name": "the data cells are made for one digit",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and each cell is wide enough for six digits (58,17,17,17,17,17,17,17,17 of 51)"
+    },
+    {
+      "name": "a refusal is not shown in the error area",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL a failure at write 3 is said, and says that the previous scenario is still shown (The scenario could not be changed: the display could not be updated (F)"
+    }
+  ]
+}

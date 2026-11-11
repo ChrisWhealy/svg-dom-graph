@@ -783,3 +783,90 @@ fn scenarios_can_be_replaced_through_every_size_and_back() {
     }
     assert_eq!(world.borrow().finalized, vec![0, 1, 2]);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One way for a replacement to go wrong, and the stage that it is reported at.
+type Breakage = (&'static str, Stage, fn(&mut World));
+
+fn breakages() -> Vec<Breakage> {
+    vec![
+        ("the host cannot be staged", Stage::Build, |w| w.fail_build = true),
+        ("the first draw leaves the candidate dirty", Stage::Validate, |w| {
+            w.first_draw_fails = true
+        }),
+        ("the readback of the candidate fails", Stage::Validate, |w| w.fail_verify = true),
+        ("the new page cannot be shown", Stage::Publish, |w| {
+            w.fail_publish_step = Some(0)
+        }),
+        ("the old page cannot be hidden", Stage::Publish, |w| {
+            w.fail_publish_step = Some(1)
+        }),
+        ("the focus cannot be moved", Stage::Publish, |w| w.fail_publish_step = Some(2)),
+        ("the new page is not shown, and nothing says so", Stage::Publish, |w| {
+            w.skipped_publish_step = Some(0)
+        }),
+        ("the old page is not hidden, and nothing says so", Stage::Publish, |w| {
+            w.skipped_publish_step = Some(1)
+        }),
+        ("the focus is not moved, and nothing says so", Stage::Publish, |w| {
+            w.skipped_publish_step = Some(2)
+        }),
+    ]
+}
+
+/// The matrix of the gallery's own path: from each size to the next on the way 2, 1, 3, 2, and for each way that a
+/// replacement can go wrong, the scenario that was on the page stays on it, at the slice that it was at, shown and
+/// focused, and the page can then be replaced as if nothing had happened.
+#[test]
+fn every_breakage_of_every_transition_leaves_the_old_session_on_the_page() {
+    let path: [fn() -> Spec; 3] = [noop, scaled, e0];
+    for step in 0..path.len() {
+        for (what, stage, make_fail) in breakages() {
+            let (mut session, world) = started();
+            // Get to the size that the transition starts from, by replacements that go right.
+            for spec in &path[..step] {
+                assert_eq!(session.switch(spec()), SwitchOutcome::Replaced);
+            }
+            let from = session.active_id().expect("an active scenario").to_owned();
+            let old = current(&session);
+            old.next();
+            old.next();
+            let token = *world.borrow().visible.iter().next().expect("a page is shown");
+            make_fail(&mut world.borrow_mut());
+            let spec = path[step];
+            let id = spec().id;
+            let SwitchOutcome::RolledBack(rollback) = session.switch(spec()) else {
+                panic!("{from} to {id}: {what} was not rolled back")
+            };
+            assert_eq!(rollback.stage, stage, "{from} to {id}: {what}");
+            assert_eq!(session.active_id(), Some(from.as_str()), "{from} to {id}: {what}");
+            assert_eq!(current(&session).committed_slice(), 2, "{from} to {id}: {what}");
+            assert!(!old.is_disposed() && !old.is_dirty(), "{from} to {id}: {what}");
+            let w = world.borrow();
+            assert_eq!(
+                w.visible,
+                BTreeSet::from([token]),
+                "{from} to {id}: {what}: the old page is the one shown"
+            );
+            assert_eq!(w.focus, Some(token), "{from} to {id}: {what}: and has the focus");
+            assert!(w.pages.contains_key(&token), "{from} to {id}: {what}: and is still there");
+            drop(w);
+            // Nothing is left over from it: the next request succeeds, and the old page is then removed once.
+            {
+                let mut w = world.borrow_mut();
+                w.fail_build = false;
+                w.first_draw_fails = false;
+                w.fail_verify = false;
+                w.fail_publish_step = None;
+                w.skipped_publish_step = None;
+            }
+            assert_eq!(
+                session.switch(spec()),
+                SwitchOutcome::Replaced,
+                "{from} to {id}: {what}: then it goes through"
+            );
+            assert!(old.is_disposed(), "{from} to {id}: {what}");
+            assert_eq!(world.borrow().visible.len(), 1, "{from} to {id}: {what}");
+        }
+    }
+}

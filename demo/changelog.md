@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P0: Submit P0 acceptance evidence (`1d4cd4d`)
 - DESS Demo P1: Reusable session coordinator (`81dec07`)
 - DESS Demo P2: Gallery scaffold and controls (`8645696`)
+- DESS Demo P2: Lifecycle and switching (``)
 
 ### Changed
 
@@ -154,4 +155,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P0: Fix CI feature test, tell `cargo tree` not to use ANSI colours codes (`871f3c2`)
 - DESS Demo P2: Ensure a failed play-control write does not leave inspector reporting an up-to-date display (`8d9c778`)
 - DESS Demo P2: Do not ignore boundary-control attribute failures (`2cbeec8`)
-- DESS Demo P2: Prevent the gallery observer from seeing SVG class mutations (``)
+- DESS Demo P2: Prevent the gallery observer from seeing SVG class mutations (`a929d35`)

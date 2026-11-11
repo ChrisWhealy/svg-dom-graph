@@ -7,18 +7,25 @@
 //! `aria-disabled` and a reason that is read with it, and is never `disabled`, which would take the click away from a
 //! controller that may have a dirty page to repair.
 
-use super::dom::PanelController;
-use service_sim::controller::{Host, Outcome, Presence};
-use service_sim::projection::{COUNTER_NAMES, counter_values};
-use service_sim::session::TargetHook;
+use super::{
+    dom::{DomSessions, PanelController, PanelHost},
+    switching,
+};
+use service_sim::{
+    catalogue::Entry as Scenario,
+    controller::{Host, Outcome, Presence},
+    host::BrowserScheduler,
+    projection::{COUNTER_NAMES, counter_values},
+    session::Coordinator,
+    session::TargetHook,
+};
 use service_sim_engine::model::{JobState, Model};
-use std::any::Any;
-use std::cell::{Cell, RefCell};
-use std::rc::{Rc, Weak};
+use std::{
+    any::Any,
+    cell::{Cell, RefCell},
+    rc::{Rc, Weak},
+};
 use wasm_bindgen::{JsCast, closure::Closure, convert::FromWasmAbi};
-
-use super::dom::PanelHost;
-use service_sim::host::BrowserScheduler;
 
 pub(super) type Hook = TargetHook<PanelHost, BrowserScheduler>;
 
@@ -27,7 +34,8 @@ pub(super) type Hook = TargetHook<PanelHost, BrowserScheduler>;
 pub(super) struct Ui {
     pub(super) error: web_sys::Element,
     pub(super) live: web_sys::Element,
-    pub(super) scenario: web_sys::Element,
+    pub(super) scenario: web_sys::HtmlSelectElement,
+    pub(super) notice: web_sys::Element,
     pub(super) snapshot: web_sys::Element,
     pub(super) previous: web_sys::Element,
     pub(super) next: web_sys::Element,
@@ -56,6 +64,13 @@ pub(super) struct Ui {
 pub(super) struct Shared {
     pub(super) ui: Ui,
     pub(super) hook: Hook,
+    /// The one coordinator of the panel. It is borrowed only for the length of a request for another scenario.
+    pub(super) coordinator: Rc<RefCell<Coordinator<DomSessions>>>,
+    /// The scenarios that the panel offers, in the order of its list.
+    pub(super) scenarios: Vec<Scenario>,
+    /// Whether playback was stopped by the panel or the page being hidden, which is said until a person acts. It is a
+    /// presentation of that interruption, and not a state of the controller.
+    pub(super) interrupted: Cell<bool>,
     /// The last snapshot of the scenario, which a preflight replay found, so that it is known before the run has been
     /// reached.
     pub(super) end: Cell<u64>,
@@ -73,10 +88,18 @@ pub(super) struct Shared {
 }
 
 impl Shared {
-    pub(super) fn new(ui: Ui, hook: Hook) -> Self {
+    pub(super) fn new(
+        ui: Ui,
+        hook: Hook,
+        coordinator: Rc<RefCell<Coordinator<DomSessions>>>,
+        scenarios: Vec<Scenario>,
+    ) -> Self {
         Self {
             ui,
             hook,
+            coordinator,
+            scenarios,
+            interrupted: Cell::new(false),
             end: Cell::new(0),
             announce_when_committed: Cell::new(false),
             queued: Cell::new(false),
@@ -282,6 +305,13 @@ pub(super) fn sync(shared: &Shared) {
         let _ = ui.error.set_attribute("hidden", "");
         ui.error.set_text_content(None);
     }
+    if shared.interrupted.get() && !playing {
+        let _ = ui.notice.remove_attribute("hidden");
+        set_text(&ui.notice, "Paused while hidden. Press Play to resume.");
+    } else {
+        let _ = ui.notice.set_attribute("hidden", "");
+        set_text(&ui.notice, "");
+    }
     if shared.announce_when_committed.get() && pending.is_none() {
         shared.announce_when_committed.set(false);
         announce(ui, &format!("Snapshot {slice} of {end}"));
@@ -330,6 +360,7 @@ fn request(shared: &Rc<Shared>, act: impl FnOnce(&PanelController, &Shared) -> O
     let Some(controller) = shared.hook.controller() else {
         return;
     };
+    shared.interrupted.set(false);
     let outcome = act(&controller, shared);
     say(shared, &controller, outcome, at_boundary);
     sync(shared);
@@ -411,11 +442,12 @@ pub(super) fn wire(shared: &Rc<Shared>) -> Result<Listeners, String> {
             } else if controller.committed_slice() >= s.end.get() {
                 request(&s, |c, _| c.next(), "End of scenario");
             } else {
-                let ms = s.ui.speed.value().parse().unwrap_or(1_000);
+                s.interrupted.set(false);
+                let ms: u32 = s.ui.speed.value().parse().unwrap_or(1_000);
                 controller.set_speed(ms);
                 let outcome = controller.play();
                 if outcome == Outcome::Done {
-                    announce(&s.ui, "Playing");
+                    announce(&s.ui, &format!("Playing at {} slices/s", 1_000 / ms.max(1)));
                 } else {
                     say(&s, &controller, outcome, "End of scenario");
                 }
@@ -456,6 +488,14 @@ pub(super) fn wire(shared: &Rc<Shared>) -> Result<Listeners, String> {
     let s = Rc::clone(shared);
     on(
         &mut listeners,
+        ui.scenario.unchecked_ref(),
+        "change",
+        Rc::new(move || switching::change(&s)),
+    )?;
+
+    let s = Rc::clone(shared);
+    on(
+        &mut listeners,
         ui.job.unchecked_ref(),
         "change",
         Rc::new(move || {
@@ -478,4 +518,20 @@ pub(super) fn wire(shared: &Rc<Shared>) -> Result<Listeners, String> {
 /// says.
 pub(super) fn counter_names() -> impl Iterator<Item = (&'static str, &'static str)> {
     COUNTER_NAMES.iter().copied()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Tells the current controller that the page or the panel changed, and says so if that stopped playback.
+///
+/// A stop is the controller's own act, and the page only says that it happened, once, and keeps saying it until a
+/// person acts. A hide and a show in one batch are seen by the observer as a panel that is shown, so playback goes on,
+/// and nothing is said.
+pub(super) fn lifecycle(shared: &Shared, tell: impl FnOnce(&Hook)) {
+    let playing = shared.hook.controller().is_some_and(|c| c.is_playing());
+    tell(&shared.hook);
+    let stopped = playing && shared.hook.controller().is_some_and(|c| !c.is_playing());
+    if stopped && !shared.interrupted.replace(true) {
+        announce(&shared.ui, "Paused while hidden. Press Play to resume.");
+    }
+    sync(shared);
 }

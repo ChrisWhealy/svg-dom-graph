@@ -14,15 +14,21 @@
 //!
 //! One pair of page hooks, a watch on the gallery's stage and the page's lifecycle listeners, is installed when the
 //! panel is built, and each calls whichever controller is current. They hold the coordinator's target weakly, so that
-//! nothing owns anything in a circle.
+//! nothing owns anything in a circle. When one of them stops playback the page says so, once, and keeps saying it until
+//! a person acts.
+//!
+//! Choosing another scenario is a request to the coordinator (`switching`). A scenario with the same number of servers
+//! is shown in the same scene, and one with another number is built in a staged host and handed over, and either is
+//! refused whole if any step fails.
 
 mod controls;
 mod dom;
+mod switching;
 
 use crate::source_file;
-use controls::{Hook, Listeners, Shared, Ui, counter_names, queue_sync, sync, wire};
+use controls::{Hook, Listeners, Shared, Ui, counter_names, lifecycle, queue_sync, sync, wire};
 use demo_common::util::{clear_error, document, report_error, required_element};
-use dom::{DomSessions, Notify, Voices};
+use dom::{Controls, DomSessions, Notify, Voices};
 use service_sim::catalogue::catalogue;
 use service_sim::host::{GalleryHint, PageLifecycle};
 use service_sim::session::{Coordinator, SwitchOutcome};
@@ -38,6 +44,7 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 pub(crate) const FILES: &[crate::SourceFile] = &[
     source_file!("service_sim/controls.rs", "controls.rs"),
     source_file!("service_sim/dom.rs", "dom.rs"),
+    source_file!("service_sim/switching.rs", "switching.rs"),
     source_file!("service-sim/src/catalogue.rs", "../../../service-sim/src/catalogue.rs"),
     source_file!("service-sim/src/session/mod.rs", "../../../service-sim/src/session/mod.rs"),
     source_file!(
@@ -64,7 +71,6 @@ thread_local! {
 /// The panel's owner: the coordinator, the one pair of hooks and the listeners of the controls.
 #[allow(dead_code)]
 struct Panel {
-    coordinator: Coordinator<DomSessions>,
     shared: Rc<Shared>,
     gallery: GalleryHint,
     lifecycle: PageLifecycle,
@@ -111,7 +117,8 @@ fn ui(document: &web_sys::Document) -> Result<Ui, String> {
     Ok(Ui {
         error: find(document, ERROR)?,
         live: find(document, "dess-live")?,
-        scenario: find(document, "dess-scenario")?,
+        scenario: find_as(document, "dess-scenario")?,
+        notice: find(document, "dess-notice")?,
         snapshot: find(document, "dess-snapshot")?,
         previous: find(document, "dess-prev")?,
         next: find(document, "dess-next")?,
@@ -153,14 +160,12 @@ pub(crate) fn build_service_simulator_demo() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn build(document: &web_sys::Document) -> Result<(), String> {
     let ui = ui(document)?;
-    let entry = catalogue()
-        .map_err(|e| e.message())?
-        .into_iter()
-        .next()
-        .ok_or("the catalogue is empty")?;
+    let scenarios = catalogue().map_err(|e| e.message())?;
+    let first = scenarios.first().ok_or("the catalogue is empty")?.clone();
     // The end of the run comes from a replay of a separate engine that draws nothing, and it is what the range's
     // maximum is.
-    let extent = entry.spec.preflight().map_err(|e| format!("The scenario was refused: {e:?}"))?;
+    let extent = first.spec.preflight().map_err(|e| format!("The scenario was refused: {e:?}"))?;
+    fill_scenarios(document, &ui.scenario, &scenarios)?;
 
     let notify_slot: Notify = Rc::new(RefCell::new(None));
     let sessions = DomSessions::new(
@@ -172,10 +177,18 @@ fn build(document: &web_sys::Document) -> Result<(), String> {
             play: ui.play.clone(),
         },
         Rc::clone(&notify_slot),
+        ui.scenario.clone().into(),
+        Controls {
+            holder: find(document, "dess-toolbar")?
+                .parent_element()
+                .ok_or("the controls have no place that they are written in")?,
+            toolbar: find(document, "dess-toolbar")?,
+            side: find(document, "dess-side")?,
+        },
     );
-    let mut coordinator = Coordinator::new(sessions);
-    let hook: Hook = coordinator.target().hook();
-    let shared = Rc::new(Shared::new(ui, hook.clone()));
+    let coordinator = Rc::new(RefCell::new(Coordinator::new(sessions)));
+    let hook: Hook = coordinator.borrow().target().hook();
+    let shared = Rc::new(Shared::new(ui, hook.clone(), Rc::clone(&coordinator), scenarios));
     shared.end.set(extent.slices);
 
     // The panel is told after each draw and each change of playback, and reads what the controller committed once that
@@ -189,52 +202,72 @@ fn build(document: &web_sys::Document) -> Result<(), String> {
     });
     *notify_slot.borrow_mut() = Some(Rc::downgrade(&notify));
 
-    let label = entry.spec.label.clone();
-    match coordinator.switch(entry.spec) {
+    match coordinator.borrow_mut().switch(first.spec) {
         SwitchOutcome::Replaced => {},
         other => return Err(format!("The first scenario could not be shown: {other:?}")),
     }
-    shared.ui.scenario.set_text_content(Some(&label));
     shared.ui.seek.set_max(&extent.slices.to_string());
     if let Some(controller) = hook.controller() {
         controller.set_speed(shared.ui.speed.value().parse().unwrap_or(1_000));
     }
 
-    // One watch on the gallery's stage and one set of page listeners, whatever scenario is on the page.
+    // One watch on the gallery's stage and one set of page listeners, whatever scenario is on the page. Each reaches
+    // the current controller through the coordinator's target, and says if it stopped playback.
     let stage = document.get_element_by_id("stage").ok_or("the gallery's stage is missing")?;
-    let (changed, shown, left) = (hook.clone(), Rc::downgrade(&shared), hook.clone());
-    let gallery = GalleryHint::install(&stage, {
-        let changed = changed.clone();
-        let shown = shown.clone();
-        move || {
-            changed.presence_changed();
-            if let Some(shared) = shown.upgrade() {
-                sync(&shared);
-            }
+    let hidden = Rc::downgrade(&shared);
+    let gallery = GalleryHint::install(&stage, move || {
+        if let Some(shared) = hidden.upgrade() {
+            lifecycle(&shared, Hook::presence_changed);
         }
     })?;
-    let lifecycle = PageLifecycle::install(
+    let (changed, left) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
+    let lifecycle_listeners = PageLifecycle::install(
         move || {
-            changed.presence_changed();
-            if let Some(shared) = shown.upgrade() {
-                sync(&shared);
+            if let Some(shared) = changed.upgrade() {
+                lifecycle(&shared, Hook::presence_changed);
             }
         },
-        move || left.suspend(),
+        move || {
+            if let Some(shared) = left.upgrade() {
+                lifecycle(&shared, Hook::suspend);
+            }
+        },
     )?;
 
     let listeners = wire(&shared)?;
     sync(&shared);
     PANEL.with(|panel| {
         *panel.borrow_mut() = Some(Panel {
-            coordinator,
             shared,
             gallery,
-            lifecycle,
+            lifecycle: lifecycle_listeners,
             listeners,
             notify,
         });
     });
+    Ok(())
+}
 
+/// Writes the options of the scenario list, with the advanced scenario in a group of its own.
+fn fill_scenarios(
+    document: &web_sys::Document,
+    list: &web_sys::HtmlSelectElement,
+    scenarios: &[service_sim::catalogue::Entry],
+) -> Result<(), String> {
+    let make = |tag: &str| {
+        document
+            .create_element(tag)
+            .map_err(|e| format!("could not make a {tag}: {e:?}"))
+    };
+    let advanced = make("optgroup")?;
+    advanced.set_attribute("label", "Advanced").map_err(|e| format!("{e:?}"))?;
+    for entry in scenarios {
+        let option = make("option")?;
+        option.set_attribute("value", &entry.spec.id).map_err(|e| format!("{e:?}"))?;
+        option.set_text_content(Some(&entry.spec.label));
+        let parent: &web_sys::Element = if entry.advanced { &advanced } else { list };
+        parent.append_child(&option).map_err(|e| format!("{e:?}"))?;
+    }
+    list.append_child(&advanced).map_err(|e| format!("{e:?}"))?;
     Ok(())
 }
