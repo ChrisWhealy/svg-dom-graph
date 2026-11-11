@@ -26,31 +26,134 @@ const SURFACE = 'service-sim/src/surface.rs'
 const MUTATIONS = [
   [
     'a stop by hiding is not said',
-    [[CONTROLS, 'let stopped = playing && shared.hook.controller().is_some_and(|c| !c.is_playing());', 'let stopped = false;']]
+    [
+      [
+        CONTROLS,
+        'let stopped = playing && shared.hook.controller().is_some_and(|c| !c.is_playing());',
+        'let stopped = false;'
+      ]
+    ]
   ],
-  ['a refused scenario leaves the list on the scenario that was asked for', [[SWITCHING, '                ui.scenario.set_value(&active);\n', '']]],
+  [
+    'a refused scenario leaves the list on the scenario that was asked for',
+    [[SWITCHING, '                ui.scenario.set_value(&active);\n', '']]
+  ],
   [
     'the range keeps the maximum of the scenario before',
-    [[SWITCHING, '            ui.seek.set_max(&extent.slices.to_string());\n            shared.interrupted.set(false);', '            shared.interrupted.set(false);']]
+    [
+      [
+        SWITCHING,
+        '            ui.seek.set_max(&extent.slices.to_string());\n            shared.interrupted.set(false);',
+        '            shared.interrupted.set(false);'
+      ]
+    ]
   ],
   [
     'the zoom is not carried to the new scene',
-    [[DOM, '            next.with_host(|host| host.surface().scene().set_view(view))\n                .map_err(|e| format!("could not carry the view: {e}"))?;', '            let _ = view;']]
+    [
+      [
+        DOM,
+        '            next.with_host(|host| host.surface().scene().set_view(view))\n                .map_err(|e| format!("could not carry the view: {e}"))?;',
+        '            let _ = view;'
+      ]
+    ]
   ],
   [
     'a focus that was in the old scene is left there',
-    [[DOM, '                    .focus()\n                    .map_err(|e| format!("could not move the focus: {e:?}"))?;', '                    .hidden();']]
+    [
+      [
+        DOM,
+        '                    .focus()\n                    .map_err(|e| format!("could not move the focus: {e:?}"))?;',
+        '                    .hidden();'
+      ]
+    ]
   ],
-  ['the old scene is not staged when the new one is shown', [[DOM, '            stage(&self.host_element(*from)?)?;\n', '']]],
-  ['a deliberate Play does not clear the reason for the pause', [[CONTROLS, '                s.interrupted.set(false);\n                let ms: u32', '                let ms: u32']]],
-  ['a candidate that was refused is left in the page', [[DOM, '        self.controllers.remove(&token);\n        self.remove(token);\n    }\n\n    fn finalize', '        self.controllers.remove(&token);\n    }\n\n    fn finalize']]],
-  ['the scene that was replaced is left in the page', [[DOM, '    fn finalize(&mut self, token: u32) {\n        self.controllers.remove(&token);\n        self.remove(token);', '    fn finalize(&mut self, token: u32) {\n        self.controllers.remove(&token);']]],
-  ['the dispatch node is not at the common midline of the servers', [[LAYOUT, 'let centre = SERVER_TOP + (last as f64 * SERVER_PITCH + SERVER_SIZE.1) / 2.0;', 'let centre = SERVER_TOP + SERVER_SIZE.1 / 2.0 + (last.min(1) as f64) * SERVER_PITCH;']]],
-  ['a connector is not forced to enter the west side', [[SURFACE, '.with_to_side(Some(Side::West))', '.with_to_side(None)']]],
-  ['the counter values are too close to the longest name', [[LAYOUT, 'pub const COUNTER_VALUE_DX: f64 = 176.0;', 'pub const COUNTER_VALUE_DX: f64 = 120.0;']]],
-  ['the data cells are made for one digit', [[LAYOUT, 'pub const DATA_CELL_SAMPLE: u64 = 999_999;', 'pub const DATA_CELL_SAMPLE: u64 = 0;']]],
-  ['an old scene that is only half staged is accepted', [[DOM, 'host.has_attribute("inert") && host.get_attribute("style").as_deref() == Some(STAGED_STYLE)', 'host.has_attribute("inert") || host.has_attribute("style")']]],
-  ['a refusal is not shown in the error area', [[SWITCHING, '            let _ = ui.error.remove_attribute("hidden");\n            ui.live.set_text_content(Some(&message));', '            ui.live.set_text_content(Some(&message));']]]
+  [
+    'the old scene is not staged when the new one is shown',
+    [[DOM, '            stage(&self.host_element(*from)?)?;\n', '']]
+  ],
+  [
+    'a deliberate Play does not clear the reason for the pause',
+    [
+      [
+        CONTROLS,
+        '                s.interrupted.set(false);\n                let ms: u32',
+        '                let ms: u32'
+      ]
+    ]
+  ],
+  [
+    'a candidate that was refused is left in the page',
+    [
+      [
+        DOM,
+        '        self.controllers.remove(&token);\n        self.remove(token);\n    }\n\n    fn finalize',
+        '        self.controllers.remove(&token);\n    }\n\n    fn finalize'
+      ]
+    ]
+  ],
+  [
+    'the scene that was replaced is left in the page',
+    [
+      [
+        DOM,
+        '    fn finalize(&mut self, token: u32) {\n        self.controllers.remove(&token);\n        self.remove(token);',
+        '    fn finalize(&mut self, token: u32) {\n        self.controllers.remove(&token);'
+      ]
+    ]
+  ],
+  [
+    'the dispatch node is not at the common midline of the servers',
+    [
+      [
+        LAYOUT,
+        'let centre = SERVER_TOP + (last as f64 * SERVER_PITCH + SERVER_SIZE.1) / 2.0;',
+        'let centre = SERVER_TOP + SERVER_SIZE.1 / 2.0 + (last.min(1) as f64) * SERVER_PITCH;'
+      ]
+    ]
+  ],
+  [
+    'a connector is not forced to enter the west side',
+    [[SURFACE, '.with_to_side(Some(Side::West))', '.with_to_side(None)']]
+  ],
+  [
+    'the counter values are too close to the longest name',
+    [[LAYOUT, 'pub const COUNTER_VALUE_DX: f64 = 176.0;', 'pub const COUNTER_VALUE_DX: f64 = 120.0;']]
+  ],
+  [
+    'the data cells are made for one digit',
+    [[LAYOUT, 'pub const DATA_CELL_SAMPLE: u64 = 999_999;', 'pub const DATA_CELL_SAMPLE: u64 = 0;']]
+  ],
+  [
+    'an old scene that is only half staged is accepted',
+    [
+      [
+        DOM,
+        'host.has_attribute("inert") && host.get_attribute("style").as_deref() == Some(STAGED_STYLE)',
+        'host.has_attribute("inert") || host.has_attribute("style")'
+      ]
+    ]
+  ],
+  [
+    'a failed handoff does not give the saved focus back',
+    [
+      [
+        DOM,
+        'self.saved_focus.take().or_else(|| moved.as_ref().ok().cloned().flatten());',
+        'self.saved_focus.take().and(moved.as_ref().ok().cloned().flatten());'
+      ]
+    ]
+  ],
+  [
+    'a refusal is not shown in the error area',
+    [
+      [
+        SWITCHING,
+        '            let _ = ui.error.remove_attribute("hidden");\n            ui.live.set_text_content(Some(&message));',
+        '            ui.live.set_text_content(Some(&message));'
+      ]
+    ]
+  ]
 ]
 
 const tree = path.join(root, 'target/p3-mutation-tree')

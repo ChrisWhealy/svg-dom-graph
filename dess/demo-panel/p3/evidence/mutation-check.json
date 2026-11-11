@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T14:33:40.506Z",
-  "git_sha": "2182fcb28e2ce839b8d439aaa465402617b3f4b4",
+  "measured_at": "2026-11-11T14:46:13.587Z",
+  "git_sha": "115bd34aaa0abebe5175a36a75c6c387eaf88ca8",
   "git_dirty": true,
-  "caught": 15,
-  "total": 15,
+  "caught": 16,
+  "total": 16,
   "mutations": [
     {
       "name": "a stop by hiding is not said",
@@ -88,6 +88,12 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL without the old scene's inert, the switch is refused at the handoff ()"
+    },
+    {
+      "name": "a failed handoff does not give the saved focus back",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and the focus is back on the scenario list, as when a person used the keyboard ()"
     },
     {
       "name": "a refusal is not shown in the error area",

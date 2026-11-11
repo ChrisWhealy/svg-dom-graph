@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T14:28:13.019Z",
-  "git_sha": "2182fcb28e2ce839b8d439aaa465402617b3f4b4",
+  "measured_at": "2026-11-11T14:40:10.756Z",
+  "git_sha": "115bd34aaa0abebe5175a36a75c6c387eaf88ca8",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1023 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1038 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -1046,6 +1046,77 @@
         {
           "ok": true,
           "text": "and an ordinary switch afterwards still works"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G16F",
+      "title": "a switch that fails at the handoff gives the focus back to where it was",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the focus is on the scenario list, as when a person used the keyboard"
+        },
+        {
+          "ok": true,
+          "text": "the switch fails at the handoff (The scenario could not be changed: Publish failed: could not show a scene: JsVal)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on the scenario list, as when a person used the keyboard (dess-scenario)"
+        },
+        {
+          "ok": true,
+          "text": "with the controls in the old scene"
+        },
+        {
+          "ok": true,
+          "text": "the focus is on the Next button"
+        },
+        {
+          "ok": true,
+          "text": "the switch fails at the handoff (The scenario could not be changed: Publish failed: could not show a scene: JsVal)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on the Next button (dess-next)"
+        },
+        {
+          "ok": true,
+          "text": "with the controls in the old scene"
+        },
+        {
+          "ok": true,
+          "text": "the focus is on a node inside the old scene"
+        },
+        {
+          "ok": true,
+          "text": "the switch fails at the handoff (The scenario could not be changed: Publish failed: could not show a scene: JsVal)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scenario, scene and cursor are as they were"
+        },
+        {
+          "ok": true,
+          "text": "and the focus is back on a node inside the old scene (S0)"
+        },
+        {
+          "ok": true,
+          "text": "with the controls in the old scene"
+        },
+        {
+          "ok": true,
+          "text": "a handoff that works keeps the focus on the control that had it"
         }
       ],
       "deferred": null

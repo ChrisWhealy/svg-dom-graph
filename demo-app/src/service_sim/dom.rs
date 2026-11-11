@@ -25,7 +25,14 @@ use wasm_bindgen::{JsCast, JsValue};
 /// What a staged host carries. It is out of the flow, so that it moves nothing that follows it, and it is not
 /// `display:none` or `visibility:hidden`, which would make the host unmeasurable.
 const STAGED_STYLE: &str = "position:absolute;left:0;top:0;width:1000px;opacity:0;pointer-events:none";
+const SVG_NS: &str = "http://www.w3.org/2000/svg";
 
+/// The height of the band above the scene that the controls are in, and the width of the column beside it that the
+/// inspector is in, in the scene's own units.
+const TOOLBAR_HEIGHT: f64 = 150.0;
+const SIDE_WIDTH: f64 = 340.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The controller of the panel, on the page's own host and the page's own timers.
 pub(super) type PanelController = Controller<PanelHost, BrowserScheduler>;
 
@@ -96,12 +103,6 @@ impl Host for PanelHost {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const SVG_NS: &str = "http://www.w3.org/2000/svg";
-/// The height of the band above the scene that the controls are in, and the width of the column beside it that the
-/// inspector is in, in the scene's own units.
-const TOOLBAR_HEIGHT: f64 = 150.0;
-const SIDE_WIDTH: f64 = 340.0;
-
 /// The view box of a scene on the page: the surface's own view box, which is at the origin, with a band above it for
 /// the controls and a column beside it for the inspector. The surface's own coordinates do not move, so its layout is
 /// the one that it was designed with.
@@ -143,6 +144,9 @@ pub(super) struct DomSessions {
     controls: Controls,
     /// The scene that is shown, which is where the controls belong.
     shown: Option<u32>,
+    /// Where the focus was when a handoff began, which is part of what a rollback restores. Moving the controls loses
+    /// the focus, so it cannot be found again from the page. It is kept until the handoff is known to have succeeded.
+    saved_focus: Option<web_sys::Element>,
     /// The controllers that were built and have not been removed, so that the view of the old scene can be read when it
     /// is handed off.
     controllers: HashMap<u32, PanelController>,
@@ -166,6 +170,7 @@ impl DomSessions {
             focus_target,
             controls,
             shown: None,
+            saved_focus: None,
             controllers: HashMap::new(),
         }
     }
@@ -211,8 +216,13 @@ impl DomSessions {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Gives the focus back to a control that was moved.
     fn restore_focus(focused: Option<web_sys::Element>) {
-        if let Some(html) = focused.as_ref().and_then(|e| e.dyn_ref::<web_sys::HtmlElement>()) {
-            let _ = html.focus();
+        // Both an HTML control and a node of a scene can take it, and `focus` is the one call that they share.
+        if let Some(element) = focused.filter(|element| element.is_connected()) {
+            if let Ok(focus) = js_sys::Reflect::get(&element, &"focus".into()) {
+                if let Ok(focus) = focus.dyn_into::<js_sys::Function>() {
+                    let _ = focus.call0(&element);
+                }
+            }
         }
     }
 
@@ -292,6 +302,33 @@ impl DomSessions {
         let factory: Factory = Rc::clone(&spec.factory);
         Controller::new(host, BrowserScheduler::new(), factory, View::default()).map_err(|e| e.message())
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// What a completed handoff leaves, read from the page.
+    fn check_published(&self, from: Option<&u32>, to: &u32) -> Result<(), String> {
+        let host = self.host_element(*to)?;
+        if is_still_staged(&host) || !host.is_connected() {
+            return Err("the new scene is still staged".to_owned());
+        }
+        let in_new = |name: &str, element: &web_sys::Element| {
+            self.object(name, *to)
+                .is_ok_and(|object| element.parent_element().is_some_and(|parent| parent == object))
+        };
+        if !in_new("toolbar", &self.controls.toolbar) || !in_new("side", &self.controls.side) {
+            return Err("the controls are not in the new scene".to_owned());
+        }
+        let Some(from) = from else { return Ok(()) };
+        let old = self.host_element(*from)?;
+        if !is_fully_staged(&old) {
+            return Err("the old scene is still shown beside the new one".to_owned());
+        }
+        // The focus is on nothing that is in a staged scene, so that it is somewhere that a person can use.
+        let stranded = self.document.active_element().is_some_and(|active| old.contains(Some(&active)));
+        if stranded {
+            return Err("the focus is still in the old scene".to_owned());
+        }
+        Ok(())
+    }
 }
 
 impl SessionHost for DomSessions {
@@ -315,6 +352,7 @@ impl SessionHost for DomSessions {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // The page is read back from its own elements and compared with the projection that was drawn, so that a scene that
     // built and did not draw is found.
     fn verify(&mut self, candidate: &Candidate<PanelHost, BrowserScheduler, u32>) -> Result<(), String> {
@@ -327,7 +365,10 @@ impl SessionHost for DomSessions {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn publish(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
+        // Where the focus is now, before anything moves, so that a handoff that fails can give it back.
+        self.saved_focus = self.document.active_element().filter(|active| active.tag_name() != "BODY");
         let new = self.host_element(*to)?;
         // The pan and zoom that a person gave the old scene are carried to the new one, which would otherwise start at
         // the identity.
@@ -359,31 +400,17 @@ impl SessionHost for DomSessions {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn verify_published(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
-        let host = self.host_element(*to)?;
-        if is_still_staged(&host) || !host.is_connected() {
-            return Err("the new scene is still staged".to_owned());
+        let checked = self.check_published(from, to);
+        // The handoff is whole, so there is nothing left to roll back to, and the focus is no longer the old one's.
+        if checked.is_ok() {
+            self.saved_focus = None;
         }
-        let in_new = |name: &str, element: &web_sys::Element| {
-            self.object(name, *to)
-                .is_ok_and(|object| element.parent_element().is_some_and(|parent| parent == object))
-        };
-        if !in_new("toolbar", &self.controls.toolbar) || !in_new("side", &self.controls.side) {
-            return Err("the controls are not in the new scene".to_owned());
-        }
-        let Some(from) = from else { return Ok(()) };
-        let old = self.host_element(*from)?;
-        if !is_fully_staged(&old) {
-            return Err("the old scene is still shown beside the new one".to_owned());
-        }
-        // The focus is on nothing that is in a staged scene, so that it is somewhere that a person can use.
-        let stranded = self.document.active_element().is_some_and(|active| old.contains(Some(&active)));
-        if stranded {
-            return Err("the focus is still in the old scene".to_owned());
-        }
-        Ok(())
+        checked
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn undo_publish(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
         self.shown = from.copied();
         // The controls come back first, since a page without them cannot be used, and every step is tried whatever the
@@ -394,16 +421,20 @@ impl SessionHost for DomSessions {
             Some(from) => self.host_element(*from).and_then(|host| unstage(&host)),
             None => Ok(()),
         };
-        let focused = moved.as_ref().ok().cloned().flatten();
+        // The focus goes back to where it was when the handoff began, when that is still somewhere that can take it,
+        // and otherwise to whatever control had it as the controls were moved back.
+        let focused = self.saved_focus.take().or_else(|| moved.as_ref().ok().cloned().flatten());
         Self::restore_focus(focused);
         moved.map(|_| ()).and(staged).and(shown)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn discard(&mut self, token: u32) {
         self.controllers.remove(&token);
         self.remove(token);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn finalize(&mut self, token: u32) {
         self.controllers.remove(&token);
         self.remove(token);
@@ -420,6 +451,7 @@ fn stage(host: &web_sys::Element) -> Result<(), String> {
         .map_err(|e| format!("could not stage a scene: {e:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Takes the staging off a host, which shows it.
 fn unstage(host: &web_sys::Element) -> Result<(), String> {
     host.remove_attribute("style")
@@ -428,10 +460,12 @@ fn unstage(host: &web_sys::Element) -> Result<(), String> {
         .map_err(|e| format!("could not show a scene: {e:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn is_still_staged(host: &web_sys::Element) -> bool {
     host.has_attribute("inert") || host.has_attribute("style")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether a host is staged in full: `inert`, so that nobody can reach it by keyboard or in the accessibility tree, and
 /// the staging style itself, as it was written, so that it is out of the flow and cannot be seen or clicked. Either one
 /// alone is a host that is half hidden.

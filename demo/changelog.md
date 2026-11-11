@@ -156,4 +156,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P2: Ensure a failed play-control write does not leave inspector reporting an up-to-date display (`8d9c778`)
 - DESS Demo P2: Do not ignore boundary-control attribute failures (`2cbeec8`)
 - DESS Demo P2: Prevent the gallery observer from seeing SVG class mutations (`a929d35`)
-- DESS Demo P3: Distinguish `is_still_staged()` from `is_fully_staged()` (``)
+- DESS Demo P3: Distinguish `is_still_staged()` from `is_fully_staged()` (`115bd34`)
+- DESS Demo P3: Maintain the previously focused control after failed publication (``)
