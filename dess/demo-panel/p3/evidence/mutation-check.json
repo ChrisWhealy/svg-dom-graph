@@ -1,8 +1,8 @@
 {
-  "measured_at": "2026-11-11T15:48:49.304Z",
-  "git_sha": "9603e0ac3b8905e045de6f32916dba813084cc3e",
+  "measured_at": "2026-11-11T15:57:28.999Z",
+  "git_sha": "79e5efef9b3d54c82f3b3f7b664b630b4736b54f",
   "git_dirty": true,
-  "caught": 20,
+  "caught": 21,
   "total": 21,
   "mutations": [
     {
@@ -122,8 +122,8 @@
     {
       "name": "a server that is down is not red",
       "built": true,
-      "caught": false,
-      "first_failure": null
+      "caught": true,
+      "first_failure": "FAIL snapshot 3: S0 is down and its box is rgb(238, 244, 255), not rgb(254, 202, 202)"
     },
     {
       "name": "a refusal is not shown in the error area",

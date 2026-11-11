@@ -50,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P1: Reusable session coordinator (`81dec07`)
 - DESS Demo P2: Gallery scaffold and controls (`8645696`)
 - DESS Demo P2: Lifecycle and switching (`2182fcb`)
+- DESS Demo P3: Script to accumulate `dess` evidence (``)
 
 ### Changed
 
@@ -73,7 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S5: CI jobs stop using Node 20. Pin CI jobs use `ubuntu-24.04` (`685cac3`)
 - Optimize CI self-tests to run in parallel with `perf smoke` and trim S5 self-test (`e9ab12a`)
 - DESS Demo P0: Gather P0 acceptance evidence (`7f6df69`)
-- DESS Demo P3: Update Service Simulator demo (``)
+- DESS Demo P3: Update Service Simulator demo (`79e5efe`)
 
 ### Fixed
 
