@@ -1,0 +1,32 @@
+{
+  "measured_at": "2026-11-11T16:21:32.930Z",
+  "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "command": "cargo run -p demo-server -- --build-only",
+  "before": {
+    "commit": "871f3c216cbbedae1f974a4c340bca68c30dc0bd",
+    "file": "svg_dom_graph_demo_bg.wasm",
+    "bytes": 9183623,
+    "gzip": 2414830
+  },
+  "after": {
+    "commit": "41beb8e867e9735bfab7200ce44858b7ddc105a3",
+    "dirty": true,
+    "file": "svg_dom_graph_demo_bg.wasm",
+    "bytes": 9915071,
+    "gzip": 2611905
+  },
+  "delta": {
+    "bytes": 731448,
+    "bytes_percent": 7.96,
+    "gzip_bytes": 197075,
+    "gzip_percent": 8.16
+  },
+  "crates_added": [
+    "service-sim 0.1.0",
+    "service-sim-engine 0.1.0"
+  ],
+  "sha2_versions_in_the_demo": [
+    "sha2 0.11.0"
+  ],
+  "note": "No threshold is imposed. These are measurements of one build of each tree, by the same command."
+}

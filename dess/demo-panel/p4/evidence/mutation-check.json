@@ -1,0 +1,51 @@
+{
+  "measured_at": "2026-11-11T16:19:09.797Z",
+  "git_sha": "41beb8e867e9735bfab7200ce44858b7ddc105a3",
+  "git_dirty": true,
+  "caught": 7,
+  "total": 7,
+  "mutations": [
+    {
+      "name": "taking the panel down leaves the page lifecycle listeners on",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19217,\"listeners\":114,\"observers\":1,\"externrefs\":2052,\"held\":{\"timers\":0,\"frames\":0}},\"now\":{\"elements\":19217,\"listene"
+    },
+    {
+      "name": "taking the panel down leaves the watch on the gallery stage on",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written ({\"hosts\":0,\"observers\":1,\"state\":null,\"controlsHome\":true,\"fram"
+    },
+    {
+      "name": "taking the panel down leaves the controls' listeners on",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"gone\":{\"hosts\":1,\"observers\":0,\"state\":null,\"controlsHome\":true,\"frames\":0,\"svgs\":1},\"retained\":{\"ran\":1,\"threw\":4,\"elementsMoved\":false}}"
+    },
+    {
+      "name": "taking the panel down leaves the controller and the scene",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written ({\"hosts\":1,\"observers\":0,\"state\":null,\"controlsHome\":false,\"fra"
+    },
+    {
+      "name": "taking the panel down leaves what the build wrote into the markup",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19243,\"listeners\":111,\"observers\":1,\"externrefs\":2052,\"held\":{\"timers\":0,\"frames\":0}},\"now\":{\"elements\":19269,\"listene"
+    },
+    {
+      "name": "the panel is not marked as unbuilt when it is taken down",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written ({\"hosts\":0,\"observers\":0,\"state\":\"ready\",\"controlsHome\":true,\"f"
+    },
+    {
+      "name": "the stale and no-op counters change places",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL snapshot 4: inspector counters 5,4,1,0,0,0,0,0,0,1 not 5,4,1,0,0,0,0,0,1,0; overlay counters 5,4,1,0,0,0,0,0,0,1 not 5,4,1,0,0,0,0,0,1,0; overlay labels Arrived: 5,Admitted: 4,Rejected: 1,Complet"
+    }
+  ]
+}

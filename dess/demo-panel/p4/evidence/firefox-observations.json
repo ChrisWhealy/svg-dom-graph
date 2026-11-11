@@ -1,0 +1,124 @@
+{
+  "observed_at": "2026-11-11T16:16:49.961Z",
+  "browser": "Mozilla Firefox 159.0",
+  "note": "Observations, not a pass claim. Chrome is the release gate.",
+  "observations": [
+    {
+      "name": "the panel is built when it is selected",
+      "seen": "yes"
+    },
+    {
+      "name": "the first snapshot",
+      "seen": "Snapshot 0 of 12"
+    },
+    {
+      "name": "the controls are in the scene",
+      "seen": "yes, in a foreignObject of the scene's svg"
+    },
+    {
+      "name": "the walkthrough after four clicks of Next",
+      "seen": {
+        "snapshot": "4 of 12",
+        "servers": [
+          {
+            "fill": "rgb(254, 202, 202)",
+            "key": "S0",
+            "state": "down"
+          },
+          {
+            "fill": "rgb(187, 247, 208)",
+            "key": "S1",
+            "state": "busy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "the server boxes are the colour of their state (the :has() rules)",
+      "seen": "yes"
+    },
+    {
+      "name": "the data node holds the eight numbers",
+      "seen": [
+        "4",
+        "4",
+        "3",
+        "1",
+        "0",
+        "0",
+        "0",
+        "1"
+      ]
+    },
+    {
+      "name": "Play for 2.6 seconds at 1 Hz, then Pause",
+      "seen": {
+        "snapshot": "6 of 12",
+        "button": "Play / false"
+      }
+    },
+    {
+      "name": "a switch to E3-NOOP",
+      "seen": {
+        "hosts": [
+          "dess-host-1"
+        ],
+        "refusal": "none",
+        "scenes": 1,
+        "servers": 1,
+        "snapshot": "0 of 9"
+      }
+    },
+    {
+      "name": "a switch to five",
+      "seen": {
+        "hosts": [
+          "dess-host-2"
+        ],
+        "refusal": "none",
+        "scenes": 1,
+        "servers": 5,
+        "snapshot": "0 of 493"
+      }
+    },
+    {
+      "name": "a switch to E0",
+      "seen": {
+        "hosts": [
+          "dess-host-3"
+        ],
+        "refusal": "none",
+        "scenes": 1,
+        "servers": 2,
+        "snapshot": "0 of 12"
+      }
+    },
+    {
+      "name": "the controls and inspector are inside the scene (left, top, width, height)",
+      "seen": {
+        "side": [
+          1153,
+          1,
+          299,
+          413
+        ],
+        "svg": [
+          273,
+          1,
+          1179,
+          554
+        ],
+        "toolbar": [
+          273,
+          1,
+          880,
+          114
+        ]
+      }
+    },
+    {
+      "name": "a screenshot was kept",
+      "seen": "dess/demo-panel/p4/evidence/firefox-observations.png"
+    }
+  ]
+}

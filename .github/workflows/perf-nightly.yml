@@ -59,3 +59,43 @@ jobs:
           name: perf-nightly-${{ github.sha }}
           path: target/perf-nightly
           retention-days: 90
+
+  # The gallery panel's long paths, which are too slow for every commit: the scaled scenario's 487 snapshots with random seeks and rate changes (G18), a thousand
+  # commits and sampled seeks on the advanced 5,464-snapshot trace (G19), and forty cycles of switching, hiding and taking the panel down that must leave the
+  # elements, listeners, observers and externref slots exactly as they were (G20). The oracle is the independent JavaScript engine. Nothing here is a timing, and
+  # the advanced trace is not a benchmark. Run apart from W6 Layer C, and never counted in its results.
+  dess-gallery-nightly:
+    name: Service simulator gallery panel, long paths (G18 to G20)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Build the demo
+        run: cargo run -p demo-server -- --build-only
+      - name: The long paths
+        run: node dess/demo-panel/test-gallery.mjs --nightly --out target/dess-gallery-nightly/gallery.json
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dess-gallery-nightly-${{ github.sha }}
+          path: target/dess-gallery-nightly
+          if-no-files-found: ignore
+          retention-days: 30

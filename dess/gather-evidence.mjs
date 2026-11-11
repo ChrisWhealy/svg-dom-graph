@@ -110,6 +110,9 @@ const STEPS = [
     'node',
     ['perf/runner/gallery-sweep.mjs', '--only', 'panel-service-simulator']
   ],
+  ['firefox-service-sim', 'an observation: the surface and controller tests in Firefox (not a gate)', 'wasm-pack', ['test', '--headless', '--firefox', 'service-sim']],
+  ['firefox-visit', 'an observation: a short visit to the panel in Firefox through geckodriver (not a gate)', 'node', [`${P}/p4/firefox-observe.mjs`]],
+  ['gallery-nightly', 'P4: the long paths G18 and G19 and the cycles of G20, at the nightly size (about a minute)', 'node', [`${P}/test-gallery.mjs`, '--nightly', '--out', `${P}/p4/evidence/gallery-nightly.json`]],
   [
     'p2-mutation',
     'P2: the panel is broken in small ways and the tests notice',
@@ -117,6 +120,8 @@ const STEPS = [
     [`${P}/p2/mutation-check.mjs`, '--out', `${P}/p2/evidence/mutation-check.json`],
     { slow: true }
   ],
+  ['p4-mutation', 'P4: the taking down of the panel and the long paths are broken in small ways and the tests notice', 'node', [`${P}/p4/mutation-check.mjs`, '--out', `${P}/p4/evidence/mutation-check.json`], { slow: true }],
+  ['size-ledger', 'P4: the demo wasm before and after the panel, in bytes and gzipped, with the dependency tree (two full builds)', 'node', [`${P}/p4/size-ledger.mjs`], { slow: true }],
   [
     'p3-mutation',
     'P3: the panel, the handoff and the layout are broken in small ways and the tests notice',
@@ -135,10 +140,10 @@ const STEPS = [
 
 const MANUAL = [
   'A screen reader (VoiceOver or NVDA) reads the Snapshot range as "Snapshot N of M": Chrome\'s accessibility tree does not show aria-valuetext.',
-  'Firefox and Safari, with their versions: the panel loads, the controls work, and the server colours show (they need :has()). These are observations, not pass claims.',
+  'Safari, with its version: the panel loads, the controls work, and the server colours show (they need :has()). Firefox has a script and Safari has no driver here. These are observations, not pass claims: see dess/demo-panel/p4/browser-observations.md.',
   'A phone-width window, by eye: the controls, the scene and the inspector stay together and are readable.',
   'One pass with a real keyboard: Tab through the controls, change the scenario, and see where the focus goes when a switch is refused.',
-  'After P4 is built: the nightly G18 to G20 runs and the wasm size ledger.'
+  'After a push: the dess-gallery-nightly job in perf-nightly.yml runs on its schedule or by hand, and keeps its results for 30 days.'
 ]
 
 const run = (command, args, env = {}) =>

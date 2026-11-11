@@ -223,6 +223,9 @@ impl Surface {
                 "text",
                 &[
                     ("class", "ss-caption ss-legend"),
+                    // The size is on the element and not only in the page's style, so that the rows are
+                    // the same width in a page that has none, whose default type is wider in some browsers.
+                    ("font-size", "10.5"),
                     ("aria-hidden", "true"),
                     ("x", &n(right + 8.0)),
                     ("y", &n(middle + 4.0)),

@@ -32,6 +32,7 @@
 - [Red–black tree](red-black-tree.md)
 - [Marching squares](marching-squares.md)
 - [Petri net](petri-net.md)
+- [Service simulator](service-simulator.md)
 - [Sparse matrix: scale and limits](sparse-matrix.md)
 - [Tarjan's strongly connected components](tarjan-scc.md)
 - [Conway's Game of Life](game-of-life.md)

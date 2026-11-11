@@ -39,8 +39,22 @@ pub(super) fn change(shared: &Rc<Shared>) {
     let Some(entry) = shared.scenarios.iter().find(|entry| entry.spec.id == id) else {
         return;
     };
-    // The exact end of the run is found before anything is built, and it is what the range will run to.
-    let outcome = match entry.spec.preflight() {
+    // The exact end of the run is found before anything is built, and it is what the range will run to. How long that
+    // took is written to the console for whoever is curious, and is never a reason to refuse a run.
+    let started = js_sys::Date::now();
+    let preflight = entry.spec.preflight();
+    if let Ok(extent) = &preflight {
+        web_sys::console::debug_1(
+            &format!(
+                "service simulator: preflight of {id} is {} slices and {} pops, in {:.0} ms",
+                extent.slices,
+                extent.pops,
+                js_sys::Date::now() - started
+            )
+            .into(),
+        );
+    }
+    let outcome = match preflight {
         Ok(extent) => {
             let outcome = shared.coordinator.borrow_mut().switch(entry.spec.clone());
             (outcome, Some(extent))

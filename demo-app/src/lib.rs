@@ -466,6 +466,47 @@ pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Takes down the owner of a panel that has one, so that its observers, listeners, controller and scene are all gone,
+/// and puts the panel back as it was before [`init_panel`] built it, so that a later call of [`init_panel`] builds it
+/// again.
+///
+/// A panel that has no owner to take down is left as it is. The gallery never calls this, since a panel that has been
+/// built is only hidden. It is for a page that unloads a panel for good, and for the tests that show that nothing is
+/// left behind. It can be called twice.
+///
+/// # Errors
+///
+/// Returns `Err` if the document is missing or the panel's owner could not be taken down.
+#[wasm_bindgen]
+pub fn dispose_panel(panel_id: &str) -> Result<(), JsValue> {
+    let document = demo_common::util::document().map_err(|e| JsValue::from_str(&e))?;
+    let Some(section) = document.get_element_by_id(panel_id) else {
+        return Ok(());
+    };
+    match panel_id {
+        "panel-service-simulator" => {
+            service_sim::dispose_service_simulator_demo().map_err(|e| JsValue::from_str(&e))?
+        },
+        _ => return Ok(()),
+    }
+    // The source frames are made again by the next build, and the state says that it has not been built.
+    if let Ok(frames) = section.query_selector_all("details.source") {
+        for i in 0..frames.length() {
+            if let Some(frame) = frames
+                .get(i)
+                .and_then(|n| wasm_bindgen::JsCast::dyn_into::<web_sys::Element>(n).ok())
+            {
+                frame.remove();
+            }
+        }
+    }
+    section
+        .remove_attribute(PANEL_STATE_ATTR)
+        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    Ok(())
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs one demo's build function, catching its error rather than letting it propagate, and reports whether it
 /// succeeded so [`init_panel`] can record that as the panel's state. A broken demo is this function's own runtime

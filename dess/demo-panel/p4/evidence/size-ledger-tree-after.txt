@@ -1,0 +1,81 @@
+svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
+├── demo-common v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-common)
+│   ├── js-sys v0.3.106
+│   │   ├── cfg-if v1.0.5
+│   │   ├── futures-util v0.3.34
+│   │   │   ├── futures-core v0.3.34
+│   │   │   ├── futures-task v0.3.34
+│   │   │   ├── pin-project-lite v0.2.17
+│   │   │   └── slab v0.4.12
+│   │   └── wasm-bindgen v0.2.129
+│   │       ├── cfg-if v1.0.5
+│   │       ├── once_cell v1.21.4
+│   │       ├── wasm-bindgen-macro v0.2.129 (proc-macro)
+│   │       │   ├── quote v1.0.47
+│   │       │   │   └── proc-macro2 v1.0.107
+│   │       │   │       └── unicode-ident v1.0.27
+│   │       │   └── wasm-bindgen-macro-support v0.2.129
+│   │       │       ├── bumpalo v3.20.3
+│   │       │       ├── proc-macro2 v1.0.107 (*)
+│   │       │       ├── quote v1.0.47 (*)
+│   │       │       ├── syn v3.0.9
+│   │       │       │   ├── proc-macro2 v1.0.107 (*)
+│   │       │       │   ├── quote v1.0.47 (*)
+│   │       │       │   └── unicode-ident v1.0.27
+│   │       │       └── wasm-bindgen-shared v0.2.129
+│   │       │           └── unicode-ident v1.0.27
+│   │       └── wasm-bindgen-shared v0.2.129
+│   │           └── unicode-ident v1.0.27
+│   │       [build-dependencies]
+│   │       └── rustversion v1.0.23 (proc-macro)
+│   ├── svg-dom v0.2.19
+│   │   ├── js-sys v0.3.106 (*)
+│   │   ├── wasm-bindgen v0.2.129 (*)
+│   │   └── web-sys v0.3.106
+│   │       ├── js-sys v0.3.106 (*)
+│   │       └── wasm-bindgen v0.2.129 (*)
+│   ├── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph)
+│   │   ├── svg-dom v0.2.19 (*)
+│   │   ├── wasm-bindgen v0.2.129 (*)
+│   │   └── web-sys v0.3.106 (*)
+│   ├── wasm-bindgen v0.2.129 (*)
+│   └── web-sys v0.3.106 (*)
+├── js-sys v0.3.106 (*)
+├── service-sim v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim)
+│   ├── js-sys v0.3.106 (*)
+│   ├── serde_json v1.0.154
+│   │   ├── itoa v1.0.18
+│   │   ├── memchr v2.8.3
+│   │   ├── serde_core v1.0.229
+│   │   └── zmij v1.0.23
+│   ├── service-sim-engine v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim-engine)
+│   │   ├── serde_json v1.0.154 (*)
+│   │   └── sha2 v0.11.0
+│   │       ├── cfg-if v1.0.5
+│   │       └── digest v0.11.3
+│   │           ├── block-buffer v0.12.1
+│   │           │   └── hybrid-array v0.4.15
+│   │           │       └── typenum v1.20.1
+│   │           ├── const-oid v0.10.2
+│   │           └── crypto-common v0.2.2
+│   │               └── hybrid-array v0.4.15 (*)
+│   ├── svg-dom v0.2.19 (*)
+│   ├── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph) (*)
+│   ├── wasm-bindgen v0.2.129 (*)
+│   └── web-sys v0.3.106 (*)
+├── service-sim-engine v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim-engine) (*)
+├── spmv-core v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-core)
+│   ├── serde_json v1.0.154 (*)
+│   └── sha2 v0.11.0 (*)
+├── spmv-scene v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-scene)
+│   ├── js-sys v0.3.106 (*)
+│   ├── serde_json v1.0.154 (*)
+│   ├── spmv-core v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-core) (*)
+│   ├── svg-dom v0.2.19 (*)
+│   ├── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph) (*)
+│   ├── wasm-bindgen v0.2.129 (*)
+│   └── web-sys v0.3.106 (*)
+├── svg-dom v0.2.19 (*)
+├── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph) (*)
+├── wasm-bindgen v0.2.129 (*)
+└── web-sys v0.3.106 (*)

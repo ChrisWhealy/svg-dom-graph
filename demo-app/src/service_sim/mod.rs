@@ -248,6 +248,7 @@ fn build(document: &web_sys::Document) -> Result<(), String> {
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the options of the scenario list, with the advanced scenario in a group of its own.
 fn fill_scenarios(
     document: &web_sys::Document,
@@ -269,5 +270,50 @@ fn fill_scenarios(
         parent.append_child(&option).map_err(|e| format!("{e:?}"))?;
     }
     list.append_child(&advanced).map_err(|e| format!("{e:?}"))?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl Panel {
+    /// Takes the owner down. The page's listeners and its hooks go first, so that nothing can call a controller that is
+    /// being disposed, and then the controller and its scene go.
+    fn dispose(self) {
+        let Self {
+            shared,
+            gallery,
+            lifecycle,
+            listeners,
+            notify,
+        } = self;
+        drop(listeners);
+        drop(gallery);
+        drop(lifecycle);
+        shared.coordinator.borrow_mut().dispose();
+        drop(notify);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Takes down the panel that [`build_service_simulator_demo`] made, and leaves its markup as it was written, so that
+/// the panel can be built again. The observer, the lifecycle listeners and every control's listener are removed, the
+/// controller is disposed, the scene is removed, and the controls go back to where they are written. It does nothing
+/// if there is no panel, and it can be called twice.
+///
+/// # Errors
+///
+/// Returns `Err` if the document is missing.
+pub(crate) fn dispose_service_simulator_demo() -> Result<(), String> {
+    let document = document()?;
+    let panel = PANEL.with(|panel| panel.borrow_mut().take());
+    if let Some(panel) = panel {
+        panel.dispose();
+    }
+    // What the build wrote into the markup is written again by the next build, so it is taken out.
+    for id in ["dess-scenario", "dess-job", "dess-counters"] {
+        if let Some(element) = document.get_element_by_id(id) {
+            element.set_inner_html("");
+        }
+    }
+    clear_error(ERROR);
     Ok(())
 }
