@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T12:15:29.653Z",
-  "git_sha": "871f3c216cbbedae1f974a4c340bca68c30dc0bd",
+  "measured_at": "2026-11-11T12:25:43.529Z",
+  "git_sha": "8645696af1f20d815597746b5f43fe8e713a22ff",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1032 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1016 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -507,6 +507,26 @@
         {
           "ok": true,
           "text": "every one of the five writes was reached inside the draw (5)"
+        },
+        {
+          "ok": true,
+          "text": "the failed write left the button saying Play (Play, false)"
+        },
+        {
+          "ok": true,
+          "text": "while playback is going (Playing / visible)"
+        },
+        {
+          "ok": true,
+          "text": "and the inspector does not say Up to date (Needs repair)"
+        },
+        {
+          "ok": true,
+          "text": "a repair puts the button right (Pause, true, Up to date)"
+        },
+        {
+          "ok": true,
+          "text": "without stopping playback"
         },
         {
           "ok": true,

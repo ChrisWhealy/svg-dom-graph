@@ -95,6 +95,10 @@ const MUTATIONS = [
     ]
   ],
   [
+    'a failed write of the Play control is not counted as needing repair',
+    [[CONTROLS, 'controller.is_dirty() || controller.with_host(|host| host.controls_stale())', 'controller.is_dirty()']]
+  ],
+  [
     'a failure is never cleared from the page',
     [[CONTROLS, 'if !dirty && (committed || shared.repaired.replace(false)) {', 'if false {']]
   ]
@@ -149,6 +153,9 @@ const build = () =>
 const results = []
 let missed = 0
 try {
+  // The copy keeps the times of the files that it was copied from, which can be older than a build of an earlier mutation that is still there, and
+  // cargo would then take the mutated build for a fresh one. Writing the files again gives them the time of now.
+  for (const [file, text] of originals) fs.writeFileSync(path.join(tree, file), text)
   // The unmutated copy has to pass, or a failure below says nothing.
   const clean = build()
   if (clean.status !== 0) {

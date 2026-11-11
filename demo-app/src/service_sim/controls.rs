@@ -269,7 +269,8 @@ pub(super) fn sync(shared: &Shared) {
         "Paused"
     };
     set_text(&ui.i_state, &format!("{state} / {visible}"));
-    let dirty = controller.is_dirty();
+    // A page needs repair if a draw failed, and also if the Play control could not be written, which leaves playback going under a button that says Play.
+    let dirty = controller.is_dirty() || controller.with_host(|host| host.controls_stale());
     set_text(&ui.i_display, if dirty { "Needs repair" } else { "Up to date" });
     let committed = shared.shown_slice.replace(slice) != slice;
     if !dirty && (committed || shared.repaired.replace(false)) {

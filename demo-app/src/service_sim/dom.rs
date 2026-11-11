@@ -52,6 +52,12 @@ impl PanelHost {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Whether a write of the Play control failed, so that it may not say what the controller says. The controller is not dirty then, since nothing that
+    /// it drew was lost, and only a repair puts the control right.
+    pub(super) fn controls_stale(&self) -> bool {
+        self.inner.controls_stale()
+    }
+
     /// The surface, which the readback of a candidate reads the page through.
     fn surface(&mut self) -> &mut Surface {
         self.inner.surface()

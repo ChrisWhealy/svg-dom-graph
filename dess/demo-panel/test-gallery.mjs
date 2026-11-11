@@ -743,6 +743,34 @@ await test('G08', 'Repair redraws the committed snapshot and changes nothing els
     )
   }
   check(fired === 5, `every one of the five writes was reached inside the draw (${fired})`)
+  // A write of the Play control that fails while playback starts leaves playback going under a button that says Play. The controller is not dirty, and the
+  // page still has to say that it needs repair, and a repair has to put the button right without stopping playback.
+  await click('#dess-restart')
+  await hold(true)
+  await evaluate('__faults.arm(1)')
+  await click('#dess-play')
+  await evaluate('__faults.disarm()')
+  page = await read()
+  check(
+    page.play.text === 'Play' && page.play.pressed === 'false',
+    `the failed write left the button saying Play (${page.play.text}, ${page.play.pressed})`
+  )
+  check(
+    (await pending()).timers.length === 1 && page.state.startsWith('Playing'),
+    `while playback is going (${page.state})`
+  )
+  check(page.display === 'Needs repair', `and the inspector does not say Up to date (${page.display})`)
+  await click('#dess-repair')
+  page = await read()
+  check(
+    page.play.text === 'Pause' && page.play.pressed === 'true' && page.display === 'Up to date',
+    `a repair puts the button right (${page.play.text}, ${page.play.pressed}, ${page.display})`
+  )
+  check((await pending()).timers.length === 1 && page.state.startsWith('Playing'), 'without stopping playback')
+  await click('#dess-play')
+  await hold(false)
+  await click('#dess-restart')
+  for (let i = 0; i < 5; i++) await click('#dess-next')
   // A failure that the controller recovers from by itself is still said, and the cursor did not move.
   await evaluate('__faults.arm(1)')
   await click('#dess-next')

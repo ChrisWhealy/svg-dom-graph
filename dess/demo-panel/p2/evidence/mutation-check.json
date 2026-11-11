@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T12:14:55.632Z",
-  "git_sha": "871f3c216cbbedae1f974a4c340bca68c30dc0bd",
+  "measured_at": "2026-11-11T12:31:08.419Z",
+  "git_sha": "8645696af1f20d815597746b5f43fe8e713a22ff",
   "git_dirty": true,
-  "caught": 13,
-  "total": 13,
+  "caught": 14,
+  "total": 14,
   "mutations": [
     {
       "name": "Next is not marked as at the last snapshot when it is",
@@ -76,6 +76,12 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL and says so, in words (Snapshot 5 of 12)"
+    },
+    {
+      "name": "a failed write of the Play control is not counted as needing repair",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and the inspector does not say Up to date (Up to date)"
     },
     {
       "name": "a failure is never cleared from the page",
