@@ -76,6 +76,11 @@ const MUTATIONS = [
     '        if let Err(reason) = Self::validate(&candidate) {'
   ],
   [
+    'a switch in place does not update the state',
+    '                        self.state = if done { State::Committed } else { State::RolledBack };\n',
+    ''
+  ],
+  [
     'a hook never reaches the current controller',
     '        self.target.upgrade().and_then(|t| t.borrow().clone())',
     '        None'

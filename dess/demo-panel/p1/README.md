@@ -34,6 +34,10 @@ Any failure before the commit rolls back.
 The candidate is disposed and removed, the old session is where it was, and its page is repaired if the handoff may have disturbed it.
 The old cursor, selection and scenario are unchanged.
 
+The coordinator's state is the result of the latest request that was acted on, whether it was a replacement or a switch in place.
+It is `Committed` if the scenario is now the one on the page, and `RolledBack` if the one that was there still is.
+A request that is rejected before anything was done changes nothing, and so leaves the state of the request before it.
+
 The old playback is not promised.
 A request invalidates it at the start, and a cancelled timer is not restored.
 
@@ -73,7 +77,7 @@ Three small additions, with no change to what the controller does.
 
 ## Tests
 
-There are 21 tests, all native, with a fake host and a manual scheduler.
+There are 22 tests, all native, with a fake host and a manual scheduler.
 
 - **Preflight:** E0 gives 12 slices and 19 pops, E3-NOOP gives 9 and 9, and the scaled run gives 487 and 1,009.
   A bad server count, a passed ceiling, a total that differs and a failing engine are each refused.
@@ -89,8 +93,8 @@ There are 21 tests, all native, with a fake host and a manual scheduler.
   One tells the current controller that the panel was hidden and shown.
 - **Ownership:** the old session is disposed and removed exactly once, no host is kept alive in a circle, and a timer and a frame that were on their way do nothing.
 
-`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 13 ways, one at a time, in a copy of the tree, and a test has to fail for each.
-All 13 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
+`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 14 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+All 14 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
 Each mutation is built on its own first, so one that does not compile is never counted as caught.
 The script exits with 2 if the coordinator's source file is not where it expects, so a move of the file cannot make it pass vacuously.
 CI runs it as one of the entries of the `perf-selftests` job.

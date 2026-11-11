@@ -1,10 +1,10 @@
 {
-  "measured_at": "2026-11-11T10:39:23.974Z",
-  "git_sha": "81dec076087193ac59d10f7fd1241298c6e1bad8",
+  "measured_at": "2026-11-11T10:43:37.820Z",
+  "git_sha": "37a3464d93bcb2b37fe5874ac41f9c384bc9ed96",
   "git_dirty": true,
   "file": "service-sim/src/session/mod.rs",
-  "caught": 13,
-  "total": 13,
+  "caught": 14,
+  "total": 14,
   "mutations": [
     {
       "name": "the new scene is not validated after the handoff",
@@ -22,7 +22,7 @@
       "name": "a rolled back candidate is not removed",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+      "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
     },
     {
       "name": "the old picture is not repaired after a failed handoff",
@@ -34,7 +34,7 @@
       "name": "a failed handoff is not undone",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_handoff_that_cannot_be_undone_is_reported_and_the_old_session_is_still_the_active_one ... FAILED"
+      "first_failure": "test session::unit_tests::a_candidate_that_is_not_live_after_the_handoff_is_rolled_back ... FAILED"
     },
     {
       "name": "the old playback is not invalidated at the start of a request",
@@ -79,10 +79,16 @@
       "first_failure": "test session::unit_tests::a_handoff_that_reports_success_and_is_incomplete_is_not_committed ... FAILED"
     },
     {
+      "name": "a switch in place does not update the state",
+      "built": true,
+      "caught": true,
+      "first_failure": "test session::unit_tests::the_state_is_the_result_of_the_latest_request_that_was_acted_on_in_place_or_not ... FAILED"
+    },
+    {
       "name": "a hook never reaches the current controller",
       "built": true,
       "caught": true,
-      "first_failure": "test session::unit_tests::a_rolled_back_replacement_leaves_the_hook_pointing_at_the_old_controller ... FAILED"
+      "first_failure": "test session::unit_tests::a_hook_tells_the_current_controller_that_the_panel_was_hidden_and_shown ... FAILED"
     }
   ]
 }

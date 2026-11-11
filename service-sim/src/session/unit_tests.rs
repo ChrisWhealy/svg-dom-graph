@@ -586,6 +586,41 @@ fn a_candidate_that_is_not_live_after_the_handoff_is_rolled_back() {
 }
 
 #[test]
+fn the_state_is_the_result_of_the_latest_request_that_was_acted_on_in_place_or_not() {
+    let (mut session, world) = started();
+    assert_eq!(session.state(), State::Committed);
+    // A replacement that fails.
+    world.borrow_mut().fail_build = true;
+    assert!(matches!(session.switch(noop()), SwitchOutcome::RolledBack(_)));
+    assert_eq!(session.state(), State::RolledBack);
+    // A request that is rejected before anything is done leaves the state of the request before it.
+    let mut bad = noop();
+    bad.servers = 9;
+    assert!(matches!(session.switch(bad), SwitchOutcome::Rejected(_)));
+    assert_eq!(
+        session.state(),
+        State::RolledBack,
+        "a rejected request changed nothing, so it changes nothing here"
+    );
+    // A switch in place that succeeds is the latest result, and the scenario on the page is the new one.
+    let mut again = e0();
+    again.id = "E0-again".into();
+    assert_eq!(session.switch(again), SwitchOutcome::InPlace(Outcome::Done));
+    assert_eq!((session.state(), session.active_id()), (State::Committed, Some("E0-again")));
+    // A switch in place whose draw fails leaves the old scenario, and the state says so.
+    let page = Rc::clone(&world.borrow().pages[&0]);
+    let draws = page.borrow().draws;
+    page.borrow_mut().fail_draws.push(draws + 1);
+    let mut third = e0();
+    third.id = "E0-third".into();
+    assert_eq!(session.switch(third), SwitchOutcome::InPlace(Outcome::Failed));
+    assert_eq!((session.state(), session.active_id()), (State::RolledBack, Some("E0-again")));
+    // And after dispose it is Idle.
+    session.dispose();
+    assert_eq!(session.state(), State::Idle);
+}
+
+#[test]
 fn a_rolled_back_request_can_be_followed_by_a_good_one() {
     let (mut session, world) = started();
     world.borrow_mut().fail_build = true;

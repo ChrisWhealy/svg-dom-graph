@@ -320,7 +320,12 @@ pub enum SwitchOutcome {
     RolledBack(Rollback),
 }
 
-/// Where the coordinator is in a replacement, and where the last one ended.
+/// Where the coordinator is in a request for another scenario, and where the last one that was acted on ended.
+///
+/// A request of either kind sets it: a replacement, which passes through `Staging` and `Publishing`, and a switch in
+/// place. It ends as `Committed` if the scenario is now the one on the page, and as `RolledBack` if the scenario that
+/// was on the page still is. A request that is rejected before anything was done changes nothing, so it leaves the
+/// state of the request before it. `Idle` is before the first request and after [`Coordinator::dispose`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     Idle,
@@ -394,19 +399,25 @@ impl<F: SessionHost> Coordinator<F> {
             if active.spec.servers == spec.servers {
                 return match controller.switch_scenario(Rc::clone(&spec.factory)) {
                     Ok(outcome) => {
-                        if outcome == Outcome::Done {
+                        // The scenario on the page is the new one only if the controller published it.
+                        let done = outcome == Outcome::Done;
+                        if done {
                             if let Some(active) = self.active.as_mut() {
                                 active.spec = spec;
                             }
                         }
+                        self.state = if done { State::Committed } else { State::RolledBack };
                         SwitchOutcome::InPlace(outcome)
                     },
-                    Err(e) => SwitchOutcome::RolledBack(Rollback {
-                        stage: Stage::Build,
-                        reason: e.message(),
-                        undo_failed: false,
-                        repair: None,
-                    }),
+                    Err(e) => {
+                        self.state = State::RolledBack;
+                        SwitchOutcome::RolledBack(Rollback {
+                            stage: Stage::Build,
+                            reason: e.message(),
+                            undo_failed: false,
+                            repair: None,
+                        })
+                    },
                 };
             }
         }
