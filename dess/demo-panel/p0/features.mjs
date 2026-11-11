@@ -24,17 +24,19 @@ const argument = name => (process.argv.includes(name) ? process.argv[process.arg
 const out = path.resolve(argument('--out') ?? path.join(root, 'dess/demo-panel/p0/evidence/features.txt'))
 const requireService = process.argv.includes('--require-service-sim')
 
+// The drawing characters are fixed to UTF-8, since a runner whose locale is not UTF-8 may otherwise draw the tree in ASCII, and the reading must not
+// depend on which it is.
 const tree = pkg => {
-  const args = ['tree', '-p', pkg, '--target', 'wasm32-unknown-unknown', '-e', 'features']
+  const args = ['tree', '-p', pkg, '--target', 'wasm32-unknown-unknown', '-e', 'features', '--charset', 'utf8']
   const ran = spawnSync('cargo', args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 })
   if (ran.status !== 0) throw new Error(`cargo ${args.join(' ')} failed:\n${ran.stderr}`)
   return { command: `cargo ${args.join(' ')}`, text: ran.stdout }
 }
 
 /** Whether a feature tree says that `service-sim` is built with its `fault-hook` feature. */
-export const hasFaultHook = text => /^[│├└─ ]*service-sim feature "fault-hook"/m.test(text)
+export const hasFaultHook = text => /^[│├└─ |`+\\-]*service-sim feature "fault-hook"/m.test(text)
 /** Whether `service-sim` is in the tree at all. */
-export const hasServiceSim = text => /^[│├└─ ]*service-sim feature "/m.test(text) || /service-sim v\d/.test(text)
+export const hasServiceSim = text => /^[│├└─ |`+\\-]*service-sim feature "/m.test(text) || /service-sim v\d/.test(text)
 
 let failures = 0
 const check = (ok, text) => {
@@ -60,6 +62,12 @@ const demo = tree('svg-dom-graph-demo')
 const harness = tree('perf-harness-wasm')
 const cargo = spawnSync('cargo', ['--version'], { encoding: 'utf8' }).stdout.trim()
 
+if (!hasFaultHook(harness.text)) {
+  const lines = harness.text.split('\n').filter(line => line.includes('service-sim'))
+  console.log(
+    `the harness graph, which should hold the hook, has these service-sim lines (${lines.length}):\n${lines.slice(0, 20).join('\n')}`
+  )
+}
 check(
   hasFaultHook(harness.text),
   'positive control: the harness build graph holds service-sim "fault-hook", so the same reading does find it when it is there'
