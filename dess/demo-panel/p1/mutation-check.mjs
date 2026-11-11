@@ -81,6 +81,11 @@ const MUTATIONS = [
     ''
   ],
   [
+    'the engine\'s own server count is not checked',
+    '        if found != self.servers {',
+    '        if false {'
+  ],
+  [
     'a hook never reaches the current controller',
     '        self.target.upgrade().and_then(|t| t.borrow().clone())',
     '        None'

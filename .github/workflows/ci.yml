@@ -338,7 +338,7 @@ jobs:
             run: node perf/runner/selftest-regression.mjs
           - name: simulator runners refuse, reject and fail
             run: node dess/s5/selftest.mjs --skip-classification
-          # The session coordinator's tests are shown to fail when the coordinator is wrong: fourteen small breakages, one at a time, in a copy of the tree.
+          # The session coordinator's tests are shown to fail when the coordinator is wrong: fifteen small breakages, one at a time, in a copy of the tree.
           - name: gallery panel session coordinator mutation check
             run: node dess/demo-panel/p1/mutation-check.mjs
           # The gallery panel's P0 proofs (dess/demo-panel/p0): that a scene can be staged in a connected host that cannot be seen, focused, clicked

@@ -71,6 +71,9 @@ pub struct Extent {
 pub enum PreflightError {
     /// The surface is built for one to four servers.
     Servers(usize),
+    /// The engine has a different number of servers from the one that the spec says, so the surface would be the wrong
+    /// shape.
+    EngineServers { found: usize, declared: usize },
     /// The engine could not be made or stepped.
     Engine(String),
     /// The run went past a ceiling before it ended.
@@ -98,13 +101,17 @@ impl Spec {
     ///
     /// # Errors
     ///
-    /// Returns a [`PreflightError`] if the server count is not one to four, the engine fails, a ceiling is passed, or
-    /// the totals are not the expected ones.
+    /// Returns a [`PreflightError`] if the server count is not one to four, the engine fails or has other servers than
+    /// declared, a ceiling is passed, or the totals are not the expected ones.
     pub fn preflight(&self) -> Result<Extent, PreflightError> {
         if !(1..=MAX_SERVERS).contains(&self.servers) {
             return Err(PreflightError::Servers(self.servers));
         }
         let mut engine = (self.factory)().map_err(|e| PreflightError::Engine(e.message()))?;
+        let found = engine.model(0, None).servers.len();
+        if found != self.servers {
+            return Err(PreflightError::EngineServers { found, declared: self.servers });
+        }
         let mut slices = 0;
         while engine.step().map_err(|e| PreflightError::Engine(e.message()))?.is_some() {
             slices += 1;

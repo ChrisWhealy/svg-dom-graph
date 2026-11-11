@@ -12,7 +12,7 @@ Nothing in `demo-app` changes in this phase, and no simulator rule is added to t
 | Piece | What it is |
 |---|---|
 | `Spec` | A scenario: its identity, its server count, how to make its engine and what it is known to come to |
-| `Spec::preflight` | Runs the engine to its end, counting slices and pops, against exact totals and per-scenario ceilings |
+| `Spec::preflight` | Checks the engine's own server count, then runs it to its end, counting slices and pops, against exact totals and ceilings |
 | `SessionHost` | The one trait that touches the page: build a candidate, verify it, hand the page over, read the handoff back, undo it, discard and finalize |
 | `Coordinator` | The state machine: Idle, Staging, Publishing, then Committed or RolledBack |
 | `Target` and `TargetHook` | The one place the current controller is kept, and the weak handle that a page's hooks hold |
@@ -80,7 +80,7 @@ Three small additions, with no change to what the controller does.
 There are 22 tests, all native, with a fake host and a manual scheduler.
 
 - **Preflight:** E0 gives 12 slices and 19 pops, E3-NOOP gives 9 and 9, and the scaled run gives 487 and 1,009.
-  A bad server count, a passed ceiling, a total that differs and a failing engine are each refused.
+  A bad server count, a count that is not the engine's own, a passed ceiling, a total that differs and a failing engine are each refused.
 - **Replacement:** the same-size path builds nothing.
   A different size replaces the session, keeps the speed, does not resume and clears the selection.
 - **Failures before the handoff:** a host that cannot be staged, a first draw that fails and leaves the candidate dirty, and a failed readback each leave the old session untouched.
@@ -93,8 +93,8 @@ There are 22 tests, all native, with a fake host and a manual scheduler.
   One tells the current controller that the panel was hidden and shown.
 - **Ownership:** the old session is disposed and removed exactly once, no host is kept alive in a circle, and a timer and a frame that were on their way do nothing.
 
-`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 14 ways, one at a time, in a copy of the tree, and a test has to fail for each.
-All 14 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
+`node dess/demo-panel/p1/mutation-check.mjs` breaks the coordinator in 15 ways, one at a time, in a copy of the tree, and a test has to fail for each.
+All 15 are caught, and the result is kept in `evidence/mutation-check.json` with the commit that it measured.
 Each mutation is built on its own first, so one that does not compile is never counted as caught.
 The script exits with 2 if the coordinator's source file is not where it expects, so a move of the file cannot make it pass vacuously.
 CI runs it as one of the entries of the `perf-selftests` job.

@@ -311,6 +311,10 @@ fn a_scenario_that_is_refused_is_refused_for_a_reason_and_without_building_anyth
     let mut many = e0();
     many.servers = 5;
     assert_eq!(many.preflight(), Err(PreflightError::Servers(5)));
+    // A count that is valid, and is not the engine's: E0 has two servers.
+    let mut liar = e0();
+    liar.servers = 3;
+    assert_eq!(liar.preflight(), Err(PreflightError::EngineServers { found: 2, declared: 3 }));
     let mut slices = e0();
     slices.expected.max_slices = 5;
     assert_eq!(slices.preflight(), Err(PreflightError::Ceiling { what: "slices", limit: 5 }));
