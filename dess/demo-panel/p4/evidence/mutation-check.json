@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T19:16:38.530Z",
-  "git_sha": "2c84797c1bb90d515b3573cbc462281cf2678fbc",
+  "measured_at": "2026-11-11T19:38:02.501Z",
+  "git_sha": "55734a7deebb3ba0cb364206851c73da38069602",
   "git_dirty": true,
-  "caught": 8,
-  "total": 8,
+  "caught": 10,
+  "total": 10,
   "mutations": [
     {
       "name": "taking the panel down leaves the page lifecycle listeners on",
@@ -21,7 +21,7 @@
       "name": "taking the panel down leaves the controls' listeners on",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"gone\":{\"hosts\":1,\"observers\":0,\"state\":null,\"controlsHome\":true,\"frames\":0,\"svgs\":1},\"retained\":{\"ran\":1,\"threw\":4,\"elementsMoved\":false}}"
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"gone\":{\"hosts\":1,\"observers\":0,\"state\":null,\"controlsHome\":true,\"frames\":0,\"svgs\":1},\"retained\":{\"ran\":1,\"threw\":3,\"changed\":true,\"scheduled"
     },
     {
       "name": "taking the panel down leaves the controller and the scene",
@@ -46,6 +46,18 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19311,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":534,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
+    },
+    {
+      "name": "a callback that is kept after the panel is taken down changes a text and adds no element",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (2 ran, 2 refused)"
+    },
+    {
+      "name": "a callback that is kept after the panel is taken down asks for a timer",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (2 ran, 2 refused)"
     },
     {
       "name": "the stale and no-op counters change places",

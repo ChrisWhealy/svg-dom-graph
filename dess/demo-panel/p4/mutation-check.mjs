@@ -63,6 +63,26 @@ const MUTATIONS = [
     ]
   ],
   [
+    'a callback that is kept after the panel is taken down changes a text and adds no element',
+    [
+      [
+        MOD,
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());',
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());\n    if let Some(window) = web_sys::window() {\n        let stale = wasm_bindgen::closure::Closure::once_into_js(|| {\n            if let Some(live) = web_sys::window().and_then(|w| w.document()).and_then(|d| d.get_element_by_id("dess-live")) {\n                live.set_text_content(Some("stale"));\n            }\n        });\n        let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(stale.unchecked_ref(), 60_000);\n    }'
+      ]
+    ]
+  ],
+  [
+    'a callback that is kept after the panel is taken down asks for a timer',
+    [
+      [
+        MOD,
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());',
+        '    let panel = PANEL.with(|panel| panel.borrow_mut().take());\n    if let Some(window) = web_sys::window() {\n        let again = wasm_bindgen::closure::Closure::once_into_js(|| {\n            if let Some(window) = web_sys::window() {\n                let nothing = wasm_bindgen::closure::Closure::once_into_js(|| {});\n                let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(nothing.unchecked_ref(), 60_000);\n            }\n        });\n        let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(again.unchecked_ref(), 60_000);\n    }'
+      ]
+    ]
+  ],
+  [
     'the stale and no-op counters change places',
     [[PROJECTION, '        c.stale,\n        c.noops,', '        c.noops,\n        c.stale,']]
   ]
@@ -165,7 +185,7 @@ try {
           '--cycles',
           '3'
         ],
-        { encoding: 'utf8', maxBuffer: 1 << 27 }
+        { encoding: 'utf8', maxBuffer: 1 << 27, timeout: 600000, killSignal: 'SIGTERM' }
       )
       const failures = ran.stdout.split('\n').filter(line => line.includes('FAIL'))
       const caught = ran.status !== 0 && failures.length > 0
@@ -173,7 +193,9 @@ try {
       results.push({ name, built: true, caught, first_failure: failures[0]?.trim().slice(0, 200) ?? null })
       console.log(`${caught ? 'caught ' : 'MISSED '} ${index + 1}. ${name}`)
       console.log(
-        caught ? `         first failure: ${failures[0].trim().slice(0, 170)}` : `         exit ${ran.status}`
+        caught
+          ? `         first failure: ${failures[0].trim().slice(0, 170)}`
+          : `         ${ran.error?.code === 'ETIMEDOUT' ? 'the tests did not finish in 10 minutes' : `exit ${ran.status}`}`
       )
     }
     for (const [file] of edits) fs.writeFileSync(path.join(tree, file), originals.get(file))

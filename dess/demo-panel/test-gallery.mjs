@@ -2254,6 +2254,20 @@ await test(
       )
     const ready = () => until(`document.getElementById('${PANEL}').dataset.panelState === 'ready'`, 10000)
     const module = `import('/pkg/svg_dom_graph_demo.js')`
+    // Calls every kept callback, and says whether anything in the page differs afterwards, in the whole of its markup and the values of its controls and
+    // and not only in how many elements there are, and whether any of them asked for a timer or a frame.
+    const invokeRetained = () =>
+      evaluate(`(() => {
+        const fingerprint = () => document.documentElement.outerHTML + '|' + [...document.querySelectorAll('input, select, textarea')].map(e => e.value).join(',')
+        const before = fingerprint()
+        const asked = () => __seen.timers.length + __seen.frames
+        const askedBefore = asked()
+        const outcome = { ran: 0, threw: 0 }
+        for (const f of [...window.__kept.timers, ...window.__kept.frames]) { try { f(performance.now()); outcome.ran++ } catch { outcome.threw++ } }
+        outcome.changed = fingerprint() !== before
+        outcome.scheduled = asked() - askedBefore
+        return outcome
+      })()`)
     const cycle = async () => {
       for (const id of ['E3-NOOP', 'scaled', 'five', 'E0']) {
         await chooseScenario(id)
@@ -2263,35 +2277,35 @@ await test(
       await routeBack()
       await hold(true)
       await setSpeed(500)
+      // Where the page's record of the timers and frames that were asked for stands, so that every one that is asked for from here on is kept.
+      const marks = await evaluate('({ timers: __seen.captured.timers.length, frames: __seen.captured.frames.length })')
       await click('#dess-play')
       const p = await pending()
-      const firstFrame = await evaluate('__seen.captured.frames.length')
       await evaluate(
         `(() => { const s = document.getElementById('dess-seek'); s.value = '9'; s.dispatchEvent(new Event('input', { bubbles: true })) })()`
-      )
-      // A timer and a frame are waiting when the panel is taken down, and the page's copies of them are kept.
-      const callbacks = await evaluate(
-        `(window.__kept = { timers: __seen.captured.timers.slice(-3), frames: __seen.captured.frames.slice(${firstFrame}) }, 0)`
       )
       const before = await evaluate('document.getElementsByTagName("*").length')
       // These are awaited by the browser: `evaluate` would stringify the promise, and not wait for it.
       await chrome.evaluate(`${module}.then(m => (m.dispose_panel('${PANEL}'), m.dispose_panel('${PANEL}'), 0))`)
       await hold(false)
+      // A timer and a frame were waiting when the panel was taken down, and anything that taking it down asked for is there as well. The page's copies
+      // of every one are kept, to be called as a browser that still held them would call them.
+      await evaluate(
+        `(window.__kept = { timers: __seen.captured.timers.slice(${marks.timers}), frames: __seen.captured.frames.slice(${marks.frames}) }, 0)`
+      )
       const gone =
         await evaluate(`({ hosts: document.querySelectorAll('[id^="dess-host-"]').length, observers: [...window.__liveObservers].filter(o => o).length, state: document.getElementById('${PANEL}').dataset.panelState ?? null,
       controlsHome: document.getElementById('dess-toolbar').parentElement.classList.contains('dess-holder'), frames: document.querySelectorAll('#${PANEL} details.source').length, svgs: document.querySelectorAll('#${PANEL} svg').length })`)
-      // The kept callbacks are called as a browser that still held them would call them.
-      const retained = await evaluate(`(() => {
-      const outcome = { ran: 0, threw: 0 }
-      const elements = document.getElementsByTagName('*').length
-      for (const f of [...window.__kept.timers, ...window.__kept.frames]) { try { f(performance.now()); outcome.ran++ } catch { outcome.threw++ } }
-      outcome.elementsMoved = document.getElementsByTagName('*').length !== elements
-      return outcome
-    })()`)
+      const retained = await invokeRetained()
       await chrome.evaluate(`${module}.then(m => (m.init_panel('${PANEL}'), 0))`)
       await ready()
       await keepElements()
-      return { p, gone, retained, callbacks, before }
+      // The same callbacks again, now that a new panel is there: an obsolete one must not reach the session that replaced it.
+      const replaced = await invokeRetained()
+      const replacement = await evaluate(
+        `({ snapshot: document.getElementById('dess-i-snapshot').textContent, seek: document.getElementById('dess-seek-text').textContent, state: document.getElementById('dess-i-state').textContent })`
+      )
+      return { p, gone, retained, replaced, replacement, before }
     }
     const warm = await cycle()
     const baseline = await counts()
@@ -2308,17 +2322,41 @@ await test(
         warm.gone.frames === 0,
       `taking the panel down leaves no scene, no observer, no source frame and no state, and the controls are back where they are written (${JSON.stringify(warm.gone)})`
     )
+    const quiet = r => !r.changed && r.scheduled === 0
     check(
-      !warm.retained.elementsMoved,
-      `callbacks that were kept and are called afterwards change nothing in the page (${warm.retained.ran} ran, ${warm.retained.threw} refused)`
+      quiet(warm.retained) && warm.retained.ran + warm.retained.threw > 0,
+      `callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (${warm.retained.ran} ran, ${warm.retained.threw} refused)`
+    )
+    check(
+      quiet(warm.replaced) && warm.replacement.snapshot === '0 of 12' && warm.replacement.seek === 'Committed 0',
+      `and called again after a new panel was built, they leave it at snapshot 0 and change nothing (${warm.replacement.snapshot}, ${warm.replacement.seek})`
+    )
+    // The detector is shown to see what it is there for: a callback that changes one text and adds no element, and one that asks for a timer.
+    await evaluate(
+      `(window.__priorLive = document.getElementById('dess-live').textContent, window.__kept = { timers: [() => { document.getElementById('dess-live').textContent = 'stale' }], frames: [] }, 0)`
+    )
+    const changesText = await invokeRetained()
+    await evaluate(
+      `(document.getElementById('dess-live').textContent = window.__priorLive, window.__kept = { timers: [() => { clearTimeout(setTimeout(() => {}, 1e6)) }], frames: [] }, 0)`
+    )
+    const asksForTimer = await invokeRetained()
+    check(
+      changesText.changed && !changesText.scheduled && asksForTimer.scheduled === 1 && !asksForTimer.changed,
+      `negative control: a callback that changes a text without adding an element is seen (${changesText.changed}), and so is one that asks for a timer (${asksForTimer.scheduled})`
     )
     let drift = null
     for (let n = 1; n <= CYCLES && !drift; n++) {
       const done = await cycle()
       const now = await counts()
       if (!same(now, baseline)) drift = { n, baseline, now }
-      if (done.gone.hosts !== 0 || done.gone.observers !== 0 || done.retained.elementsMoved)
-        drift = { n, gone: done.gone, retained: done.retained }
+      if (
+        done.gone.hosts !== 0 ||
+        done.gone.observers !== 0 ||
+        !quiet(done.retained) ||
+        !quiet(done.replaced) ||
+        done.replacement.snapshot !== '0 of 12'
+      )
+        drift = { n, gone: done.gone, retained: done.retained, replaced: done.replaced, replacement: done.replacement }
     }
     check(
       drift === null,

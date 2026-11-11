@@ -38,10 +38,20 @@ After the first cycle the table held 532 objects in 2,052 slots, with 2 lost, an
 
 Callbacks that were kept and called after the panel was taken down do not run.
 The page's scheduler frees a closure that was taken back, so a browser that still held one gets a refusal and not a call.
-The test shows that calling them changes nothing in the page.
+The test shows that calling them has no effect, and not only that the number of elements is the same.
+It compares the whole markup of the page and the values of its controls before and after, and checks that none of them asked for a timer or a frame.
+It keeps every timer and frame that was asked for from the start of the cycle, including any that taking the panel down asked for, and calls them all.
+It then calls them again after the new panel has been built, to show that an obsolete callback cannot reach the session that replaced it.
+A negative control runs first: a callback that changes one text and adds no element, and one that asks for a timer, are each seen by the same check.
 
-`dess/demo-panel/p4/mutation-check.mjs` breaks the taking down in six ways, leaks one object in each, and swaps the stale and no-op counters, and a test has to fail for each.
-All eight are caught.
+`dess/demo-panel/p4/mutation-check.mjs` breaks the panel in ten ways, one at a time, and a test has to fail for each.
+- It breaks the taking down in six ways.
+- It leaks one object each time the panel is taken down.
+- It keeps a callback that changes a text without adding an element.
+- It keeps a callback that asks for a timer.
+- It swaps the stale and no-op counters.
+
+All ten are caught.
 The leak is the case that matters: the table's capacity stays at 2,052, and only the count of held slots shows it.
 It runs the tests with `--nightly --cycles 3`.
 

@@ -164,4 +164,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P3: Distinguish `is_still_staged()` from `is_fully_staged()` (`115bd34`)
 - DESS Demo P3: Maintain the previously focused control after failed publication (`9603e0a`)
 - DESS Demo P4: Prevent publication from losing focus after the final controller check fails (`2c84797`)
-- DESS Demo P4: G20 measure `externref` leaks from occupied references not just table capacity (``)
+- DESS Demo P4: G20 measure `externref` leaks from occupied references not just table capacity (`55734a7`)
+- DESS Demo P4: G20 Strengthen stale-callback assertion (``)

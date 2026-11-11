@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T19:27:55.467Z",
-  "git_sha": "2c84797c1bb90d515b3573cbc462281cf2678fbc",
+  "measured_at": "2026-11-11T19:38:57.864Z",
+  "git_sha": "55734a7deebb3ba0cb364206851c73da38069602",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1040 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1020 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -1479,7 +1479,15 @@
         },
         {
           "ok": true,
-          "text": "callbacks that were kept and are called afterwards change nothing in the page (0 ran, 2 refused)"
+          "text": "callbacks that were kept and are called after the panel was taken down change nothing in the markup or the controls, and ask for no timer or frame (0 ran, 2 refused)"
+        },
+        {
+          "ok": true,
+          "text": "and called again after a new panel was built, they leave it at snapshot 0 and change nothing (0 of 12, Committed 0)"
+        },
+        {
+          "ok": true,
+          "text": "negative control: a callback that changes a text without adding an element is seen (true), and so is one that asks for a timer (1)"
         },
         {
           "ok": true,

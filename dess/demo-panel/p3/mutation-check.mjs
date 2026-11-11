@@ -161,12 +161,39 @@ const MUTATIONS = [
     'five servers are drawn at the pitch that four have room for',
     [[LAYOUT, 'pub const SERVER_PITCH_FIVE: f64 = 76.0;', 'pub const SERVER_PITCH_FIVE: f64 = 92.0;']]
   ],
-  ['the surface refuses a fifth server', [[SESSION, 'pub const MAX_SERVERS: usize = 5;', 'pub const MAX_SERVERS: usize = 4;']]],
-  ['a running server is not green', [[STYLE, '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #bbf7d0;', '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
-  ['a server that is down is not red', [[STYLE, '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #fecaca;', '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;']]],
+  [
+    'the surface refuses a fifth server',
+    [[SESSION, 'pub const MAX_SERVERS: usize = 5;', 'pub const MAX_SERVERS: usize = 4;']]
+  ],
+  [
+    'a running server is not green',
+    [
+      [
+        STYLE,
+        '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #bbf7d0;',
+        '[data-ss-key="S0"].ss-busy) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;'
+      ]
+    ]
+  ],
+  [
+    'a server that is down is not red',
+    [
+      [
+        STYLE,
+        '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #fecaca;',
+        '[data-ss-key="S0"].ss-down) > g[aria-label^="S0."] > rect {\n    fill: #eef4ff;'
+      ]
+    ]
+  ],
   [
     'the saved focus is let go as soon as the readback passes',
-    [[DOM, '        self.check_published(from, to)\n    }', '        let checked = self.check_published(from, to);\n        if checked.is_ok() {\n            self.saved_focus = None;\n        }\n        checked\n    }']]
+    [
+      [
+        DOM,
+        '        self.check_published(from, to)\n    }',
+        '        let checked = self.check_published(from, to);\n        if checked.is_ok() {\n            self.saved_focus = None;\n        }\n        checked\n    }'
+      ]
+    ]
   ],
   [
     'where the focus has to be is not checked',
@@ -267,7 +294,7 @@ try {
       const ran = spawnSync(
         'node',
         [path.join(root, 'dess/demo-panel/test-gallery.mjs'), '--stage', path.join(tree, 'target/demo-stage')],
-        { encoding: 'utf8', maxBuffer: 1 << 27 }
+        { encoding: 'utf8', maxBuffer: 1 << 27, timeout: 600000, killSignal: 'SIGTERM' }
       )
       const failures = ran.stdout.split('\n').filter(line => line.includes('FAIL'))
       const caught = ran.status !== 0 && failures.length > 0
@@ -275,7 +302,9 @@ try {
       results.push({ name, built: true, caught, first_failure: failures[0]?.trim().slice(0, 200) ?? null })
       console.log(`${caught ? 'caught ' : 'MISSED '} ${index + 1}. ${name}`)
       console.log(
-        caught ? `         first failure: ${failures[0].trim().slice(0, 170)}` : `         exit ${ran.status}`
+        caught
+          ? `         first failure: ${failures[0].trim().slice(0, 170)}`
+          : `         ${ran.error?.code === 'ETIMEDOUT' ? 'the tests did not finish in 10 minutes' : `exit ${ran.status}`}`
       )
     }
     for (const [file] of edits) fs.writeFileSync(path.join(tree, file), originals.get(file))
