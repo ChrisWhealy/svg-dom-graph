@@ -1,0 +1,796 @@
+# P0-D: the feature graphs of the demo build and the harness build
+# cargo 1.99.1 (5f94df478 2026-08-27)
+# measured 2026-11-10T18:26:16.477Z
+# demo has service-sim: false; demo has fault-hook: false; harness has fault-hook: true
+
+## cargo tree -p svg-dom-graph-demo --target wasm32-unknown-unknown -e features
+svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
+├── demo-common feature "default"
+│   └── demo-common v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-common)
+│       ├── js-sys feature "default"
+│       │   ├── js-sys v0.3.106
+│       │   │   ├── futures-util v0.3.34
+│       │   │   │   ├── futures-core v0.3.34
+│       │   │   │   ├── futures-task v0.3.34
+│       │   │   │   ├── slab v0.4.12
+│       │   │   │   └── pin-project-lite feature "default"
+│       │   │   │       └── pin-project-lite v0.2.17
+│       │   │   ├── wasm-bindgen v0.2.129
+│       │   │   │   ├── once_cell v1.21.4
+│       │   │   │   ├── cfg-if feature "default"
+│       │   │   │   │   └── cfg-if v1.0.5
+│       │   │   │   ├── wasm-bindgen-macro feature "default"
+│       │   │   │   │   └── wasm-bindgen-macro v0.2.129 (proc-macro)
+│       │   │   │   │       ├── quote feature "default"
+│       │   │   │   │       │   ├── quote v1.0.47
+│       │   │   │   │       │   │   └── proc-macro2 v1.0.107
+│       │   │   │   │       │   │       └── unicode-ident feature "default"
+│       │   │   │   │       │   │           └── unicode-ident v1.0.27
+│       │   │   │   │       │   └── quote feature "proc-macro"
+│       │   │   │   │       │       ├── quote v1.0.47 (*)
+│       │   │   │   │       │       └── proc-macro2 feature "proc-macro"
+│       │   │   │   │       │           └── proc-macro2 v1.0.107 (*)
+│       │   │   │   │       └── wasm-bindgen-macro-support feature "default"
+│       │   │   │   │           └── wasm-bindgen-macro-support v0.2.129
+│       │   │   │   │               ├── quote feature "default" (*)
+│       │   │   │   │               ├── proc-macro2 feature "default"
+│       │   │   │   │               │   ├── proc-macro2 v1.0.107 (*)
+│       │   │   │   │               │   └── proc-macro2 feature "proc-macro" (*)
+│       │   │   │   │               ├── bumpalo feature "default"
+│       │   │   │   │               │   └── bumpalo v3.20.3
+│       │   │   │   │               ├── syn feature "default"
+│       │   │   │   │               │   ├── syn v3.0.9
+│       │   │   │   │               │   │   ├── proc-macro2 v1.0.107 (*)
+│       │   │   │   │               │   │   ├── quote v1.0.47 (*)
+│       │   │   │   │               │   │   └── unicode-ident feature "default" (*)
+│       │   │   │   │               │   ├── syn feature "clone-impls"
+│       │   │   │   │               │   │   └── syn v3.0.9 (*)
+│       │   │   │   │               │   ├── syn feature "derive"
+│       │   │   │   │               │   │   └── syn v3.0.9 (*)
+│       │   │   │   │               │   ├── syn feature "parsing"
+│       │   │   │   │               │   │   └── syn v3.0.9 (*)
+│       │   │   │   │               │   ├── syn feature "printing"
+│       │   │   │   │               │   │   └── syn v3.0.9 (*)
+│       │   │   │   │               │   └── syn feature "proc-macro"
+│       │   │   │   │               │       ├── syn v3.0.9 (*)
+│       │   │   │   │               │       ├── quote feature "proc-macro" (*)
+│       │   │   │   │               │       └── proc-macro2 feature "proc-macro" (*)
+│       │   │   │   │               ├── syn feature "extra-traits"
+│       │   │   │   │               │   └── syn v3.0.9 (*)
+│       │   │   │   │               ├── syn feature "full"
+│       │   │   │   │               │   └── syn v3.0.9 (*)
+│       │   │   │   │               ├── syn feature "visit"
+│       │   │   │   │               │   └── syn v3.0.9 (*)
+│       │   │   │   │               ├── syn feature "visit-mut"
+│       │   │   │   │               │   └── syn v3.0.9 (*)
+│       │   │   │   │               └── wasm-bindgen-shared feature "default"
+│       │   │   │   │                   └── wasm-bindgen-shared v0.2.129
+│       │   │   │   │                       └── unicode-ident feature "default" (*)
+│       │   │   │   └── wasm-bindgen-shared feature "default"
+│       │   │   │       └── wasm-bindgen-shared v0.2.129
+│       │   │   │           └── unicode-ident feature "default"
+│       │   │   │               └── unicode-ident v1.0.27
+│       │   │   │   [build-dependencies]
+│       │   │   │   └── rustversion feature "default"
+│       │   │   │       └── rustversion v1.0.23 (proc-macro)
+│       │   │   └── cfg-if feature "default" (*)
+│       │   ├── js-sys feature "std"
+│       │   │   ├── js-sys v0.3.106 (*)
+│       │   │   ├── js-sys feature "futures-util"
+│       │   │   │   └── js-sys v0.3.106 (*)
+│       │   │   ├── futures-util feature "std"
+│       │   │   │   ├── futures-util v0.3.34 (*)
+│       │   │   │   ├── futures-util feature "alloc"
+│       │   │   │   │   ├── futures-util v0.3.34 (*)
+│       │   │   │   │   ├── futures-util feature "slab"
+│       │   │   │   │   │   └── futures-util v0.3.34 (*)
+│       │   │   │   │   ├── futures-core feature "alloc"
+│       │   │   │   │   │   └── futures-core v0.3.34
+│       │   │   │   │   └── futures-task feature "alloc"
+│       │   │   │   │       └── futures-task v0.3.34
+│       │   │   │   ├── futures-util feature "slab" (*)
+│       │   │   │   ├── futures-core feature "std"
+│       │   │   │   │   ├── futures-core v0.3.34
+│       │   │   │   │   └── futures-core feature "alloc" (*)
+│       │   │   │   ├── futures-task feature "std"
+│       │   │   │   │   ├── futures-task v0.3.34
+│       │   │   │   │   └── futures-task feature "alloc" (*)
+│       │   │   │   └── slab feature "std"
+│       │   │   │       └── slab v0.4.12
+│       │   │   └── wasm-bindgen feature "std"
+│       │   │       └── wasm-bindgen v0.2.129 (*)
+│       │   └── js-sys feature "unsafe-eval"
+│       │       └── js-sys v0.3.106 (*)
+│       ├── wasm-bindgen feature "default"
+│       │   ├── wasm-bindgen v0.2.129 (*)
+│       │   └── wasm-bindgen feature "std" (*)
+│       ├── svg-dom feature "default"
+│       │   └── svg-dom v0.2.19
+│       │       ├── js-sys feature "default" (*)
+│       │       ├── wasm-bindgen feature "default" (*)
+│       │       ├── web-sys feature "AddEventListenerOptions"
+│       │       │   └── web-sys v0.3.106
+│       │       │       ├── js-sys v0.3.106 (*)
+│       │       │       └── wasm-bindgen v0.2.129 (*)
+│       │       ├── web-sys feature "Document"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget"
+│       │       │   │   └── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "Node"
+│       │       │       ├── web-sys v0.3.106 (*)
+│       │       │       └── web-sys feature "EventTarget" (*)
+│       │       ├── web-sys feature "DocumentFragment"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "DomRect"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "DomRectReadOnly"
+│       │       │       └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "DomTokenList"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "DragEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event"
+│       │       │   │   └── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "MouseEvent"
+│       │       │   │   ├── web-sys v0.3.106 (*)
+│       │       │   │   ├── web-sys feature "Event" (*)
+│       │       │   │   └── web-sys feature "UiEvent"
+│       │       │   │       ├── web-sys v0.3.106 (*)
+│       │       │   │       └── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "Element"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "Event" (*)
+│       │       ├── web-sys feature "EventTarget" (*)
+│       │       ├── web-sys feature "FocusEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "HtmlCollection"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "KeyboardEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "MouseEvent" (*)
+│       │       ├── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "NodeList"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "PointerEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   ├── web-sys feature "MouseEvent" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "SvgElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "SvgGeometryElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement"
+│       │       │       ├── web-sys v0.3.106 (*)
+│       │       │       ├── web-sys feature "Element" (*)
+│       │       │       ├── web-sys feature "EventTarget" (*)
+│       │       │       ├── web-sys feature "Node" (*)
+│       │       │       └── web-sys feature "SvgElement" (*)
+│       │       ├── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "SvgMatrix"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgPoint"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgRect"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgTextContentElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "SvgsvgElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "Text"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "CharacterData"
+│       │       │   │   ├── web-sys v0.3.106 (*)
+│       │       │   │   ├── web-sys feature "EventTarget" (*)
+│       │       │   │   └── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "TouchEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "WheelEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   ├── web-sys feature "MouseEvent" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "Window"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "EventTarget" (*)
+│       │       └── web-sys feature "default"
+│       │           ├── web-sys v0.3.106 (*)
+│       │           └── web-sys feature "std"
+│       │               ├── web-sys v0.3.106 (*)
+│       │               ├── js-sys feature "std" (*)
+│       │               └── wasm-bindgen feature "std" (*)
+│       ├── web-sys feature "CssStyleDeclaration"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "Document" (*)
+│       ├── web-sys feature "DomRect" (*)
+│       ├── web-sys feature "DomTokenList" (*)
+│       ├── web-sys feature "Element" (*)
+│       ├── web-sys feature "Event" (*)
+│       ├── web-sys feature "EventTarget" (*)
+│       ├── web-sys feature "HtmlCollection" (*)
+│       ├── web-sys feature "HtmlInputElement"
+│       │   ├── web-sys v0.3.106 (*)
+│       │   ├── web-sys feature "Element" (*)
+│       │   ├── web-sys feature "EventTarget" (*)
+│       │   ├── web-sys feature "HtmlElement"
+│       │   │   ├── web-sys v0.3.106 (*)
+│       │   │   ├── web-sys feature "Element" (*)
+│       │   │   ├── web-sys feature "EventTarget" (*)
+│       │   │   └── web-sys feature "Node" (*)
+│       │   └── web-sys feature "Node" (*)
+│       ├── web-sys feature "KeyboardEvent" (*)
+│       ├── web-sys feature "Location"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "NodeList" (*)
+│       ├── web-sys feature "SvgElement" (*)
+│       ├── web-sys feature "Window" (*)
+│       ├── web-sys feature "console"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "default" (*)
+│       └── svg-dom-graph feature "default"
+│           └── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph)
+│               ├── wasm-bindgen feature "default" (*)
+│               ├── svg-dom feature "default" (*)
+│               ├── web-sys feature "Document" (*)
+│               ├── web-sys feature "DomRect" (*)
+│               ├── web-sys feature "Element" (*)
+│               ├── web-sys feature "Event" (*)
+│               ├── web-sys feature "EventTarget" (*)
+│               ├── web-sys feature "FocusOptions"
+│               │   └── web-sys v0.3.106 (*)
+│               ├── web-sys feature "HtmlInputElement" (*)
+│               ├── web-sys feature "KeyboardEvent" (*)
+│               ├── web-sys feature "WheelEvent" (*)
+│               ├── web-sys feature "Window" (*)
+│               └── web-sys feature "default" (*)
+├── js-sys feature "default" (*)
+├── wasm-bindgen feature "default" (*)
+├── svg-dom feature "default" (*)
+├── web-sys feature "Blob"
+│   └── web-sys v0.3.106 (*)
+├── web-sys feature "BlobPropertyBag"
+│   └── web-sys v0.3.106 (*)
+├── web-sys feature "CssStyleDeclaration" (*)
+├── web-sys feature "Document" (*)
+├── web-sys feature "DomRect" (*)
+├── web-sys feature "Element" (*)
+├── web-sys feature "Event" (*)
+├── web-sys feature "EventTarget" (*)
+├── web-sys feature "FocusEvent" (*)
+├── web-sys feature "HtmlAnchorElement"
+│   ├── web-sys v0.3.106 (*)
+│   ├── web-sys feature "Element" (*)
+│   ├── web-sys feature "EventTarget" (*)
+│   ├── web-sys feature "HtmlElement" (*)
+│   └── web-sys feature "Node" (*)
+├── web-sys feature "HtmlElement" (*)
+├── web-sys feature "HtmlInputElement" (*)
+├── web-sys feature "HtmlSelectElement"
+│   ├── web-sys v0.3.106 (*)
+│   ├── web-sys feature "Element" (*)
+│   ├── web-sys feature "EventTarget" (*)
+│   ├── web-sys feature "HtmlElement" (*)
+│   └── web-sys feature "Node" (*)
+├── web-sys feature "KeyboardEvent" (*)
+├── web-sys feature "Location" (*)
+├── web-sys feature "MediaQueryList"
+│   ├── web-sys v0.3.106 (*)
+│   └── web-sys feature "EventTarget" (*)
+├── web-sys feature "Node" (*)
+├── web-sys feature "NodeList" (*)
+├── web-sys feature "PageTransitionEvent"
+│   ├── web-sys v0.3.106 (*)
+│   └── web-sys feature "Event" (*)
+├── web-sys feature "PointerEvent" (*)
+├── web-sys feature "Screen"
+│   ├── web-sys v0.3.106 (*)
+│   └── web-sys feature "EventTarget" (*)
+├── web-sys feature "SvgElement" (*)
+├── web-sys feature "Url"
+│   └── web-sys v0.3.106 (*)
+├── web-sys feature "Window" (*)
+├── web-sys feature "console" (*)
+├── web-sys feature "default" (*)
+├── svg-dom-graph feature "default" (*)
+├── spmv-core feature "default"
+│   └── spmv-core v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-core)
+│       ├── serde_json feature "default"
+│       │   ├── serde_json v1.0.154
+│       │   │   ├── memchr v2.8.3
+│       │   │   ├── serde_core v1.0.229
+│       │   │   ├── itoa feature "default"
+│       │   │   │   └── itoa v1.0.18
+│       │   │   └── zmij feature "default"
+│       │   │       └── zmij v1.0.23
+│       │   └── serde_json feature "std"
+│       │       ├── serde_json v1.0.154 (*)
+│       │       ├── memchr feature "std"
+│       │       │   ├── memchr v2.8.3
+│       │       │   └── memchr feature "alloc"
+│       │       │       └── memchr v2.8.3
+│       │       └── serde_core feature "std"
+│       │           └── serde_core v1.0.229
+│       └── sha2 feature "default"
+│           ├── sha2 v0.11.0
+│           │   ├── cfg-if feature "default" (*)
+│           │   └── digest feature "default"
+│           │       ├── digest v0.11.3
+│           │       │   ├── block-buffer feature "default"
+│           │       │   │   └── block-buffer v0.12.1
+│           │       │   │       └── hybrid-array feature "default"
+│           │       │   │           └── hybrid-array v0.4.15
+│           │       │   │               ├── typenum feature "const-generics"
+│           │       │   │               │   └── typenum v1.20.1
+│           │       │   │               └── typenum feature "default"
+│           │       │   │                   └── typenum v1.20.1
+│           │       │   ├── const-oid feature "default"
+│           │       │   │   └── const-oid v0.10.2
+│           │       │   └── crypto-common feature "default"
+│           │       │       └── crypto-common v0.2.2
+│           │       │           └── hybrid-array feature "default" (*)
+│           │       └── digest feature "block-api"
+│           │           └── digest v0.11.3 (*)
+│           ├── sha2 feature "alloc"
+│           │   ├── sha2 v0.11.0 (*)
+│           │   └── digest feature "alloc"
+│           │       └── digest v0.11.3 (*)
+│           └── sha2 feature "oid"
+│               ├── sha2 v0.11.0 (*)
+│               └── digest feature "oid"
+│                   └── digest v0.11.3 (*)
+└── spmv-scene feature "default"
+    └── spmv-scene v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/spmv-scene)
+        ├── js-sys feature "default" (*)
+        ├── wasm-bindgen feature "default" (*)
+        ├── svg-dom feature "default" (*)
+        ├── web-sys feature "Document" (*)
+        ├── web-sys feature "Element" (*)
+        ├── web-sys feature "HtmlElement" (*)
+        ├── web-sys feature "Navigator"
+        │   └── web-sys v0.3.106 (*)
+        ├── web-sys feature "Node" (*)
+        ├── web-sys feature "NodeList" (*)
+        ├── web-sys feature "Performance"
+        │   ├── web-sys v0.3.106 (*)
+        │   └── web-sys feature "EventTarget" (*)
+        ├── web-sys feature "Window" (*)
+        ├── web-sys feature "console" (*)
+        ├── web-sys feature "default" (*)
+        ├── svg-dom-graph feature "default" (*)
+        ├── spmv-core feature "default" (*)
+        └── serde_json feature "default" (*)
+
+## cargo tree -p perf-harness-wasm --target wasm32-unknown-unknown -e features
+perf-harness-wasm v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness-wasm)
+├── perf-harness v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness)
+│   ├── serde feature "default"
+│   │   ├── serde v1.0.229
+│   │   │   ├── serde_core feature "result"
+│   │   │   │   └── serde_core v1.0.229
+│   │   │   └── serde_derive feature "default"
+│   │   │       └── serde_derive v1.0.229 (proc-macro)
+│   │   │           ├── quote feature "proc-macro"
+│   │   │           │   ├── quote v1.0.47
+│   │   │           │   │   └── proc-macro2 v1.0.107
+│   │   │           │   │       └── unicode-ident feature "default"
+│   │   │           │   │           └── unicode-ident v1.0.27
+│   │   │           │   └── proc-macro2 feature "proc-macro"
+│   │   │           │       └── proc-macro2 v1.0.107 (*)
+│   │   │           ├── proc-macro2 feature "proc-macro" (*)
+│   │   │           ├── syn feature "clone-impls"
+│   │   │           │   └── syn v3.0.9
+│   │   │           │       ├── proc-macro2 v1.0.107 (*)
+│   │   │           │       ├── quote v1.0.47 (*)
+│   │   │           │       └── unicode-ident feature "default" (*)
+│   │   │           ├── syn feature "derive"
+│   │   │           │   └── syn v3.0.9 (*)
+│   │   │           ├── syn feature "parsing"
+│   │   │           │   └── syn v3.0.9 (*)
+│   │   │           ├── syn feature "printing"
+│   │   │           │   └── syn v3.0.9 (*)
+│   │   │           └── syn feature "proc-macro"
+│   │   │               ├── syn v3.0.9 (*)
+│   │   │               ├── quote feature "proc-macro" (*)
+│   │   │               └── proc-macro2 feature "proc-macro" (*)
+│   │   └── serde feature "std"
+│   │       ├── serde v1.0.229 (*)
+│   │       └── serde_core feature "std"
+│   │           └── serde_core v1.0.229
+│   ├── serde feature "derive"
+│   │   ├── serde v1.0.229 (*)
+│   │   └── serde feature "serde_derive"
+│   │       └── serde v1.0.229 (*)
+│   ├── serde_json feature "default"
+│   │   ├── serde_json v1.0.154
+│   │   │   ├── memchr v2.8.3
+│   │   │   ├── serde_core v1.0.229
+│   │   │   ├── itoa feature "default"
+│   │   │   │   └── itoa v1.0.18
+│   │   │   └── zmij feature "default"
+│   │   │       └── zmij v1.0.23
+│   │   └── serde_json feature "std"
+│   │       ├── serde_json v1.0.154 (*)
+│   │       ├── serde_core feature "std" (*)
+│   │       └── memchr feature "std"
+│   │           ├── memchr v2.8.3
+│   │           └── memchr feature "alloc"
+│   │               └── memchr v2.8.3
+│   ├── sha2 feature "default"
+│   │   ├── sha2 v0.11.0
+│   │   │   ├── cfg-if feature "default"
+│   │   │   │   └── cfg-if v1.0.5
+│   │   │   └── digest feature "default"
+│   │   │       ├── digest v0.11.3
+│   │   │       │   ├── block-buffer feature "default"
+│   │   │       │   │   └── block-buffer v0.12.1
+│   │   │       │   │       └── hybrid-array feature "default"
+│   │   │       │   │           └── hybrid-array v0.4.15
+│   │   │       │   │               ├── typenum feature "const-generics"
+│   │   │       │   │               │   └── typenum v1.20.1
+│   │   │       │   │               └── typenum feature "default"
+│   │   │       │   │                   └── typenum v1.20.1
+│   │   │       │   ├── const-oid feature "default"
+│   │   │       │   │   └── const-oid v0.10.2
+│   │   │       │   └── crypto-common feature "default"
+│   │   │       │       └── crypto-common v0.2.2
+│   │   │       │           └── hybrid-array feature "default" (*)
+│   │   │       └── digest feature "block-api"
+│   │   │           └── digest v0.11.3 (*)
+│   │   ├── sha2 feature "alloc"
+│   │   │   ├── sha2 v0.11.0 (*)
+│   │   │   └── digest feature "alloc"
+│   │   │       └── digest v0.11.3 (*)
+│   │   └── sha2 feature "oid"
+│   │       ├── sha2 v0.11.0 (*)
+│   │       └── digest feature "oid"
+│   │           └── digest v0.11.3 (*)
+│   └── toml feature "default"
+│       ├── toml v1.2.0+spec-1.1.0
+│       │   ├── winnow v1.0.5
+│       │   ├── serde_core feature "alloc"
+│       │   │   └── serde_core v1.0.229
+│       │   ├── serde_spanned feature "alloc"
+│       │   │   ├── serde_spanned v1.1.2
+│       │   │   │   └── serde_core v1.0.229
+│       │   │   └── serde_core feature "alloc" (*)
+│       │   ├── toml_datetime feature "alloc"
+│       │   │   ├── toml_datetime v1.1.2+spec-1.1.0
+│       │   │   │   └── serde_core v1.0.229
+│       │   │   └── serde_core feature "alloc" (*)
+│       │   ├── toml_parser feature "alloc"
+│       │   │   └── toml_parser v1.1.5+spec-1.1.0
+│       │   │       └── winnow v1.0.5
+│       │   └── toml_writer feature "alloc"
+│       │       └── toml_writer v1.2.0+spec-1.1.0
+│       ├── toml feature "display"
+│       │   └── toml v1.2.0+spec-1.1.0 (*)
+│       ├── toml feature "parse"
+│       │   └── toml v1.2.0+spec-1.1.0 (*)
+│       ├── toml feature "serde"
+│       │   ├── toml v1.2.0+spec-1.1.0 (*)
+│       │   ├── serde_spanned feature "serde"
+│       │   │   └── serde_spanned v1.1.2 (*)
+│       │   └── toml_datetime feature "serde"
+│       │       └── toml_datetime v1.1.2+spec-1.1.0 (*)
+│       └── toml feature "std"
+│           ├── toml v1.2.0+spec-1.1.0 (*)
+│           ├── serde_core feature "std" (*)
+│           ├── serde_spanned feature "std"
+│           │   ├── serde_spanned v1.1.2 (*)
+│           │   ├── serde_core feature "std" (*)
+│           │   └── serde_spanned feature "alloc" (*)
+│           ├── toml_datetime feature "std"
+│           │   ├── toml_datetime v1.1.2+spec-1.1.0 (*)
+│           │   ├── serde_core feature "std" (*)
+│           │   └── toml_datetime feature "alloc" (*)
+│           ├── toml_parser feature "std"
+│           │   ├── toml_parser v1.1.5+spec-1.1.0 (*)
+│           │   └── toml_parser feature "alloc" (*)
+│           └── toml_writer feature "std"
+│               ├── toml_writer v1.2.0+spec-1.1.0
+│               └── toml_writer feature "alloc" (*)
+├── js-sys feature "default"
+│   ├── js-sys v0.3.106
+│   │   ├── futures-util v0.3.34
+│   │   │   ├── futures-core v0.3.34
+│   │   │   ├── futures-task v0.3.34
+│   │   │   ├── slab v0.4.12
+│   │   │   └── pin-project-lite feature "default"
+│   │   │       └── pin-project-lite v0.2.17
+│   │   ├── wasm-bindgen v0.2.129
+│   │   │   ├── once_cell v1.21.4
+│   │   │   ├── cfg-if feature "default" (*)
+│   │   │   ├── wasm-bindgen-macro feature "default"
+│   │   │   │   └── wasm-bindgen-macro v0.2.129 (proc-macro)
+│   │   │   │       ├── quote feature "default"
+│   │   │   │       │   ├── quote v1.0.47 (*)
+│   │   │   │       │   └── quote feature "proc-macro" (*)
+│   │   │   │       └── wasm-bindgen-macro-support feature "default"
+│   │   │   │           └── wasm-bindgen-macro-support v0.2.129
+│   │   │   │               ├── quote feature "default" (*)
+│   │   │   │               ├── proc-macro2 feature "default"
+│   │   │   │               │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │               │   └── proc-macro2 feature "proc-macro" (*)
+│   │   │   │               ├── bumpalo feature "default"
+│   │   │   │               │   └── bumpalo v3.20.3
+│   │   │   │               ├── syn feature "default"
+│   │   │   │               │   ├── syn v3.0.9 (*)
+│   │   │   │               │   ├── syn feature "clone-impls" (*)
+│   │   │   │               │   ├── syn feature "derive" (*)
+│   │   │   │               │   ├── syn feature "parsing" (*)
+│   │   │   │               │   ├── syn feature "printing" (*)
+│   │   │   │               │   └── syn feature "proc-macro" (*)
+│   │   │   │               ├── syn feature "extra-traits"
+│   │   │   │               │   └── syn v3.0.9 (*)
+│   │   │   │               ├── syn feature "full"
+│   │   │   │               │   └── syn v3.0.9 (*)
+│   │   │   │               ├── syn feature "visit"
+│   │   │   │               │   └── syn v3.0.9 (*)
+│   │   │   │               ├── syn feature "visit-mut"
+│   │   │   │               │   └── syn v3.0.9 (*)
+│   │   │   │               └── wasm-bindgen-shared feature "default"
+│   │   │   │                   └── wasm-bindgen-shared v0.2.129
+│   │   │   │                       └── unicode-ident feature "default" (*)
+│   │   │   └── wasm-bindgen-shared feature "default"
+│   │   │       └── wasm-bindgen-shared v0.2.129
+│   │   │           └── unicode-ident feature "default"
+│   │   │               └── unicode-ident v1.0.27
+│   │   │   [build-dependencies]
+│   │   │   └── rustversion feature "default"
+│   │   │       └── rustversion v1.0.23 (proc-macro)
+│   │   └── cfg-if feature "default" (*)
+│   ├── js-sys feature "std"
+│   │   ├── js-sys v0.3.106 (*)
+│   │   ├── js-sys feature "futures-util"
+│   │   │   └── js-sys v0.3.106 (*)
+│   │   ├── futures-util feature "std"
+│   │   │   ├── futures-util v0.3.34 (*)
+│   │   │   ├── futures-util feature "alloc"
+│   │   │   │   ├── futures-util v0.3.34 (*)
+│   │   │   │   ├── futures-util feature "slab"
+│   │   │   │   │   └── futures-util v0.3.34 (*)
+│   │   │   │   ├── futures-core feature "alloc"
+│   │   │   │   │   └── futures-core v0.3.34
+│   │   │   │   └── futures-task feature "alloc"
+│   │   │   │       └── futures-task v0.3.34
+│   │   │   ├── futures-util feature "slab" (*)
+│   │   │   ├── futures-core feature "std"
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   └── futures-core feature "alloc" (*)
+│   │   │   ├── futures-task feature "std"
+│   │   │   │   ├── futures-task v0.3.34
+│   │   │   │   └── futures-task feature "alloc" (*)
+│   │   │   └── slab feature "std"
+│   │   │       └── slab v0.4.12
+│   │   └── wasm-bindgen feature "std"
+│   │       └── wasm-bindgen v0.2.129 (*)
+│   └── js-sys feature "unsafe-eval"
+│       └── js-sys v0.3.106 (*)
+├── wasm-bindgen feature "default"
+│   ├── wasm-bindgen v0.2.129 (*)
+│   └── wasm-bindgen feature "std" (*)
+├── serde feature "default" (*)
+├── serde feature "derive" (*)
+├── serde_json feature "default" (*)
+├── service-sim feature "default"
+│   └── service-sim v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim)
+│       ├── js-sys feature "default" (*)
+│       ├── wasm-bindgen feature "default" (*)
+│       ├── service-sim-engine feature "default"
+│       │   └── service-sim-engine v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim-engine)
+│       │       ├── serde_json feature "default" (*)
+│       │       └── sha2 feature "default" (*)
+│       ├── svg-dom feature "default"
+│       │   └── svg-dom v0.2.19
+│       │       ├── js-sys feature "default" (*)
+│       │       ├── wasm-bindgen feature "default" (*)
+│       │       ├── web-sys feature "AddEventListenerOptions"
+│       │       │   └── web-sys v0.3.106
+│       │       │       ├── js-sys v0.3.106 (*)
+│       │       │       └── wasm-bindgen v0.2.129 (*)
+│       │       ├── web-sys feature "Document"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget"
+│       │       │   │   └── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "Node"
+│       │       │       ├── web-sys v0.3.106 (*)
+│       │       │       └── web-sys feature "EventTarget" (*)
+│       │       ├── web-sys feature "DocumentFragment"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "DomRect"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "DomRectReadOnly"
+│       │       │       └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "DomTokenList"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "DragEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event"
+│       │       │   │   └── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "MouseEvent"
+│       │       │   │   ├── web-sys v0.3.106 (*)
+│       │       │   │   ├── web-sys feature "Event" (*)
+│       │       │   │   └── web-sys feature "UiEvent"
+│       │       │   │       ├── web-sys v0.3.106 (*)
+│       │       │   │       └── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "Element"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "Event" (*)
+│       │       ├── web-sys feature "EventTarget" (*)
+│       │       ├── web-sys feature "FocusEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "HtmlCollection"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "KeyboardEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "MouseEvent" (*)
+│       │       ├── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "NodeList"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "PointerEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   ├── web-sys feature "MouseEvent" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "SvgElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "SvgGeometryElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement"
+│       │       │       ├── web-sys v0.3.106 (*)
+│       │       │       ├── web-sys feature "Element" (*)
+│       │       │       ├── web-sys feature "EventTarget" (*)
+│       │       │       ├── web-sys feature "Node" (*)
+│       │       │       └── web-sys feature "SvgElement" (*)
+│       │       ├── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "SvgMatrix"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgPoint"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgRect"
+│       │       │   └── web-sys v0.3.106 (*)
+│       │       ├── web-sys feature "SvgTextContentElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "SvgsvgElement"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Element" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   ├── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "SvgElement" (*)
+│       │       │   └── web-sys feature "SvgGraphicsElement" (*)
+│       │       ├── web-sys feature "Text"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "CharacterData"
+│       │       │   │   ├── web-sys v0.3.106 (*)
+│       │       │   │   ├── web-sys feature "EventTarget" (*)
+│       │       │   │   └── web-sys feature "Node" (*)
+│       │       │   ├── web-sys feature "EventTarget" (*)
+│       │       │   └── web-sys feature "Node" (*)
+│       │       ├── web-sys feature "TouchEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "WheelEvent"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   ├── web-sys feature "Event" (*)
+│       │       │   ├── web-sys feature "MouseEvent" (*)
+│       │       │   └── web-sys feature "UiEvent" (*)
+│       │       ├── web-sys feature "Window"
+│       │       │   ├── web-sys v0.3.106 (*)
+│       │       │   └── web-sys feature "EventTarget" (*)
+│       │       └── web-sys feature "default"
+│       │           ├── web-sys v0.3.106 (*)
+│       │           └── web-sys feature "std"
+│       │               ├── web-sys v0.3.106 (*)
+│       │               ├── js-sys feature "std" (*)
+│       │               └── wasm-bindgen feature "std" (*)
+│       ├── web-sys feature "Document" (*)
+│       ├── web-sys feature "Element" (*)
+│       ├── web-sys feature "Event" (*)
+│       ├── web-sys feature "EventTarget" (*)
+│       ├── web-sys feature "HtmlElement"
+│       │   ├── web-sys v0.3.106 (*)
+│       │   ├── web-sys feature "Element" (*)
+│       │   ├── web-sys feature "EventTarget" (*)
+│       │   └── web-sys feature "Node" (*)
+│       ├── web-sys feature "MutationObserver"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "MutationObserverInit"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "Node" (*)
+│       ├── web-sys feature "NodeList" (*)
+│       ├── web-sys feature "SvgElement" (*)
+│       ├── web-sys feature "Window" (*)
+│       ├── web-sys feature "console"
+│       │   └── web-sys v0.3.106 (*)
+│       ├── web-sys feature "default" (*)
+│       └── svg-dom-graph feature "default"
+│           └── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph)
+│               ├── wasm-bindgen feature "default" (*)
+│               ├── svg-dom feature "default" (*)
+│               ├── web-sys feature "Document" (*)
+│               ├── web-sys feature "DomRect" (*)
+│               ├── web-sys feature "Element" (*)
+│               ├── web-sys feature "Event" (*)
+│               ├── web-sys feature "EventTarget" (*)
+│               ├── web-sys feature "FocusOptions"
+│               │   └── web-sys v0.3.106 (*)
+│               ├── web-sys feature "HtmlInputElement"
+│               │   ├── web-sys v0.3.106 (*)
+│               │   ├── web-sys feature "Element" (*)
+│               │   ├── web-sys feature "EventTarget" (*)
+│               │   ├── web-sys feature "HtmlElement" (*)
+│               │   └── web-sys feature "Node" (*)
+│               ├── web-sys feature "KeyboardEvent" (*)
+│               ├── web-sys feature "WheelEvent" (*)
+│               ├── web-sys feature "Window" (*)
+│               └── web-sys feature "default" (*)
+├── service-sim feature "fault-hook"
+│   └── service-sim v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/service-sim) (*)
+├── service-sim-engine feature "default" (*)
+├── svg-dom feature "default" (*)
+├── web-sys feature "Document" (*)
+├── web-sys feature "DomTokenList" (*)
+├── web-sys feature "Element" (*)
+├── web-sys feature "HtmlCollection" (*)
+├── web-sys feature "HtmlElement" (*)
+├── web-sys feature "Node" (*)
+├── web-sys feature "NodeList" (*)
+├── web-sys feature "Performance"
+│   ├── web-sys v0.3.106 (*)
+│   └── web-sys feature "EventTarget" (*)
+├── web-sys feature "Window" (*)
+├── web-sys feature "console" (*)
+├── web-sys feature "default" (*)
+└── svg-dom-graph feature "default" (*)

@@ -1,0 +1,101 @@
+{
+  "injector_sha256": "86674ec782ac1e39ca029cbdc4ee094937972de532790cafbe335e90dd38f57f",
+  "baseline_injector_sha256": "920ea299ad8a9b5922f5a124150c09f9c356ca7db2b5a3966000d50c7a1dd767",
+  "cases": [
+    {
+      "nth": 1,
+      "report": {
+        "svgId": "perf-sim-svg",
+        "method": "setAttribute",
+        "nth": 1,
+        "eligibleSeen": 1,
+        "fired": true,
+        "firings": 1,
+        "site": {
+          "method": "setAttribute",
+          "tag": "g",
+          "name": "aria-label",
+          "ordinal": 1
+        },
+        "detached": true
+      },
+      "stepped": "unavailable",
+      "interrupted": {
+        "slice": 1,
+        "dirty": true,
+        "presence": "Detached"
+      },
+      "repaired": "done",
+      "next": "done"
+    },
+    {
+      "nth": 4,
+      "report": {
+        "svgId": "perf-sim-svg",
+        "method": "setAttribute",
+        "nth": 4,
+        "eligibleSeen": 4,
+        "fired": true,
+        "firings": 1,
+        "site": {
+          "method": "setAttribute",
+          "tag": "g",
+          "name": "aria-label",
+          "ordinal": 4
+        },
+        "detached": true
+      },
+      "stepped": "unavailable",
+      "interrupted": {
+        "slice": 1,
+        "dirty": true,
+        "presence": "Detached"
+      },
+      "repaired": "done",
+      "next": "done"
+    },
+    {
+      "nth": 8,
+      "report": {
+        "svgId": "perf-sim-svg",
+        "method": "setAttribute",
+        "nth": 8,
+        "eligibleSeen": 8,
+        "fired": true,
+        "firings": 1,
+        "site": {
+          "method": "setAttribute",
+          "tag": "text",
+          "name": "aria-label",
+          "ordinal": 8
+        },
+        "detached": true
+      },
+      "stepped": "unavailable",
+      "interrupted": {
+        "slice": 1,
+        "dirty": true,
+        "presence": "Detached"
+      },
+      "repaired": "done",
+      "next": "done"
+    },
+    {
+      "nth": 13,
+      "report": {
+        "svgId": "perf-sim-svg",
+        "method": "setAttribute",
+        "nth": 13,
+        "eligibleSeen": 8,
+        "fired": false,
+        "firings": 0,
+        "site": null,
+        "detached": false
+      },
+      "stepped": "done"
+    }
+  ],
+  "eligible_calls_in_the_interrupted_slice": 8,
+  "recovery_selftest": "pass",
+  "pass": true
+}

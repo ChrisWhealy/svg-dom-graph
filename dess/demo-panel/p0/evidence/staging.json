@@ -1,0 +1,689 @@
+{
+  "identity": {
+    "measured_at": "2026-11-10T17:42:53.132Z",
+    "git_sha": "9d0af83f0fef446bd56c20140e6177eb32dc9462",
+    "git_dirty": true,
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "node": "v26.13.0"
+  },
+  "css": {
+    "opacity_inert": "opacity:0;pointer-events:none",
+    "opacity_aria_hidden": "opacity:0;pointer-events:none",
+    "offscreen_inert": "position:absolute;left:-20000px;top:0;width:1000px"
+  },
+  "control": {
+    "sees_the_scene": true,
+    "observations": {
+      "mode": "none (control)",
+      "built": true,
+      "elements": 135,
+      "observed": {
+        "connected": true,
+        "checkVisibility": true,
+        "containerStyle": null,
+        "inert": false,
+        "box": {
+          "x": 8,
+          "y": 69,
+          "width": 1000,
+          "height": 480
+        },
+        "boxIsFinite": true,
+        "viewBox": "0 0 1000 480",
+        "contentGroups": 1,
+        "textCount": 54,
+        "textMeasurable": true,
+        "labelCount": 32,
+        "presence": "Live",
+        "dirty": false,
+        "setterCalls": 1,
+        "dataCells": 8,
+        "pageIsProjection": true,
+        "committedSlice": 0
+      },
+      "staged": {
+        "ax": {
+          "names": 33,
+          "exposed": 33,
+          "exposedNames": [
+            "Waiting. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Waiting.",
+            "S1. Input from Waiting.",
+            "S2. Input from Waiting.",
+            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "row 0, column 0: 0",
+            "row 0, column 1: 0",
+            "row 0, column 2: 0"
+          ],
+          "tabbableProbe": true
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 3
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 3
+          }
+        ]
+      }
+    }
+  },
+  "candidates": {
+    "opacity_inert": {
+      "mode": "opacity_inert",
+      "built": true,
+      "elements": 135,
+      "observed": {
+        "connected": true,
+        "checkVisibility": true,
+        "containerStyle": "opacity:0;pointer-events:none",
+        "inert": true,
+        "box": {
+          "x": 8,
+          "y": 69,
+          "width": 1000,
+          "height": 480
+        },
+        "boxIsFinite": true,
+        "viewBox": "0 0 1000 480",
+        "contentGroups": 1,
+        "textCount": 54,
+        "textMeasurable": true,
+        "labelCount": 32,
+        "presence": "Live",
+        "dirty": false,
+        "setterCalls": 1,
+        "dataCells": 8,
+        "pageIsProjection": true,
+        "committedSlice": 0
+      },
+      "staged": {
+        "ax": {
+          "names": 33,
+          "exposed": 0,
+          "exposedNames": [],
+          "tabbableProbe": false
+        },
+        "tab": {
+          "reachedScene": false,
+          "probesReached": [],
+          "stops": [
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": false,
+          "p0-html-probe": false
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 0
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 0
+          }
+        ]
+      },
+      "published": {
+        "observed": {
+          "connected": true,
+          "checkVisibility": true,
+          "containerStyle": null,
+          "inert": false,
+          "box": {
+            "x": 8,
+            "y": 21,
+            "width": 1000,
+            "height": 480
+          },
+          "boxIsFinite": true,
+          "viewBox": "0 0 1000 480",
+          "contentGroups": 1,
+          "textCount": 54,
+          "textMeasurable": true,
+          "labelCount": 32,
+          "presence": "Live",
+          "dirty": false,
+          "setterCalls": 1,
+          "dataCells": 8,
+          "pageIsProjection": true,
+          "committedSlice": 0
+        },
+        "ax": {
+          "names": 33,
+          "exposed": 33,
+          "exposedNames": [
+            "Waiting. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Waiting.",
+            "S1. Input from Waiting.",
+            "S2. Input from Waiting.",
+            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "row 0, column 0: 0",
+            "row 0, column 1: 0",
+            "row 0, column 2: 0"
+          ],
+          "tabbableProbe": true
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 3
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 3
+          }
+        ]
+      },
+      "restaged": {
+        "ax": {
+          "names": 33,
+          "exposed": 0,
+          "exposedNames": [],
+          "tabbableProbe": false
+        },
+        "tab": {
+          "reachedScene": false,
+          "probesReached": [],
+          "stops": [
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": false,
+          "p0-html-probe": false
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 0
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 0
+          }
+        ]
+      },
+      "gates": {
+        "S1_presence": true,
+        "S2_geometry": true,
+        "S3_isolation": true,
+        "S4_publish": true
+      },
+      "passes": true
+    },
+    "offscreen_inert": {
+      "mode": "offscreen_inert",
+      "built": true,
+      "elements": 135,
+      "observed": {
+        "connected": true,
+        "checkVisibility": true,
+        "containerStyle": "position:absolute;left:-20000px;top:0;width:1000px",
+        "inert": true,
+        "box": {
+          "x": -20000,
+          "y": 21,
+          "width": 1000,
+          "height": 480
+        },
+        "boxIsFinite": true,
+        "viewBox": "0 0 1000 480",
+        "contentGroups": 1,
+        "textCount": 54,
+        "textMeasurable": true,
+        "labelCount": 32,
+        "presence": "Live",
+        "dirty": false,
+        "setterCalls": 1,
+        "dataCells": 8,
+        "pageIsProjection": true,
+        "committedSlice": 0
+      },
+      "staged": {
+        "ax": {
+          "names": 33,
+          "exposed": 0,
+          "exposedNames": [],
+          "tabbableProbe": false
+        },
+        "tab": {
+          "reachedScene": false,
+          "probesReached": [],
+          "stops": [
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": false,
+          "p0-html-probe": false
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": false
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": false
+          }
+        ]
+      },
+      "published": {
+        "observed": {
+          "connected": true,
+          "checkVisibility": true,
+          "containerStyle": null,
+          "inert": false,
+          "box": {
+            "x": 8,
+            "y": 69,
+            "width": 1000,
+            "height": 480
+          },
+          "boxIsFinite": true,
+          "viewBox": "0 0 1000 480",
+          "contentGroups": 1,
+          "textCount": 54,
+          "textMeasurable": true,
+          "labelCount": 32,
+          "presence": "Live",
+          "dirty": false,
+          "setterCalls": 1,
+          "dataCells": 8,
+          "pageIsProjection": true,
+          "committedSlice": 0
+        },
+        "ax": {
+          "names": 33,
+          "exposed": 33,
+          "exposedNames": [
+            "Waiting. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Waiting.",
+            "S1. Input from Waiting.",
+            "S2. Input from Waiting.",
+            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "row 0, column 0: 0",
+            "row 0, column 1: 0",
+            "row 0, column 2: 0"
+          ],
+          "tabbableProbe": true
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 3
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 3
+          }
+        ]
+      },
+      "restaged": {
+        "ax": {
+          "names": 33,
+          "exposed": 0,
+          "exposedNames": [],
+          "tabbableProbe": false
+        },
+        "tab": {
+          "reachedScene": false,
+          "probesReached": [],
+          "stops": [
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BODY#",
+            "BUTTON#perf-sim-next"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": false,
+          "p0-html-probe": false
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": false
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": false
+          }
+        ]
+      },
+      "gates": {
+        "S1_presence": true,
+        "S2_geometry": true,
+        "S3_isolation": true,
+        "S4_publish": true
+      },
+      "passes": true
+    }
+  },
+  "negative_control": {
+    "aria_hidden_without_inert_leaks_to_the_keyboard": true,
+    "observations": {
+      "mode": "opacity_aria_hidden",
+      "built": true,
+      "elements": 135,
+      "observed": {
+        "connected": true,
+        "checkVisibility": true,
+        "containerStyle": "opacity:0;pointer-events:none",
+        "inert": false,
+        "box": {
+          "x": 8,
+          "y": 69,
+          "width": 1000,
+          "height": 480
+        },
+        "boxIsFinite": true,
+        "viewBox": "0 0 1000 480",
+        "contentGroups": 1,
+        "textCount": 54,
+        "textMeasurable": true,
+        "labelCount": 32,
+        "presence": "Live",
+        "dirty": false,
+        "setterCalls": 1,
+        "dataCells": 8,
+        "pageIsProjection": true,
+        "committedSlice": 0
+      },
+      "staged": {
+        "ax": {
+          "names": 33,
+          "exposed": 0,
+          "exposedNames": [],
+          "tabbableProbe": false
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 0
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 0
+          }
+        ]
+      },
+      "published": {
+        "observed": {
+          "connected": true,
+          "checkVisibility": true,
+          "containerStyle": null,
+          "inert": false,
+          "box": {
+            "x": 8,
+            "y": 21,
+            "width": 1000,
+            "height": 480
+          },
+          "boxIsFinite": true,
+          "viewBox": "0 0 1000 480",
+          "contentGroups": 1,
+          "textCount": 54,
+          "textMeasurable": true,
+          "labelCount": 32,
+          "presence": "Live",
+          "dirty": false,
+          "setterCalls": 1,
+          "dataCells": 8,
+          "pageIsProjection": true,
+          "committedSlice": 0
+        },
+        "ax": {
+          "names": 33,
+          "exposed": 33,
+          "exposedNames": [
+            "Waiting. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Waiting.",
+            "S1. Input from Waiting.",
+            "S2. Input from Waiting.",
+            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "row 0, column 0: 0",
+            "row 0, column 1: 0",
+            "row 0, column 2: 0"
+          ],
+          "tabbableProbe": true
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 3
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 3
+          }
+        ]
+      },
+      "restaged": {
+        "ax": {
+          "names": 33,
+          "exposed": 33,
+          "exposedNames": [
+            "Waiting. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Waiting.",
+            "S1. Input from Waiting.",
+            "S2. Input from Waiting.",
+            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "row 0, column 0: 0",
+            "row 0, column 1: 0",
+            "row 0, column 2: 0"
+          ],
+          "tabbableProbe": true
+        },
+        "tab": {
+          "reachedScene": true,
+          "probesReached": ["p0-html-probe", "p0-svg-probe"],
+          "stops": [
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*",
+            "g#p0-svg-probe*",
+            "BODY#",
+            "BUTTON#perf-sim-next",
+            "BUTTON#perf-sim-play",
+            "INPUT#perf-sim-seek",
+            "BUTTON#p0-html-probe*"
+          ]
+        },
+        "focus": {
+          "p0-svg-probe": true,
+          "p0-html-probe": true
+        },
+        "clicks": [
+          {
+            "id": "p0-html-probe",
+            "onScreen": true,
+            "events": 0
+          },
+          {
+            "id": "p0-svg-probe",
+            "onScreen": true,
+            "events": 0
+          }
+        ]
+      }
+    }
+  },
+  "selected": "opacity_inert",
+  "pass": true
+}

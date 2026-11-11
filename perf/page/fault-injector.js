@@ -11,6 +11,18 @@
 //
 //   __faults.record(true); ...; __faults.take()   describes every counted call that was made, in order
 //   __faults.arm(n); ...; __faults.disarm()       fails the nth counted call; gives how many were counted and which one failed
+//
+// A second mode puts a host in the document one write short of what a draw needs, and it is separate from the first. It is for the simulator's gallery
+// panel (design-specs/dess_demo.pdf, P0-F), whose draw has to meet a host that leaves in the middle of it:
+//
+//   __faults.armDetach({ svgId, method, nth })    the nth counted call of `method` on a node inside `#svgId` is made natively, and then the
+//                                                 `<svg>` is removed from the document before control returns to the caller
+//   __faults.disarmDetach()                       says what happened: how many eligible calls were seen, whether it fired, and at which call
+//   __faults.reattach()                           puts the `<svg>` back where it was, so that a repair can be made
+//
+// It is off until it is armed, and it is one-shot. It never changes what `record`, `arm` and `take` count or when: its own count is kept apart, and
+// it only looks at a call after the call has been counted and made. It will not be armed while `arm` is, since a call is not both failed and
+// detached on. A detach that was armed and never fired is reported as not fired, and a test has to treat that as a failure and not as a pass.
 ;(() => {
   if (window.__faults) return
 
@@ -18,6 +30,9 @@
   let recording = false
   let calls = []
   let armed = null
+  // The detach mode, which is a separate state from `armed` and is null until armDetach is called.
+  let detach = null
+  let detached = null
 
   const describe = (method, target, args) => {
     const named =
@@ -49,13 +64,33 @@
     }
   }
 
+  // After a call has been counted and made: whether it is the one that the detach was armed for. It does not touch the counting above.
+  const afterCall = (method, target, args) => {
+    if (detach.fired || method !== detach.method || !(target instanceof Node) || !detach.svg.contains(target)) return
+    detach.seen++
+    if (detach.seen !== detach.nth) return
+    detach.fired = true
+    detach.firings++
+    const described = describe(method, target, args)
+    detach.site = { method, tag: described.tag, name: described.name, ordinal: detach.seen }
+    // The host leaves as a person's would: removed from where it is, and the position kept so that it can be put back.
+    detached = { parent: detach.svg.parentNode, next: detach.svg.nextSibling, svg: detach.svg }
+    nativeRemove.call(detach.svg)
+  }
+
   const wrap = (prototype, method) => {
     const native = prototype[method]
     prototype[method] = function (...args) {
       count(method, this, args)
-      return native.apply(this, args)
+      const result = native.apply(this, args)
+      if (detach !== null) afterCall(method, this, args)
+      return result
     }
   }
+  // The native removal, taken before anything is wrapped, which the detach uses and which the self-test's removal that does nothing does not affect.
+  let suppressRemoval = false
+  const nativeRemove = Element.prototype.remove
+  const nativeInsertBefore = Node.prototype.insertBefore
   wrap(Element.prototype, 'setAttribute')
   wrap(Element.prototype, 'setAttributeNS')
   wrap(Node.prototype, 'appendChild')
@@ -64,15 +99,6 @@
   wrap(Document.prototype, 'createElement')
   wrap(EventTarget.prototype, 'addEventListener')
   wrap(SVGGraphicsElement.prototype, 'getBBox')
-
-  // For the self-test only: removal that does nothing, which is a library with no rollback. If the sweeps cannot tell, they prove
-  // nothing about the rollback that the library has.
-  let suppressRemoval = false
-  const nativeRemove = Element.prototype.remove
-  Element.prototype.remove = function () {
-    if (suppressRemoval) return
-    return nativeRemove.call(this)
-  }
 
   // Animation frames, which a page can be made to refuse, or to hold back so that something can happen while one is pending.
   //   __frames.refuseNext()   the next requestAnimationFrame throws, as a browser that will not give a frame would
@@ -191,7 +217,46 @@
     }
   }
 
+  // For the self-test only: removal that does nothing, which is a library with no rollback. If the sweeps cannot tell, they prove
+  // nothing about the rollback that the library has.
+  Element.prototype.remove = function () {
+    if (suppressRemoval) return
+    return nativeRemove.call(this)
+  }
+
   window.__faults = {
+    armDetach: ({ svgId, method = 'setAttribute', nth = 1 }) => {
+      if (armed !== null)
+        throw new Error('armDetach: an exception is armed, and a call is not both failed and detached on')
+      if (detach !== null) throw new Error('armDetach: a detach is already armed')
+      const svg = document.getElementById(svgId)
+      if (!svg) throw new Error(`armDetach: there is no element #${svgId}`)
+      if (!Number.isInteger(nth) || nth < 1) throw new Error('armDetach: nth is a whole number from 1')
+      detach = { svg, svgId, method, nth, seen: 0, fired: false, firings: 0, site: null }
+      detached = null
+    },
+    disarmDetach: () => {
+      const report = detach
+        ? {
+            svgId: detach.svgId,
+            method: detach.method,
+            nth: detach.nth,
+            eligibleSeen: detach.seen,
+            fired: detach.fired,
+            firings: detach.firings,
+            site: detach.site,
+            detached: detached !== null && !detached.svg.isConnected
+          }
+        : null
+      detach = null
+      return report
+    },
+    reattach: () => {
+      if (!detached || detached.svg.isConnected) return false
+      nativeInsertBefore.call(detached.parent, detached.svg, detached.next)
+      detached = null
+      return true
+    },
     record: on => {
       recording = on
       if (on) calls = []

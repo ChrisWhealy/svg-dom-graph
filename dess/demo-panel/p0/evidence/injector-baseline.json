@@ -1,0 +1,85 @@
+{
+  "injector_sha256": "920ea299ad8a9b5922f5a124150c09f9c356ca7db2b5a3966000d50c7a1dd767",
+  "operation": "sim_build (product) then sim_step(1)",
+  "calls": 8,
+  "trace": [
+    {
+      "method": "setAttribute",
+      "tag": "g",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "g",
+      "name": "class",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "g",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "g",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "g",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "text",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "text",
+      "name": "aria-label",
+      "label": false
+    },
+    {
+      "method": "setAttribute",
+      "tag": "text",
+      "name": "aria-label",
+      "label": false
+    }
+  ],
+  "arms": [
+    {
+      "n": 1,
+      "counted": 60,
+      "fired": {
+        "method": "setAttribute",
+        "tag": "g",
+        "name": "aria-label",
+        "label": false
+      },
+      "outcome": "failed"
+    },
+    {
+      "n": 4,
+      "counted": 63,
+      "fired": {
+        "method": "setAttribute",
+        "tag": "g",
+        "name": "aria-label",
+        "label": false
+      },
+      "outcome": "failed"
+    },
+    {
+      "n": 12,
+      "counted": 8,
+      "fired": null,
+      "outcome": "done"
+    }
+  ]
+}

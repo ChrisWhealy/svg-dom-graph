@@ -338,6 +338,13 @@ jobs:
             run: node perf/runner/selftest-regression.mjs
           - name: simulator runners refuse, reject and fail
             run: node dess/s5/selftest.mjs --skip-classification
+          # The gallery panel's P0 proofs (dess/demo-panel/p0): that a scene can be staged in a connected host that cannot be seen, focused, clicked
+          # or heard, and that the page injector's detach mode fires where it is armed and leaves its other user, the graph recovery self-test, alone.
+          - name: gallery panel staging and injector proofs
+            run: |
+              node dess/demo-panel/p0/staging.mjs
+              node dess/demo-panel/p0/injector.mjs
+              node dess/demo-panel/p0/features.mjs
     env:
       PERF_RUNNER_CLASS: github-ubuntu-24.04
       PERF_CHROME_NO_SANDBOX: "1"

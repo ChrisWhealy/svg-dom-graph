@@ -157,6 +157,12 @@ struct Config {
     /// The controller as a person's page has it, with real controls, when true. The measurement fixture, when false.
     #[serde(default)]
     product: bool,
+    /// How the container of the scene is staged while the surface is built into it, for the gallery's staging probe
+    /// (dess/demo-panel/p0). `opacity_inert` is a connected, laid-out container with `opacity:0`, `pointer-events:none`
+    /// and `inert`. `offscreen_inert` is a connected container moved far off the screen with `inert`.
+    /// `opacity_aria_hidden` is the probe's negative control. Absent means a container that is shown and live.
+    #[serde(default)]
+    staging: Option<String>,
 }
 
 struct Page {
@@ -181,7 +187,7 @@ fn seed_from_text_or_number<'de, D: serde::Deserializer<'de>>(deserializer: D) -
     }
 }
 
-fn make_page(document: &web_sys::Document) -> Result<Page, String> {
+fn make_page(document: &web_sys::Document, staging: Option<&str>) -> Result<Page, String> {
     let make = |tag: &str, id: &str| -> Result<web_sys::Element, String> {
         let e = document.create_element(tag).map_err(js(tag))?;
         e.set_id(id);
@@ -190,6 +196,32 @@ fn make_page(document: &web_sys::Document) -> Result<Page, String> {
     let root = make("div", ROOT_ID)?;
     let stage = make("div", STAGE_ID)?;
     let container = make("div", "perf-sim-container")?;
+    // The staging is applied before anything is built into the container, since the scene has to be constructed under
+    // it. Neither candidate uses `display:none` or `visibility:hidden`, which would make the host unmeasurable.
+    match staging {
+        None => {},
+        Some("opacity_inert") => {
+            container
+                .set_attribute("style", "opacity:0;pointer-events:none")
+                .map_err(js("staging"))?;
+            container.set_attribute("inert", "").map_err(js("staging"))?;
+        },
+        // Not a candidate: the negative control of the probe, which hides the scene from the accessibility tree and the
+        // eye, and does not isolate it from the keyboard. The probe has to find that it leaks.
+        Some("opacity_aria_hidden") => {
+            container
+                .set_attribute("style", "opacity:0;pointer-events:none")
+                .map_err(js("staging"))?;
+            container.set_attribute("aria-hidden", "true").map_err(js("staging"))?;
+        },
+        Some("offscreen_inert") => {
+            container
+                .set_attribute("style", "position:absolute;left:-20000px;top:0;width:1000px")
+                .map_err(js("staging"))?;
+            container.set_attribute("inert", "").map_err(js("staging"))?;
+        },
+        Some(other) => return Err(format!("there is no staging called {other}")),
+    }
     let status = make("p", STATUS_ID)?;
     status.set_attribute("role", "status").map_err(js("status"))?;
     status.set_attribute("aria-live", "polite").map_err(js("status"))?;
@@ -256,7 +288,7 @@ fn build_sim(config: &Config) -> Result<Sim, String> {
         next,
         play,
         seek,
-    } = make_page(&document)?;
+    } = make_page(&document, config.staging.as_deref())?;
     let built = (|| -> Result<Sim, String> {
         let (w, h) = Surface::view_box();
         let svg = SvgRoot::create_in("perf-sim-container", Size::new(w, h)).map_err(|e| e.to_string())?;
@@ -464,6 +496,8 @@ pub fn state() -> String {
             "surface_trusted": trusted,
             "setter_calls": setter_calls,
             "dirty": c.is_dirty(),
+            // The host's own test of whether it may be drawn on, as the controller asks it.
+            "presence": format!("{:?}", c.with_host(|h| h.presence_for_test())),
             "reads_layout": c.with_host(|h| h.reads_layout()),
             "playing": c.is_playing(),
             "epoch": c.epoch(),
