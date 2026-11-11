@@ -1319,6 +1319,34 @@ await test('G16', 'the sizes 2, 1, 3 and 2 each keep one scene, and a failure at
   check(last.select === 'E3-NOOP' && last.svgs === 1 && (await scenes()) === 1 && !last.errorShown, 'and an ordinary switch afterwards still works')
 })
 
+await test('G16P', 'a handoff that does nothing for one of the two staging writes is found, and rolled back', async () => {
+  await fresh()
+  // The page makes the old scene's write of `inert`, or of its style, return normally and do nothing, as a handoff that silently failed would.
+  for (const skipped of ['inert', 'style']) {
+    const before = await scenarioState()
+    const hostId = before.hosts[0].id
+    await evaluate(`(() => {
+      const set = Element.prototype.setAttribute
+      window.__restoreSet = () => { Element.prototype.setAttribute = set }
+      Element.prototype.setAttribute = function (name, value) {
+        if (this.id === '${hostId}' && name === '${skipped}') return undefined
+        return set.call(this, name, value)
+      }
+      return 0
+    })()`)
+    await chooseScenario('E3-NOOP')
+    await evaluate('__restoreSet()')
+    const state = await scenarioState()
+    check(state.errorShown && /Publish failed/.test(state.error) && /old scene/.test(state.error), `without the old scene's ${skipped}, the switch is refused at the handoff (${state.error.slice(0, 90)})`)
+    check(state.select === 'E0' && state.svgs === 1 && state.hosts.length === 1 && state.hosts[0].id === hostId && !state.hosts[0].staged, `and the old scene is still the one shown (${state.hosts.map(h => h.id)})`)
+    check((await scenes()) === 1, 'with one scene in the accessibility tree')
+    check(await evaluate(`Boolean(document.getElementById('dess-next').closest('#${hostId}'))`), 'and the controls are in it')
+  }
+  await chooseScenario('E3-NOOP')
+  const last = await scenarioState()
+  check(last.select === 'E3-NOOP' && !last.errorShown && (await scenes()) === 1, 'and the same switch with nothing wrong still goes through')
+})
+
 await test('G17', 'the no-op scenario is nine slices that match the independent engine, and its end commits nothing', async () => {
   await fresh()
   await chooseScenario('E3-NOOP')

@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T14:16:56.463Z",
-  "git_sha": "a929d354139c45b7a26a1ba71f13eb62baab78c6",
+  "measured_at": "2026-11-11T14:33:40.506Z",
+  "git_sha": "2182fcb28e2ce839b8d439aaa465402617b3f4b4",
   "git_dirty": true,
-  "caught": 14,
-  "total": 14,
+  "caught": 15,
+  "total": 15,
   "mutations": [
     {
       "name": "a stop by hiding is not said",
@@ -82,6 +82,12 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL and each cell is wide enough for six digits (58,17,17,17,17,17,17,17,17 of 51)"
+    },
+    {
+      "name": "an old scene that is only half staged is accepted",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL without the old scene's inert, the switch is refused at the handoff ()"
     },
     {
       "name": "a refusal is not shown in the error area",

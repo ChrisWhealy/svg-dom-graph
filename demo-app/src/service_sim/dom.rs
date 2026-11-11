@@ -361,7 +361,7 @@ impl SessionHost for DomSessions {
 
     fn verify_published(&mut self, from: Option<&u32>, to: &u32) -> Result<(), String> {
         let host = self.host_element(*to)?;
-        if is_staged(&host) || !host.is_connected() {
+        if is_still_staged(&host) || !host.is_connected() {
             return Err("the new scene is still staged".to_owned());
         }
         let in_new = |name: &str, element: &web_sys::Element| {
@@ -373,7 +373,7 @@ impl SessionHost for DomSessions {
         }
         let Some(from) = from else { return Ok(()) };
         let old = self.host_element(*from)?;
-        if !is_staged(&old) {
+        if !is_fully_staged(&old) {
             return Err("the old scene is still shown beside the new one".to_owned());
         }
         // The focus is on nothing that is in a staged scene, so that it is somewhere that a person can use.
@@ -428,6 +428,13 @@ fn unstage(host: &web_sys::Element) -> Result<(), String> {
         .map_err(|e| format!("could not show a scene: {e:?}"))
 }
 
-fn is_staged(host: &web_sys::Element) -> bool {
+fn is_still_staged(host: &web_sys::Element) -> bool {
     host.has_attribute("inert") || host.has_attribute("style")
+}
+
+/// Whether a host is staged in full: `inert`, so that nobody can reach it by keyboard or in the accessibility tree, and
+/// the staging style itself, as it was written, so that it is out of the flow and cannot be seen or clicked. Either one
+/// alone is a host that is half hidden.
+fn is_fully_staged(host: &web_sys::Element) -> bool {
+    host.has_attribute("inert") && host.get_attribute("style").as_deref() == Some(STAGED_STYLE)
 }

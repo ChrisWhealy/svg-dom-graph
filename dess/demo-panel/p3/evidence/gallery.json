@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T14:11:50.332Z",
-  "git_sha": "a929d354139c45b7a26a1ba71f13eb62baab78c6",
+  "measured_at": "2026-11-11T14:28:13.019Z",
+  "git_sha": "2182fcb28e2ce839b8d439aaa465402617b3f4b4",
   "git_dirty": true,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1026 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1023 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -1046,6 +1046,49 @@
         {
           "ok": true,
           "text": "and an ordinary switch afterwards still works"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G16P",
+      "title": "a handoff that does nothing for one of the two staging writes is found, and rolled back",
+      "checks": [
+        {
+          "ok": true,
+          "text": "without the old scene's inert, the switch is refused at the handoff (The scenario could not be changed: Publish failed: the old scene is still shown beside the)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scene is still the one shown (dess-host-0)"
+        },
+        {
+          "ok": true,
+          "text": "with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the controls are in it"
+        },
+        {
+          "ok": true,
+          "text": "without the old scene's style, the switch is refused at the handoff (The scenario could not be changed: Publish failed: the old scene is still shown beside the)"
+        },
+        {
+          "ok": true,
+          "text": "and the old scene is still the one shown (dess-host-0)"
+        },
+        {
+          "ok": true,
+          "text": "with one scene in the accessibility tree"
+        },
+        {
+          "ok": true,
+          "text": "and the controls are in it"
+        },
+        {
+          "ok": true,
+          "text": "and the same switch with nothing wrong still goes through"
         }
       ],
       "deferred": null

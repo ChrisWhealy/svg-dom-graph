@@ -49,6 +49,7 @@ const MUTATIONS = [
   ['a connector is not forced to enter the west side', [[SURFACE, '.with_to_side(Some(Side::West))', '.with_to_side(None)']]],
   ['the counter values are too close to the longest name', [[LAYOUT, 'pub const COUNTER_VALUE_DX: f64 = 176.0;', 'pub const COUNTER_VALUE_DX: f64 = 120.0;']]],
   ['the data cells are made for one digit', [[LAYOUT, 'pub const DATA_CELL_SAMPLE: u64 = 999_999;', 'pub const DATA_CELL_SAMPLE: u64 = 0;']]],
+  ['an old scene that is only half staged is accepted', [[DOM, 'host.has_attribute("inert") && host.get_attribute("style").as_deref() == Some(STAGED_STYLE)', 'host.has_attribute("inert") || host.has_attribute("style")']]],
   ['a refusal is not shown in the error area', [[SWITCHING, '            let _ = ui.error.remove_attribute("hidden");\n            ui.live.set_text_content(Some(&message));', '            ui.live.set_text_content(Some(&message));']]]
 ]
 
