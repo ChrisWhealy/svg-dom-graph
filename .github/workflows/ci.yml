@@ -348,7 +348,7 @@ jobs:
               node dess/demo-panel/p0/staging.mjs
               node dess/demo-panel/p0/injector.mjs
               node dess/demo-panel/p0/injector-mutation-check.mjs
-              node dess/demo-panel/p0/features.mjs
+              node dess/demo-panel/p0/features.mjs --require-service-sim
     env:
       PERF_RUNNER_CLASS: github-ubuntu-24.04
       PERF_CHROME_NO_SANDBOX: "1"
@@ -610,5 +610,51 @@ jobs:
         with:
           name: cdp-timings-${{ matrix.shard }}
           path: cdp-timings-${{ matrix.shard }}.tsv
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # The simulator's gallery panel, driven as a person would drive it: the real gallery that `cdp-build` made and shared, in the runner's own Chrome, with
+  # real clicks and keys. The oracle is the independent JavaScript engine, and failures are made by the page-level injector and not by a second build of
+  # the wasm. It does not rebuild the demo, and it takes no part in the CDP shards or in perf-smoke. See dess/demo-panel/test-gallery.mjs.
+  dess-gallery:
+    name: Service simulator gallery panel (G01 to G10 · feature gate)
+    needs: cdp-build
+    runs-on: ubuntu-24.04
+    env:
+      # The runner's Chrome runs without its sandbox, as the CDP shards do, since the sandbox needs a privilege the runner lacks.
+      PERF_CHROME_NO_SANDBOX: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Download the demo build
+        uses: actions/download-artifact@v8
+        with:
+          name: cdp-builds
+          path: .
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+
+      # The demo is one wasm build and must not hold the simulator's test-only fault hook, which only the harness build has. The gallery now depends on
+      # service-sim, so the absence of the hook is about a crate that is there.
+      - name: The demo build does not hold the fault hook
+        run: node dess/demo-panel/p0/features.mjs --require-service-sim
+
+      - name: The gallery panel passes G01 to G10
+        run: node dess/demo-panel/test-gallery.mjs --out target/dess-gallery/gallery.json
+
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dess-gallery-${{ github.sha }}
+          path: target/dess-gallery
           if-no-files-found: ignore
           retention-days: 30

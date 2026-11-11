@@ -8,13 +8,12 @@
 //! is what it schedules with. The [`session`] replaces one surface and controller by another, as a scenario with a
 //! different number of servers needs, without ever losing the picture that is on the page.
 
+pub mod catalogue;
 pub mod controller;
 pub mod layout;
 pub mod projection;
 pub mod scheduler;
 pub mod session;
 
-#[cfg(target_arch = "wasm32")]
 pub mod host;
-#[cfg(target_arch = "wasm32")]
 pub mod surface;

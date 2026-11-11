@@ -1,0 +1,87 @@
+{
+  "measured_at": "2026-11-11T12:14:55.632Z",
+  "git_sha": "871f3c216cbbedae1f974a4c340bca68c30dc0bd",
+  "git_dirty": true,
+  "caught": 13,
+  "total": 13,
+  "mutations": [
+    {
+      "name": "Next is not marked as at the last snapshot when it is",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL Next says that it is at the last snapshot, and is aria-disabled"
+    },
+    {
+      "name": "a boundary button gets the HTML disabled attribute",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL Next says that it is at the last snapshot, and is aria-disabled"
+    },
+    {
+      "name": "Play at the end asks for playback and not a step",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL Play at the end on a clean page schedules no timer and no frame (1, 0)"
+    },
+    {
+      "name": "each seek request is made twice",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL each press asked the browser for a frame of its own (10)"
+    },
+    {
+      "name": "the range stops saying Snapshot N of M",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the range runs to the preflight's 12 (12, null)"
+    },
+    {
+      "name": "the range ends one snapshot too late",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the heading says Snapshot 0 of 13"
+    },
+    {
+      "name": "a click on Previous at the first snapshot is swallowed",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL a click on the dimmed Previous still reaches the controller, which says so ()"
+    },
+    {
+      "name": "choosing a job selects none",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL exactly one slot is outlined, and it holds J2 ()"
+    },
+    {
+      "name": "Repair restarts instead",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL snapshot 5: the page equals its own full redraw"
+    },
+    {
+      "name": "the chosen speed is not given to the controller",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL 2 Hz: Play holds one timer, of 500 ms ([{\"id\":2000002,\"delay\":1000}])"
+    },
+    {
+      "name": "the stale and no-op counters change places",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL snapshot 4: inspector counters 5,4,1,0,0,0,0,0,0,1 not 5,4,1,0,0,0,0,0,1,0; overlay counters 5,4,1,0,0,0,0,0,0,1 not 5,4,1,0,0,0,0,0,1,0; overlay labels Arrived: 5,Admitted: 4,Rejected: 1,Complet"
+    },
+    {
+      "name": "a failed draw is not said",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and says so, in words (Snapshot 5 of 12)"
+    },
+    {
+      "name": "a failure is never cleared from the page",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine"
+    }
+  ]
+}

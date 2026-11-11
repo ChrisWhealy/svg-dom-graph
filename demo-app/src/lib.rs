@@ -42,6 +42,10 @@
 //!   three consumers empty, as an ordinary place/transition Petri net. Three scripts show a full and an empty buffer,
 //!   two producers that compete for the last slot, and workers that overlap. A manual branch lets a person fire the
 //!   enabled transitions. The net, not the page, stops a full buffer from taking an item.
+//! - `panel-service-simulator` / `#dess-stage` — [`service_sim::build_service_simulator_demo`]: a discrete-event service
+//!   simulator, with a queue, one to four servers, outages, retries and cancellations, on one long-lived scene with a
+//!   data node of eight counters. Native controls drive the simulator's own controller, and the page shows only what it
+//!   committed. Only the walkthrough is offered so far.
 //! - `panel-tarjan` / `#tj-open` — [`tarjan::build_tarjan_demo`]: Tarjan's strongly connected components on a fixed
 //!   graph of 64 vertices and 114 edges, one event at a time, in a window of its own. The graph, the stack, the roster
 //!   of components and the condensation are all in one scene.
@@ -194,6 +198,7 @@ mod qr_code;
 mod quicksort;
 mod red_black_tree;
 mod selection;
+mod service_sim;
 mod sha1;
 mod sha2_256;
 mod sha3_sponge;
@@ -325,6 +330,7 @@ demo_gallery! {
     "panel-red-black-tree" => red_black_tree::build_red_black_tree_demo + red_black_tree::FILES,
     "panel-marching-squares" => marching_squares::build_marching_squares_demo + marching_squares::FILES,
     "panel-petri-net" => petri_net::build_petri_net_demo + petri_net::FILES,
+    "panel-service-simulator" => service_sim::build_service_simulator_demo + service_sim::FILES,
     "panel-tarjan" => tarjan::build_tarjan_demo + tarjan::FILES,
     "panel-sparse-matrix" => sparse_matrix::build_sparse_matrix_demo + sparse_matrix::FILES,
 }

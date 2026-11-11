@@ -263,13 +263,22 @@ impl<H: Host + 'static, S: Scheduler + 'static> Target<H, S> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a mutation observer and the page's lifecycle listeners hold. Whatever has gone is a no-op, and a hook that
 /// outlives the coordinator does nothing and starts nothing.
-#[derive(Clone)]
 pub struct TargetHook<H: Host + 'static, S: Scheduler + 'static> {
     target: Weak<RefCell<Option<Controller<H, S>>>>,
 }
 
+// Written out, since a derive would ask the host and the scheduler to be `Clone`, and the hook holds neither.
+impl<H: Host + 'static, S: Scheduler + 'static> Clone for TargetHook<H, S> {
+    fn clone(&self) -> Self {
+        Self { target: self.target.clone() }
+    }
+}
+
 impl<H: Host + 'static, S: Scheduler + 'static> TargetHook<H, S> {
-    fn controller(&self) -> Option<Controller<H, S>> {
+    /// The current controller, if the coordinator is still there and has one. The handle is cloned out under a short
+    /// borrow, so that a handler that calls it cannot meet the borrow again.
+    #[must_use]
+    pub fn controller(&self) -> Option<Controller<H, S>> {
         self.target.upgrade().and_then(|t| t.borrow().clone())
     }
 

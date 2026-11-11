@@ -11,24 +11,22 @@ publish = false
 
 [dependencies]
 service-sim-engine = { path = "../service-sim-engine" }
+serde_json = "1"
 
-# The surface needs a browser, so only the wasm target has these. The projection builds and is tested natively.
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The surface and the page's host need a browser to run, but they only have to build everywhere: `web-sys` compiles natively, and the demo gallery, whose
+# own tests build natively, depends on this crate. The projection, the controller and the session coordinator are tested natively without one.
 svg-dom-graph = { path = ".." }
 svg-dom = "^0.2.17"
 wasm-bindgen = "0.2"
 js-sys = "0.3"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+[dependencies.web-sys]
 version = "0.3"
 features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement", "MutationObserver", "MutationObserverInit", "console", "EventTarget", "Event"]
 
 # The tests detach the host in the middle of a draw, which needs a hook that no other build has.
 [features]
 fault-hook = []
-
-[dev-dependencies]
-serde_json = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"

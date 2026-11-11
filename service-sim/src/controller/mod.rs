@@ -328,6 +328,14 @@ impl<H: Host + 'static, S: Scheduler + 'static> Controller<H, S> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The slice that a seek that is still being replayed is going to, so that a page can say what was asked for and
+    /// what is still the committed one. It is `None` once the seek has been committed, superseded or abandoned.
+    #[must_use]
+    pub fn pending_seek(&self) -> Option<u64> {
+        self.inner.state.borrow().seek.as_ref().map(|job| job.target)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The seek that failed to ask for a frame, which [`retry`](Self::retry) asks for again.
     #[must_use]
     pub fn pending_retry(&self) -> Option<u64> {

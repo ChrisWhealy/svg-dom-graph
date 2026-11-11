@@ -1,0 +1,669 @@
+{
+  "measured_at": "2026-11-11T12:15:29.653Z",
+  "git_sha": "871f3c216cbbedae1f974a4c340bca68c30dc0bd",
+  "git_dirty": true,
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "tests": [
+    {
+      "id": "G01",
+      "title": "the menu, the deep link and the source frame agree with the registry",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the menu puts the panel immediately after Petri Net (after panel-petri-net)"
+        },
+        {
+          "ok": true,
+          "text": "in the Concurrency group (Concurrency)"
+        },
+        {
+          "ok": true,
+          "text": "a deep link to the panel selects it and marks its menu item as the current page"
+        },
+        {
+          "ok": true,
+          "text": "the section of that id is the active one, and its panel is built"
+        },
+        {
+          "ok": true,
+          "text": "the menu item says what the section's data-label says (Service Simulator: Queue and Servers)"
+        },
+        {
+          "ok": true,
+          "text": "demo_gallery! registers panel-service-simulator (\"panel-service-simulator\" => service_sim::build_service_simulator_demo + service_sim::FILES)"
+        },
+        {
+          "ok": true,
+          "text": "the first source frame is the function that built it (Rust source — fn build_service_simulator_demo)"
+        },
+        {
+          "ok": true,
+          "text": "and there is one frame for each of the 8 files that the registry lists (8)"
+        },
+        {
+          "ok": true,
+          "text": "the fragments are numbered 01-petri-net and 02-service-simulator"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G02",
+      "title": "the panel is built once, and a revisit adds no owner, observer, SVG, listener or id",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the first visit builds one SVG, one host and one overlay (1, dess-host-0, 1)"
+        },
+        {
+          "ok": true,
+          "text": "and one watch on the gallery's stage (1)"
+        },
+        {
+          "ok": true,
+          "text": "and no id twice in the page"
+        },
+        {
+          "ok": true,
+          "text": "three more round trips leave one SVG, the same host and one overlay"
+        },
+        {
+          "ok": true,
+          "text": "and the same number of effective listeners (101 then 101)"
+        },
+        {
+          "ok": true,
+          "text": "and still one watch on the stage (1)"
+        },
+        {
+          "ok": true,
+          "text": "and no duplicate id and no second set of controls"
+        },
+        {
+          "ok": true,
+          "text": "and the panel still says that it was built once"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G03",
+      "title": "the first draw is the walkthrough at snapshot 0",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the heading says Snapshot 0 of 12"
+        },
+        {
+          "ok": true,
+          "text": "one SVG, one content group and one overlay"
+        },
+        {
+          "ok": true,
+          "text": "twelve queue slots and two servers (12, 2)"
+        },
+        {
+          "ok": true,
+          "text": "the fixed view box (0 0 1000 480)"
+        },
+        {
+          "ok": true,
+          "text": "the data cells, the ten counters, the clock and the queue are the independent engine's snapshot 0 "
+        },
+        {
+          "ok": true,
+          "text": "both servers are idle (idle, idle)"
+        },
+        {
+          "ok": true,
+          "text": "the range runs to the preflight's 12 (12, Snapshot 0 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "Play reads Play and is not pressed"
+        },
+        {
+          "ok": true,
+          "text": "Paused / visible, Up to date"
+        },
+        {
+          "ok": true,
+          "text": "and no error is shown"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G04",
+      "title": "twelve Next clicks match the independent engine at every snapshot",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the data node's ordinal advanced by one at each commit (0,1,2,3,4,5,6,7,8,9,10,11,12)"
+        },
+        {
+          "ok": true,
+          "text": "and snapshot 12 is the end of the run: every counter agrees"
+        },
+        {
+          "ok": true,
+          "text": "both servers are idle at the end, as the fixture says"
+        },
+        {
+          "ok": true,
+          "text": "and the totals are the fixture's own known answers"
+        },
+        {
+          "ok": true,
+          "text": "Next says that it is at the last snapshot, and is aria-disabled"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G05",
+      "title": "Previous, Restart and a seek equal a full redraw, and each arrow key is a request",
+      "checks": [
+        {
+          "ok": true,
+          "text": "snapshot 5: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 5: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 9: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 9: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 2: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 2: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 12: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 12: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 0: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 0: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 7: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 7: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "snapshot 0: the page equals its own full redraw"
+        },
+        {
+          "ok": true,
+          "text": "snapshot 0: and the independent engine's "
+        },
+        {
+          "ok": true,
+          "text": "after five presses the range asks for 5 and says Snapshot 5 of 12"
+        },
+        {
+          "ok": true,
+          "text": "while the committed snapshot is still 0 (Requested 5, committed 0)"
+        },
+        {
+          "ok": true,
+          "text": "and the description names it (Snapshot 0 is still the committed one.)"
+        },
+        {
+          "ok": true,
+          "text": "each press asked the browser for a frame of its own (5)"
+        },
+        {
+          "ok": true,
+          "text": "and the last one is the only one that is still waiting (1)"
+        },
+        {
+          "ok": true,
+          "text": "the last request is the one that committed (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a slider named Snapshot, at 5 (Snapshot, 5)"
+        },
+        {
+          "ok": true,
+          "text": "and its aria-valuetext says Snapshot 5 of 12"
+        },
+        {
+          "ok": true,
+          "text": "and it is described by the element that names the committed snapshot (dess-seek-desc)"
+        }
+      ],
+      "deferred": "the same arrow keys on the 5,464 snapshots of the W6 reference trace need the scenario to be switched, which is P3",
+      "limits": [
+        "Chrome's DevTools accessibility tree reports a range's value as its number and ignores aria-valuetext: a custom role=slider that has it is reported with an empty valuetext in the same Chrome (157). So what is announced is checked at the attribute, and a screen reader's own reading is a manual observation for P4."
+      ]
+    },
+    {
+      "id": "G06",
+      "title": "playback takes one slice per timer at each rate, and Play at the end starts nothing",
+      "checks": [
+        {
+          "ok": true,
+          "text": "1 Hz: Play holds one timer, of 1000 ms ([{\"id\":2000000,\"delay\":1000}])"
+        },
+        {
+          "ok": true,
+          "text": "1 Hz: and the button reads Pause and is pressed"
+        },
+        {
+          "ok": true,
+          "text": "1 Hz: one firing commits one slice and asks for the next timer only (1 held)"
+        },
+        {
+          "ok": true,
+          "text": "1 Hz: Pause takes the timer back and unpresses the button"
+        },
+        {
+          "ok": true,
+          "text": "2 Hz: Play holds one timer, of 500 ms ([{\"id\":2000002,\"delay\":500}])"
+        },
+        {
+          "ok": true,
+          "text": "2 Hz: and the button reads Pause and is pressed"
+        },
+        {
+          "ok": true,
+          "text": "2 Hz: one firing commits one slice and asks for the next timer only (1 held)"
+        },
+        {
+          "ok": true,
+          "text": "2 Hz: Pause takes the timer back and unpresses the button"
+        },
+        {
+          "ok": true,
+          "text": "5 Hz: Play holds one timer, of 200 ms ([{\"id\":2000004,\"delay\":200}])"
+        },
+        {
+          "ok": true,
+          "text": "5 Hz: and the button reads Pause and is pressed"
+        },
+        {
+          "ok": true,
+          "text": "5 Hz: one firing commits one slice and asks for the next timer only (1 held)"
+        },
+        {
+          "ok": true,
+          "text": "5 Hz: Pause takes the timer back and unpresses the button"
+        },
+        {
+          "ok": true,
+          "text": "10 Hz: Play holds one timer, of 100 ms ([{\"id\":2000006,\"delay\":100}])"
+        },
+        {
+          "ok": true,
+          "text": "10 Hz: and the button reads Pause and is pressed"
+        },
+        {
+          "ok": true,
+          "text": "10 Hz: one firing commits one slice and asks for the next timer only (1 held)"
+        },
+        {
+          "ok": true,
+          "text": "10 Hz: Pause takes the timer back and unpresses the button"
+        },
+        {
+          "ok": true,
+          "text": "a new rate replaces the waiting timer and does not add one ([{\"id\":2000009,\"delay\":200}])"
+        },
+        {
+          "ok": true,
+          "text": "Play at the end on a clean page schedules no timer and no frame (0, 0)"
+        },
+        {
+          "ok": true,
+          "text": "and the button stays Play and unpressed (Paused, end of scenario / visible)"
+        },
+        {
+          "ok": true,
+          "text": "and says End of scenario, with the cursor where it was (End of scenario)"
+        },
+        {
+          "ok": true,
+          "text": "a failed repair leaves the page marked dirty (Needs repair)"
+        },
+        {
+          "ok": true,
+          "text": "Play at the end of a dirty page repairs it first and schedules nothing (Up to date)"
+        },
+        {
+          "ok": true,
+          "text": "and the toggle is unpressed and the picture is snapshot 12"
+        },
+        {
+          "ok": true,
+          "text": "the real timer, once at 1 Hz, committed a slice (1032 ms, which is told and not judged)"
+        },
+        {
+          "ok": true,
+          "text": "and Pause stopped it"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G07",
+      "title": "a callback that was taken back cannot commit, and the last request wins",
+      "checks": [
+        {
+          "ok": true,
+          "text": "a timer that Pause took back is gone, and commits nothing ({\"ran\":false,\"threw\":null}, 0 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "a seek asks for one frame"
+        },
+        {
+          "ok": true,
+          "text": "Next takes the seek's frame back and steps from where the page was (0 held, 1 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "three seeks leave one frame waiting (1)"
+        },
+        {
+          "ok": true,
+          "text": "the last of them is the one that commits (6 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "Play takes a waiting seek back and asks for a timer (0 frames, 1 timers, 6 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and the timer commits one slice from where the page was"
+        },
+        {
+          "ok": true,
+          "text": "and Pause leaves nothing waiting"
+        },
+        {
+          "ok": true,
+          "text": "and the page raised no exception (0)"
+        }
+      ],
+      "deferred": "A callback that the browser still calls after it was taken back is shown by the native controller tests, with a scheduler that keeps cancelled tasks. The page scheduler frees a taken-back closure, so the real page cannot call one. Pause leaves a seek that is waiting alone is also native: the page has no way to pause while a seek is waiting, since a seek stops playback"
+    },
+    {
+      "id": "G08",
+      "title": "Repair redraws the committed snapshot and changes nothing else",
+      "checks": [
+        {
+          "ok": true,
+          "text": "on a clean page the picture and the data cells are what they were"
+        },
+        {
+          "ok": true,
+          "text": "and the cursor, the selection and the view are unmoved"
+        },
+        {
+          "ok": true,
+          "text": "and Play is not started"
+        },
+        {
+          "ok": true,
+          "text": "a repair restores the overlay ()"
+        },
+        {
+          "ok": true,
+          "text": "and the Play control and its ARIA"
+        },
+        {
+          "ok": true,
+          "text": "without moving the cursor"
+        },
+        {
+          "ok": true,
+          "text": "a failure at write 1 is not a commit: still 5 of 12, Needs repair (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and says so, in words (The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "and the first failure of an episode is written in the error area (The simulator could not draw: label: JsValue(Inval)"
+        },
+        {
+          "ok": true,
+          "text": "a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine "
+        },
+        {
+          "ok": true,
+          "text": "a failure at write 2 is not a commit: still 5 of 12, Needs repair (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and says so, in words (The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine "
+        },
+        {
+          "ok": true,
+          "text": "a failure at write 3 is not a commit: still 5 of 12, Needs repair (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and says so, in words (The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine "
+        },
+        {
+          "ok": true,
+          "text": "a failure at write 5 is not a commit: still 5 of 12, Needs repair (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and says so, in words (The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine "
+        },
+        {
+          "ok": true,
+          "text": "a failure at write 8 is not a commit: still 5 of 12, Needs repair (5 of 12)"
+        },
+        {
+          "ok": true,
+          "text": "and says so, in words (The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "a repair makes it snapshot 5 again, with the data cells and overlay of the independent engine "
+        },
+        {
+          "ok": true,
+          "text": "every one of the five writes was reached inside the draw (5)"
+        },
+        {
+          "ok": true,
+          "text": "a failure that was recovered from is still said, and is not a commit (5 of 12, The display could not be updated. Use Repair display.)"
+        },
+        {
+          "ok": true,
+          "text": "and the page that the recovery left is snapshot 5"
+        },
+        {
+          "ok": true,
+          "text": "and after a repair the next slice commits"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G09",
+      "title": "selecting and clearing a job agree across the scene, the inspector and the accessible label",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the list offers None and the jobs that can be seen (3)"
+        },
+        {
+          "ok": true,
+          "text": "exactly one slot is outlined, and it holds J2 (Q0)"
+        },
+        {
+          "ok": true,
+          "text": "the inspector names it and its state (J2: high priority, queued, attempt 0)"
+        },
+        {
+          "ok": true,
+          "text": "and so does the selected-job line (Selected job J2, high priority, queued)"
+        },
+        {
+          "ok": true,
+          "text": "and the outlined slot's accessible name (Position 1: J2, high priority)"
+        },
+        {
+          "ok": true,
+          "text": "the cursor, the data cells and the view are unchanged"
+        },
+        {
+          "ok": true,
+          "text": "clearing the selection takes every outline off"
+        },
+        {
+          "ok": true,
+          "text": "and the inspector and the line say none (none)"
+        },
+        {
+          "ok": true,
+          "text": "with the cursor and the view still unmoved"
+        },
+        {
+          "ok": true,
+          "text": "the selection is still the same job after a step (J2: high priority, queued, attempt 0)"
+        }
+      ],
+      "deferred": null
+    },
+    {
+      "id": "G10",
+      "title": "native keyboard controls, names, focus and the boundary rule pass the accessibility tree",
+      "checks": [
+        {
+          "ok": true,
+          "text": "the accessibility tree has a button named Previous"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a button named Next"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a button named Restart"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a button named Play"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a button named Repair display"
+        },
+        {
+          "ok": true,
+          "text": "the accessibility tree has a slider named Snapshot"
+        },
+        {
+          "ok": true,
+          "text": "and a combobox named Speed"
+        },
+        {
+          "ok": true,
+          "text": "and one named Inspect a job"
+        },
+        {
+          "ok": true,
+          "text": "Play is a toggle that is not pressed"
+        },
+        {
+          "ok": true,
+          "text": "Previous is exposed as disabled at snapshot 0, by aria-disabled"
+        },
+        {
+          "ok": true,
+          "text": "and neither boundary button has the HTML disabled attribute"
+        },
+        {
+          "ok": true,
+          "text": "and its reason is read with it (Already at first snapshot)"
+        },
+        {
+          "ok": true,
+          "text": "and there is a polite live region"
+        },
+        {
+          "ok": true,
+          "text": "a click on the dimmed Previous still reaches the controller, which says so (Already at the first snapshot)"
+        },
+        {
+          "ok": true,
+          "text": "Tab visits the controls in order (dess-next,dess-restart,dess-play,dess-speed,dess-repair,dess-seek)"
+        },
+        {
+          "ok": true,
+          "text": "Enter on Next steps once, and the focus stays on Next"
+        },
+        {
+          "ok": true,
+          "text": "and Space does the same"
+        },
+        {
+          "ok": true,
+          "text": "an arrow key on the range is one seek, and keeps the focus"
+        },
+        {
+          "ok": true,
+          "text": "Space on Play starts playback and keeps the focus"
+        },
+        {
+          "ok": true,
+          "text": "and Space again pauses it"
+        },
+        {
+          "ok": true,
+          "text": "keys pressed with no control focused do nothing: there is no shortcut"
+        },
+        {
+          "ok": true,
+          "text": "and the page raised no exception or console error (0: )"
+        }
+      ],
+      "deferred": null
+    }
+  ]
+}

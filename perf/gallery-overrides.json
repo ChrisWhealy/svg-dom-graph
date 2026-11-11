@@ -11,6 +11,12 @@
     "panel-tarjan": {
       "skip": "the panel only opens the demo in its own window, and has no controls of its own to walk"
     },
+    "panel-service-simulator": {
+      "expect": {
+        "reversible": true,
+        "because": "service-sim/src/controller/mod.rs: previous() shows the slice before the committed one, by replaying the same seeded engine"
+      }
+    },
     "panel-petri-net": {
       "before_build": "window.__pnManualClock = true",
       "advance": "window.__pnAdvance(6)"
