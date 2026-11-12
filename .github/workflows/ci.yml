@@ -424,6 +424,22 @@ jobs:
       - name: Check demo-app builds on the declared MSRV
         run: cargo check -p svg-dom-graph-demo -p demo-common --target wasm32-unknown-unknown
 
+  # What has to hold of the package that would be published: its contents, a dry-run publish, the minimum Rust version, the documentation and the
+  # dependencies. See docs/release-qualification.md. The consumer check needs the application's repository, and is made before a release.
+  release-qualification:
+    name: release qualification (package, MSRV, docs, dependencies)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - run: scripts/release-check.sh
+
   browser-tests:
     name: wasm-pack test (${{ matrix.browser }})
     runs-on: ubuntu-24.04

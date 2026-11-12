@@ -60,20 +60,20 @@ A node's degree matters separately from the total edge count, for two reasons.
 
 - **Accessibility metadata growth.**
 
-   Every edge appends a relationship clause to both endpoint nodes.
+  Every edge appends a relationship clause to both endpoint nodes.
 
-   `Scene::append_relationship` then rewrites the whole accumulated string into both `aria-label` and `<title>`.
-   A node with thousands of edges therefore ends up with a huge description, and each further edge writes a longer string than the last.
-   Long node names will only make this worse.
+  `Scene::append_relationship` then rewrites the whole accumulated string into both `aria-label` and `<title>`.
+  A node with thousands of edges therefore ends up with a huge description, and each further edge writes a longer string than the last.
+  Long node names will only make this worse.
 
 - **Per-frame drag cost.**
 
-   The high resolution pointer movement events created at the hardware level are coalesced to at most one `move_node` event per animation frame.
+  The high resolution pointer movement events created at the hardware level are coalesced to at most one `move_node` event per animation frame.
 
-   ⚠️ Caveat ⚠️
+  ⚠️ Caveat ⚠️
 
-   `move_node` must still redraw every edge incident to the moving node.
-   The coalescing process limits how often a new frame is rendered, not how much work must be performed to render that frame.
+  `move_node` must still redraw every edge incident to the moving node.
+  The coalescing process limits how often a new frame is rendered, not how much work must be performed to render that frame.
 
 ### String Lengths
 
@@ -103,6 +103,19 @@ An application accepting untrusted graph descriptions should consider imposing t
 - optionally, an overall rendered-DOM-element budget
 
 Reject or truncate a description that exceeds a budget limit before any `Scene` call is made.
+
+### Worked examples
+
+Two applications enforce budgets before any `Scene` call, and each has tests that hold the limits where they are written.
+
+- **The sparse-matrix demonstrator** (`spmv-core/src/budget.rs`, with its measured basis in `spmv/docs/resource-risks.md`) checks nodes, edges, degree, cells, label length and an estimate of the page's elements.
+  The figures are those of one browser on one machine, so they are a budget for that class of device.
+- **The service simulator application** lives in a repository of its own and builds from the published crate.
+  It bounds a run by its ceilings before the scene is built, and keeps the scene's size independent of the run.
+  Its `docs/budgets.md` says how, and names the tests.
+
+For your own input, decide each ceiling from the cost that it limits, and write it down.
+Check before you draw, make the over-limit case an error rather than a truncation, and test the value at the ceiling and one past it.
 
 ## Underlying `svg-dom` Trust Boundaries
 

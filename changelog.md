@@ -13,6 +13,10 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## [0.2.51] - 2026-11-12
 
+## Added
+
+- Release qualification docs and release check script (``)
+
 ## Changed
 
 - Refactored `src/model/plot/unit_tests.rs` (`3405140`)
