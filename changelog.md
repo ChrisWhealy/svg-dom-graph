@@ -13,9 +13,13 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## [0.2.51] - 2026-11-12
 
+## Changed
+
+- Refactored `src/model/plot/unit_tests.rs` (``)
+
 ## Fixed
 
-- `Scene::set_edge_label` left partial artefacts in the document if a write failed during drawing (``)
+- `Scene::set_edge_label` left partial artefacts in the document if a write failed during drawing (`885266b`)
 
 # [Released]
 
