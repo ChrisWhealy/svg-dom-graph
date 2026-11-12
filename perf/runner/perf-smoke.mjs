@@ -10,13 +10,14 @@
 // writes a comparison report. The comparison only reports. A timing that is uncertain, or even a clear regression, does not fail
 // this command, since the baseline needs 10 runs on one runner class before its thresholds mean anything (section 8.1). With
 // the three repetitions of a smoke run the report is labelled diagnostic and gives no verdict at all (section 6).
-// `--enforce-statistical` is for when that point has been reached: it then also fails on a regression, but only from a baseline
-// that has the runs to block with.
+// A baseline that has the runs to block with, and that a person has approved with `qualify.mjs --approve`, also fails this command on a
+// regression. `--enforce-statistical` drops the approval, for trying a baseline of 10 runs before it is approved.
 //
 // A layer with no baseline in this environment is not an error. It says so, and says how to make one.
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { isQualified } from '../lib/qualification.mjs'
 import {
   RUNS_TO_BLOCK,
   baselineDirFor,
@@ -121,7 +122,17 @@ for (const [index, id] of options.manifests.entries()) {
       console.log(lines.join('\n').replaceAll('**', '').replaceAll('`', ''))
       summary.push(...lines)
       compared.push({ id, layer, out: path.relative(root, out), gating: report.gating.statistical_gates })
-      if (options.enforce && report.gating.statistical_gates === 'blocking' && regressions(report).length > 0)
+      const approved = isQualified(baseline)
+      if (report.gating.statistical_gates === 'blocking' && !approved)
+        summary.push(
+          `This baseline has the runs to block, and a person has not approved it yet: \`node perf/runner/qualify.mjs\` says how.`,
+          ''
+        )
+      if (
+        report.gating.statistical_gates === 'blocking' &&
+        (approved || options.enforce) &&
+        regressions(report).length > 0
+      )
         statisticalFailures++
     } catch (error) {
       // A comparison that cannot be made is not a slow commit. It is said, and it does not fail the run.
@@ -142,6 +153,8 @@ fs.writeFileSync(path.join(options.outDir, 'perf-smoke-summary.md'), summary.joi
 fs.writeFileSync(path.join(options.outDir, 'perf-smoke-comparisons.json'), JSON.stringify(compared, null, 2) + '\n')
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n')
 console.log(`\n${verdict}`)
-if (!options.enforce && statisticalFailures === 0)
-  console.log(`(statistical verdicts report only until a baseline has ${RUNS_TO_BLOCK} runs)`)
+if (statisticalFailures === 0)
+  console.log(
+    `(statistical verdicts report only until a baseline has ${RUNS_TO_BLOCK} runs and has been approved: node perf/runner/qualify.mjs)`
+  )
 process.exit(deterministicFailures || statisticalFailures ? 1 : 0)

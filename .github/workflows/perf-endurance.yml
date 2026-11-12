@@ -1,0 +1,68 @@
+# The soak: the endurance manifests run for hours, to show that nothing a cycle builds is left behind.
+#
+# The manifests are 200 cycles, which is minutes. perf/runner/endurance-soak.mjs times a manifest, works out how many cycles fill the hours that
+# were asked for, and runs them. The gates are exact: the elements and listeners return to their baseline after every teardown, the live bytes
+# do not grow after the warm-up, and every recovery reaches the state that its contract promises. A job on a hosted runner can run for six hours
+# at most, so the hours are limited to four and a half, which leaves room for the build and for timing the manifest.
+#
+# Started by hand. The `endurance-record.json` in each artifact is the evidence: it is kept in perf/evidence/endurance/ and read by
+# `node perf/runner/qualify.mjs`. Add a `schedule` here to make it a regular run.
+name: perf-endurance
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 'Hours of cycles for each manifest (at most 4.5)'
+        default: '3'
+
+jobs:
+  soak:
+    name: Soak ${{ matrix.manifest }} for ${{ inputs.hours }} hours
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: [w3-scene-lifecycle-endurance, w5-recovery-long]
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - name: The hours are allowed
+        run: node -e "const h = Number('${{ inputs.hours }}'); if (!(h > 0 && h <= 4.5)) { console.error('hours must be above 0 and at most 4.5'); process.exit(1) }"
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Build what the soak runs
+        run: |
+          cargo build --release -p perf-harness
+          wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+      - name: Soak
+        run: node perf/runner/endurance-soak.mjs perf/manifests/${{ matrix.manifest }}.toml --hours "${{ inputs.hours }}" --out-dir target/endurance-soak
+      - name: Keep the record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: endurance-${{ matrix.manifest }}-${{ github.sha }}
+          path: |
+            target/endurance-soak/endurance-record.json
+            target/endurance-soak/soak.log
+          if-no-files-found: ignore
+          retention-days: 90

@@ -205,6 +205,10 @@ jobs:
       - name: The simulator workload's counts are ones the result schema accepts
         run: node perf/runner/test-service-metrics.mjs
 
+      # The rules for approving a baseline to block a change: the runs it needs, the spread it may have, and that promoting over it voids the approval.
+      - name: The rules for approving a baseline hold
+        run: node perf/runner/test-qualification.mjs
+
       # The discrete-event service simulator's stage S0 prototype, which needs no browser. It reproduces the design's known answers,
       # and the seed-qualification gate that froze the generator's parameters, so a change to either cannot pass unnoticed.
       - name: Simulator prototype gives the design's known answers and qualifies its seeds
@@ -265,7 +269,7 @@ jobs:
   # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
   # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it
   # is labelled diagnostic and gives no verdict. The statistical verdicts block a change only from a baseline of 10 runs on one
-  # runner class (section 8.1), and perf-smoke is not given `--enforce-statistical` until there is one.
+  # runner class (section 8.1) that a person has approved with `perf/runner/qualify.mjs --approve`. See perf/docs/qualification.md.
   perf-smoke:
     name: perf smoke (W1 to W4 and W6 · baseline comparison report)
     runs-on: ubuntu-24.04

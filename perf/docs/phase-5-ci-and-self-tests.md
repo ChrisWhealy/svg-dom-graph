@@ -10,9 +10,9 @@
 `perf-smoke` writes the comparison to the job summary and uploads the results and comparison reports as an artifact kept for 90 days.
 Historical runs are artifacts and are not committed.
 Statistical gates report only until a baseline has 10 runs on one runner class (design section 8.1).
-`perf-smoke` has `--enforce-statistical`, which then also fails on a regression.
-It does so only from a baseline with the runs to block with.
-It is not given the flag yet.
+`perf-smoke` also fails on a regression, from a baseline that has the runs to block with and that a person has approved.
+`--enforce-statistical` drops the approval, to try a baseline of 10 runs before it is approved.
+See [Qualifying the baselines](qualification.md).
 
 The smoke manifests are the small scene (12 nodes, 20 edges) with enough measured iterations for a median.
 They run 40 cycles for W1 and W3 and 2,000 moves for W2.

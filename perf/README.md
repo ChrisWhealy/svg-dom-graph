@@ -29,6 +29,7 @@ Paths in these pages are relative to `perf/` unless they start with `../`.
 | [Phase 4: recovery and endurance](docs/phase-4-recovery.md) | The failure contracts, how a failure is injected, and endurance under failures |
 | [Phase 4 findings](docs/phase-4-findings.md) | What breaking the library on purpose found, and what was fixed |
 | [Phase 5: comparison and baselines](docs/phase-5-comparison-and-baselines.md) | The statistical comparison, the verdicts, and how a baseline is promoted |
+| [Qualifying the baselines](docs/qualification.md) | What a baseline needs before it blocks a change: its runs, its spread, endurance, and where each stands |
 | [Phase 5: CI profiles and self-tests](docs/phase-5-ci-and-self-tests.md) | The CI jobs, the tests that prove regressions and leaks are caught, and the calibration |
 | [Evidence](docs/evidence.md) | What each recorded evidence directory holds, and how to record it again |
 

@@ -1,0 +1,67 @@
+# Collects the repetitions that a baseline needs: 10 or more valid runs of each smoke workload, on one commit, in one environment.
+#
+# A baseline is kept for one environment, and the environment includes the processor, which GitHub chooses for each job from more than one
+# model (EPYC 7763 and Xeon 8573C so far). The runs of two jobs on different processors are therefore two baselines and never one. Each job here
+# runs all of its repetitions on its own machine, so each artifact is one environment, and several jobs are started so that more than one processor
+# is likely to be among them. The job summary names the environment of each.
+#
+# Started by hand. Then, for each artifact whose environment has no baseline of 10 runs yet:
+#
+#   node perf/runner/promote-from-run.mjs <run id> --artifact perf-baseline-<sha>-<sample> --reason "..."
+#   node perf/runner/qualify.mjs                    # what each baseline lacks, and the spread of its runs
+#   node perf/runner/qualify.mjs --approve <baseline directory> --reason "..."
+#
+# and commit perf/baselines. A baseline blocks a change only after it is approved. See perf/docs/qualification.md.
+name: perf-baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: 'Repetitions of each smoke workload in each job (10 or more are needed to approve a baseline)'
+        default: '12'
+
+jobs:
+  collect:
+    name: Smoke workloads, ${{ inputs.repetitions }} repetitions (sample ${{ matrix.sample }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3, 4]
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Which processor this is
+        run: |
+          echo "sample ${{ matrix.sample }}: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Run the smoke workloads
+        run: node perf/runner/perf-smoke.mjs --repetitions "${{ inputs.repetitions }}"
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-baseline-${{ github.sha }}-${{ matrix.sample }}
+          path: target/perf-smoke
+          retention-days: 90

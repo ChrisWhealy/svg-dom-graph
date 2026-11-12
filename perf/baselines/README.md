@@ -96,7 +96,8 @@ Look at what changed, and then commit it.
     git status perf/baselines git add perf/baselines
 
 A new baseline is compared against from the next run on, and the comparison only reports.
-It starts to block a change only after it has 10 runs on one runner class, and `perf-smoke` is not given `--enforce-statistical` until then.
+It starts to block a change only after it has 10 runs on one runner class and a person has approved it with `node perf/runner/qualify.mjs --approve`.
+See [Qualifying the baselines](../docs/qualification.md).
 A baseline is replaced by promoting again, and git keeps the history of the old one.
 
 See [Phase 5: comparison and baselines](../docs/phase-5-comparison-and-baselines.md).
