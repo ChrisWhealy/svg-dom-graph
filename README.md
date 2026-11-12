@@ -2,20 +2,19 @@
 
 [![CI](https://github.com/ChrisWhealy/svg-dom-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisWhealy/svg-dom-graph/actions) [![crates.io](https://img.shields.io/crates/v/svg-dom-graph.svg)](https://crates.io/crates/svg-dom-graph) [![Documentation](https://docs.rs/svg-dom-graph/badge.svg)](https://docs.rs/svg-dom-graph) [![Rust](https://img.shields.io/badge/rust-1.85.0%2B-blue.svg?maxAge=3600)](https://github.com/ChrisWhealy/svg-dom-graph)
 
-Draws graphs with dynamically re-routable connectors between SVG boxes.
-Each connector routes as a straight line or an elbow, with a configurable corner radius.
+A production-ready data-visualisation library that allows you to build browser-based, interactive scenes entirely using SVG elements.
 
-![Array Operator Chain](img/sha3_sponge_demo.png)
+These scenes range in complexity from simple directed graphs, all the way up to visualising data as it flows through algorithms such as SHA2 or SHA3, a Fast Fourier transform, a Petri Net or the simulation of discrete events inside a job dispatch queue.
+Animated data visualisation such as Conway's Game of Life is also possible.
 
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 
-`svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what sort of graph a caller builds.
+The `svg-dom-graph` library holds no opinion about which HTML page hosts it or what sort of graph the caller builds.
 See [`library/README.md`](docs/library/README.md) for more details.
 
-_**IMPORTANT**_<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
+_**IMPORTANT**_<br>Being entirely browser-based, and in keeping with the `svg-dom` crate, this crate targets WebAssembly only.
 
-The goal is to allow the users to create a scene containing SVG elements suitable for visualising the data flow through an algorithm.
-The original target algorithms were SHA1, SHA2 and SHA3; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
+The original target algorithms were the SHA1, SHA2 and SHA3 hash algorithms; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
 
 <details>
 <summary>Cryptographic Algorithms</summary>
