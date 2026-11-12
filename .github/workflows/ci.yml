@@ -404,6 +404,8 @@ jobs:
           fetch-depth: 0
       - name: Test the version check
         run: .github/scripts/test-check-library-version.sh
+      - name: Test the check that the release commit's CI run was green
+        run: .github/scripts/test-require-green-ci.sh
       # A change to src/ must not go into a version that crates.io already has, so it needs a new version only after the
       # next publish. Any number of changes can go into one that is not published yet. A change to the demos or the tests
       # needs none, and goes in demo/CHANGELOG.md instead.

@@ -6,12 +6,15 @@
 set -euo pipefail
 sha="${1:-$(git rev-parse HEAD)}"
 runs=$(gh run list --workflow ci.yml --commit "$sha" --json databaseId,status,conclusion,event --limit 20)
-count=$(echo "$runs" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
-if [ "$count" = 0 ]; then echo "no CI run of $sha: push it, and wait for the run to finish" >&2; exit 1; fi
-echo "$runs" | python3 - "$sha" <<'PY'
-import json, sys
-sha = sys.argv[1]
-runs = json.load(sys.stdin)
+# The JSON goes to Python in the environment, since a here-document would be Python's standard input and the pipe would never reach it.
+export RUNS="$runs" SHA="$sha"
+python3 - <<'PY'
+import json, os, sys
+sha = os.environ["SHA"]
+runs = json.loads(os.environ["RUNS"])
+if not runs:
+    print(f"no CI run of {sha}: push it, and wait for the run to finish", file=sys.stderr)
+    sys.exit(1)
 bad = [r for r in runs if r["status"] != "completed" or r["conclusion"] != "success"]
 for r in runs:
     print(f'run {r["databaseId"]} ({r["event"]}): {r["status"]}, {r["conclusion"] or "no conclusion yet"}')
