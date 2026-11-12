@@ -15,7 +15,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## Changed
 
-- Refactored `src/model/plot/unit_tests.rs` (``)
+- Refactored `src/model/plot/unit_tests.rs` (`3405140`)
 
 ## Fixed
 
