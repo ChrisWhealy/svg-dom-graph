@@ -55,7 +55,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P4: Advance/Scale and release (`d652bae`)
 - DESS Demo P4: Evidence gathered by running script (`0fd5394`)
 - DESS Demo P4: Evidence gathered by running script (`da62de2`)
-- Run `perf-baseline.yml` in CI to perform endurance soak test (``)
+- Run `perf-baseline.yml` in CI to perform endurance soak test (`90bf506`)
+- Gather test evidence for Firefox and Safari browsers (``)
 
 ### Changed
 

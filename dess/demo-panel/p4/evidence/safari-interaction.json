@@ -1,0 +1,274 @@
+{
+  "observed_at": "2026-11-12T11:15:33.928Z",
+  "browser": "Safari 27.2 on macOS 27.2",
+  "viewport": null,
+  "note": "Observations, not a pass claim. Chrome is the release gate.",
+  "observations": [
+    {
+      "name": "the panel is built when it is selected",
+      "seen": "yes"
+    },
+    {
+      "name": "the window",
+      "seen": {
+        "asked": null,
+        "got": [1500, 1000],
+        "inner": [1500, 948]
+      }
+    },
+    {
+      "name": "the controls are in the scene",
+      "seen": [
+        "dess-prev: true",
+        "dess-next: true",
+        "dess-play: true",
+        "dess-restart: true",
+        "dess-scenario: true",
+        "dess-seek: true",
+        "dess-speed: true"
+      ]
+    },
+    {
+      "name": "the role and name that the browser computes for each control",
+      "seen": {
+        "dess-prev": "button / Previous",
+        "dess-next": "button / Next",
+        "dess-play": "button / Play",
+        "dess-restart": "button / Restart",
+        "dess-repair": "button / Repair display",
+        "dess-scenario": "button / Scenario",
+        "dess-seek": "slider / Snapshot",
+        "dess-speed": "button / Speed"
+      }
+    },
+    {
+      "name": "the server boxes are the colour of their state (the :has() rules)",
+      "seen": {
+        "snapshot": "4 of 12",
+        "servers": [
+          {
+            "key": "S0",
+            "state": "down",
+            "fill": "rgb(254, 202, 202)"
+          },
+          {
+            "key": "S1",
+            "state": "busy",
+            "fill": "rgb(187, 247, 208)"
+          }
+        ],
+        "allMatch": true
+      }
+    },
+    {
+      "name": "the pointer: three clicks of Next, then one of Previous",
+      "seen": [
+        {
+          "clicked": "next",
+          "before": "4 of 12",
+          "snapshot": "1 of 12",
+          "milliseconds": 2
+        },
+        {
+          "clicked": "next",
+          "before": "1 of 12",
+          "snapshot": "2 of 12",
+          "milliseconds": 2
+        },
+        {
+          "clicked": "next",
+          "before": "2 of 12",
+          "snapshot": "3 of 12",
+          "milliseconds": 3
+        },
+        {
+          "clicked": "prev",
+          "before": "3 of 12",
+          "snapshot": "2 of 12",
+          "milliseconds": 59
+        }
+      ]
+    },
+    {
+      "name": "the pointer: a real pointer sequence on Next (move, press, release)",
+      "seen": {
+        "before": "2 of 12",
+        "snapshot": "3 of 12",
+        "milliseconds": 4
+      }
+    },
+    {
+      "name": "the keyboard: Enter and then Space on Next",
+      "seen": {
+        "before": "3 of 12",
+        "afterEnter": "4 of 12",
+        "afterSpace": "5 of 12",
+        "focus": "dess-next"
+      }
+    },
+    {
+      "name": "the keyboard: where Tab goes from Next, eight times",
+      "seen": ["dess-speed", "dess-job", "SUMMARY", "SUMMARY", "SUMMARY", "SUMMARY", "SUMMARY", "SUMMARY"]
+    },
+    {
+      "name": "the keyboard: the arrow keys on the range",
+      "seen": {
+        "before": "5",
+        "after": "7",
+        "snapshot": "7 of 12",
+        "text": "Committed 7"
+      }
+    },
+    {
+      "name": "the keyboard: a choice in the scenario list",
+      "seen": {
+        "labels": [
+          "E0: Walkthrough - default",
+          "E3-NOOP: No-op and stale events",
+          "scaled: Busy service / outages",
+          "five: Five servers",
+          "W6: W6 reference trace - advanced"
+        ],
+        "before": "E0",
+        "afterArrow": "E0",
+        "typed": "n",
+        "afterTyping": "E3-NOOP",
+        "scenes": 1,
+        "focus": "dess-scenario",
+        "refusal": null
+      }
+    },
+    {
+      "name": "Play, then a press of Next while it runs",
+      "seen": {
+        "playing": {
+          "snapshot": "1 of 12",
+          "button": "Pause / aria-pressed true"
+        },
+        "afterNext": {
+          "snapshot": "2 of 12",
+          "button": "Play / aria-pressed false"
+        },
+        "oneAndAHalfSecondsLater": "2 of 12"
+      }
+    },
+    {
+      "name": "Play, then the panel is routed away from and back",
+      "seen": {
+        "before": "1 of 12",
+        "panelActiveWhileAway": false,
+        "afterReturn": "1 of 12",
+        "button": "Play / aria-pressed false",
+        "note": "a snapshot that is the same before and after means nothing ticked while the panel was hidden, and the button not pressed means that it did not resume"
+      }
+    },
+    {
+      "name": "focus after a route away and back",
+      "seen": {
+        "before": "dess-next",
+        "after": "BODY"
+      }
+    },
+    {
+      "name": "a switch of scenario, the five-server scenario and back",
+      "seen": [
+        {
+          "id": "five",
+          "scenes": 1,
+          "servers": 5,
+          "refusal": null,
+          "focus": "BODY"
+        },
+        {
+          "id": "E0",
+          "scenes": 1,
+          "servers": 2,
+          "refusal": null,
+          "focus": "BODY"
+        }
+      ]
+    },
+    {
+      "name": "a failed write during a step, and the repair",
+      "seen": {
+        "failed": {
+          "display": "Up to date",
+          "error": "The simulator could not draw: label: JsValue(InvalidStateError: an injected failure of call 1, setAttribute\nundefined)",
+          "snapshot": "0 of 12",
+          "focus": "BODY",
+          "injection": {
+            "counted": 64,
+            "fired": {
+              "label": false,
+              "method": "setAttribute",
+              "name": "aria-label",
+              "tag": "g"
+            },
+            "all": [
+              {
+                "label": false,
+                "method": "setAttribute",
+                "name": "aria-label",
+                "tag": "g"
+              }
+            ]
+          }
+        },
+        "afterRepair": {
+          "display": "Up to date",
+          "error": null,
+          "snapshot": "0 of 12",
+          "focus": "BODY"
+        }
+      }
+    },
+    {
+      "name": "a failed write during a switch of scenario, and a second try",
+      "seen": {
+        "was": "E0",
+        "failed": {
+          "list": "E0",
+          "scenes": 1,
+          "refusal": "The scenario could not be changed: Build failed: host: JsValue(InvalidStateError: an injected failure of call 3, setAttribute\nundefined). The previous scenario is still shown.",
+          "injection": {
+            "counted": 6,
+            "fired": {
+              "label": false,
+              "method": "setAttribute",
+              "name": "inert",
+              "tag": "div"
+            },
+            "all": [
+              {
+                "label": false,
+                "method": "setAttribute",
+                "name": "inert",
+                "tag": "div"
+              }
+            ]
+          }
+        },
+        "secondTry": {
+          "list": "five",
+          "refusal": null,
+          "scenes": 1
+        }
+      }
+    },
+    {
+      "name": "the layout in the viewport",
+      "seen": {
+        "smallestControl": 14,
+        "inner": [1500, 948],
+        "controlsOutsideTheViewportSideways": [],
+        "pageScrollsSideways": false,
+        "svg": [273, 1, 1177, 553],
+        "stage": [272, 0, 1179, 555]
+      }
+    },
+    {
+      "name": "a screenshot was kept",
+      "seen": "dess/demo-panel/p4/evidence/safari-interaction.png"
+    }
+  ]
+}

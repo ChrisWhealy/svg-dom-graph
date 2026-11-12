@@ -1,0 +1,274 @@
+{
+  "observed_at": "2026-11-12T11:15:44.605Z",
+  "browser": "Mozilla Firefox 159.0",
+  "viewport": [390, 844],
+  "note": "Observations, not a pass claim. Chrome is the release gate.",
+  "observations": [
+    {
+      "name": "the panel is built when it is selected",
+      "seen": "yes"
+    },
+    {
+      "name": "the window",
+      "seen": {
+        "asked": [390, 844],
+        "got": [500, 844],
+        "inner": [500, 759]
+      }
+    },
+    {
+      "name": "the controls are in the scene",
+      "seen": [
+        "dess-prev: true",
+        "dess-next: true",
+        "dess-play: true",
+        "dess-restart: true",
+        "dess-scenario: true",
+        "dess-seek: true",
+        "dess-speed: true"
+      ]
+    },
+    {
+      "name": "the role and name that the browser computes for each control",
+      "seen": {
+        "dess-prev": "button / Previous",
+        "dess-next": "button / Next",
+        "dess-play": "button / Play",
+        "dess-restart": "button / Restart",
+        "dess-repair": "button / Repair display",
+        "dess-scenario": "combobox / Scenario",
+        "dess-seek": "slider / Snapshot",
+        "dess-speed": "combobox / Speed"
+      }
+    },
+    {
+      "name": "the server boxes are the colour of their state (the :has() rules)",
+      "seen": {
+        "snapshot": "4 of 12",
+        "servers": [
+          {
+            "fill": "rgb(254, 202, 202)",
+            "key": "S0",
+            "state": "down"
+          },
+          {
+            "fill": "rgb(187, 247, 208)",
+            "key": "S1",
+            "state": "busy"
+          }
+        ],
+        "allMatch": true
+      }
+    },
+    {
+      "name": "the pointer: three clicks of Next, then one of Previous",
+      "seen": [
+        {
+          "clicked": "next",
+          "before": "4 of 12",
+          "snapshot": "5 of 12",
+          "milliseconds": 1
+        },
+        {
+          "clicked": "next",
+          "before": "5 of 12",
+          "snapshot": "6 of 12",
+          "milliseconds": 5
+        },
+        {
+          "clicked": "next",
+          "before": "6 of 12",
+          "snapshot": "7 of 12",
+          "milliseconds": 1
+        },
+        {
+          "clicked": "prev",
+          "before": "7 of 12",
+          "snapshot": "6 of 12",
+          "milliseconds": 1
+        }
+      ]
+    },
+    {
+      "name": "the pointer: a real pointer sequence on Next (move, press, release)",
+      "seen": {
+        "before": "6 of 12",
+        "snapshot": "7 of 12",
+        "milliseconds": 0
+      }
+    },
+    {
+      "name": "the keyboard: Enter and then Space on Next",
+      "seen": {
+        "before": "7 of 12",
+        "afterEnter": "8 of 12",
+        "afterSpace": "9 of 12",
+        "focus": "dess-next"
+      }
+    },
+    {
+      "name": "the keyboard: where Tab goes from Next, eight times",
+      "seen": ["dess-restart", "dess-play", "dess-speed", "dess-repair", "dess-seek", "dess-job", "SUMMARY", "PRE"]
+    },
+    {
+      "name": "the keyboard: the arrow keys on the range",
+      "seen": {
+        "before": "9",
+        "after": "11",
+        "snapshot": "11 of 12",
+        "text": "Committed 11"
+      }
+    },
+    {
+      "name": "the keyboard: a choice in the scenario list",
+      "seen": {
+        "labels": [
+          "E0: Walkthrough - default",
+          "E3-NOOP: No-op and stale events",
+          "scaled: Busy service / outages",
+          "five: Five servers",
+          "W6: W6 reference trace - advanced"
+        ],
+        "before": "E0",
+        "afterArrow": "E0",
+        "typed": "n",
+        "afterTyping": "E3-NOOP",
+        "scenes": 1,
+        "focus": "dess-scenario",
+        "refusal": null
+      }
+    },
+    {
+      "name": "Play, then a press of Next while it runs",
+      "seen": {
+        "playing": {
+          "snapshot": "1 of 12",
+          "button": "Pause / aria-pressed true"
+        },
+        "afterNext": {
+          "snapshot": "2 of 12",
+          "button": "Play / aria-pressed false"
+        },
+        "oneAndAHalfSecondsLater": "2 of 12"
+      }
+    },
+    {
+      "name": "Play, then the panel is routed away from and back",
+      "seen": {
+        "before": "1 of 12",
+        "panelActiveWhileAway": false,
+        "afterReturn": "1 of 12",
+        "button": "Play / aria-pressed false",
+        "note": "a snapshot that is the same before and after means nothing ticked while the panel was hidden, and the button not pressed means that it did not resume"
+      }
+    },
+    {
+      "name": "focus after a route away and back",
+      "seen": {
+        "before": "dess-next",
+        "after": "BODY"
+      }
+    },
+    {
+      "name": "a switch of scenario, the five-server scenario and back",
+      "seen": [
+        {
+          "id": "five",
+          "scenes": 1,
+          "servers": 5,
+          "refusal": null,
+          "focus": "BODY"
+        },
+        {
+          "id": "E0",
+          "scenes": 1,
+          "servers": 2,
+          "refusal": null,
+          "focus": "BODY"
+        }
+      ]
+    },
+    {
+      "name": "a failed write during a step, and the repair",
+      "seen": {
+        "failed": {
+          "display": "Up to date",
+          "error": "The simulator could not draw: label: JsValue(InvalidStateError: an injected failure of call 1, setAttribute\ncount@http://127.0.0.1:63170/:63:15\nwrap/prototype[method]@http://127.0.0.1:63170/:85:12\n__wbg_get_imports/__wbg_setAttribute_9e7d603908f63705/<@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:845:18\nhandleError@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1252:18\n__wbg_setAttribute_9e7d603908f63705@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:844:66\nsvg_dom_graph_demo.wasm.<web_sys[b56fa8e7b6b1cade]::features::gen_Element::Element>::set_attribute::__wbg_setAttribute_9e7d603908f63705 externref shim@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4842]:0x2e4392\nsvg_dom_graph_demo.wasm.<web_sys[b56fa8e7b6b1cade]::features::gen_Element::Element>::set_attribute@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4327]:0x2df970\nsvg_dom_graph_demo.wasm.<service_sim[43b0cec4f7f5db9e]::surface::Surface>::write@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[749]:0x19c0dc\nsvg_dom_graph_demo.wasm.<service_sim[43b0cec4f7f5db9e]::host::PageHost as service_sim[43b0cec4f7f5db9e]::controller::host::Host>::draw@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[1640]:0x247e2f\nsvg_dom_graph_demo.wasm.<svg_dom_graph_demo[5aa5746115c27453]::service_sim::dom::PanelHost as service_sim[43b0cec4f7f5db9e]::controller::host::Host>::draw@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[2850]:0x2afaea\nsvg_dom_graph_demo.wasm.<service_sim[43b0cec4f7f5db9e]::controller::inner::Inner<svg_dom_graph_demo[5aa5746115c27453]::service_sim::dom::PanelHost, service_sim[43b0cec4f7f5db9e]::host::BrowserScheduler>>::render_then_commit@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[627]:0x1704b4\nsvg_dom_graph_demo.wasm.<service_sim[43b0cec4f7f5db9e]::controller::inner::Inner<svg_dom_graph_demo[5aa5746115c27453]::service_sim::dom::PanelHost, service_sim[43b0cec4f7f5db9e]::host::BrowserScheduler>>::step_next@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[412]:0x1005cd\nsvg_dom_graph_demo.wasm.svg_dom_graph_demo[5aa5746115c27453]::service_sim::controls::wire::{closure#1}@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[2354]:0x28e881\nsvg_dom_graph_demo.wasm.svg_dom_graph_demo[5aa5746115c27453]::service_sim::controls::wire::{closure#0}::{closure#0}@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4338]:0x2dfc1e\nsvg_dom_graph_demo.wasm.wasm_bindgen[7b0a4a0adf17f3da]::convert::closures::_::invoke::<web_sys[b56fa8e7b6b1cade]::features::gen_Event::Event, (), true>@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4614]:0x2e2bc6\nsvg_dom_graph_demo.wasm.wasm_bindgen[7b0a4a0adf17f3da]::convert::closures::_::invoke::<web_sys[b56fa8e7b6b1cade]::features::gen_Event::Event, (), true> externref shim@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4818]:0x2e41ba\nwasm_bindgen_7b0a4a0adf17f3da___convert__closures_____invoke___web_sys_b56fa8e7b6b1cade___features__gen_Event__Event______true_@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1123:10\nreal@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1299:20\n)",
+          "snapshot": "0 of 12",
+          "focus": "dess-next",
+          "injection": {
+            "all": [
+              {
+                "label": false,
+                "method": "setAttribute",
+                "name": "aria-label",
+                "tag": "g"
+              }
+            ],
+            "counted": 64,
+            "fired": {
+              "label": false,
+              "method": "setAttribute",
+              "name": "aria-label",
+              "tag": "g"
+            }
+          }
+        },
+        "afterRepair": {
+          "display": "Up to date",
+          "error": null,
+          "snapshot": "0 of 12",
+          "focus": "dess-repair"
+        }
+      }
+    },
+    {
+      "name": "a failed write during a switch of scenario, and a second try",
+      "seen": {
+        "was": "E0",
+        "failed": {
+          "list": "E0",
+          "scenes": 1,
+          "refusal": "The scenario could not be changed: Build failed: host: JsValue(InvalidStateError: an injected failure of call 3, setAttribute\ncount@http://127.0.0.1:63170/:63:15\nwrap/prototype[method]@http://127.0.0.1:63170/:85:12\n__wbg_get_imports/__wbg_setAttribute_9e7d603908f63705/<@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:845:18\nhandleError@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1252:18\n__wbg_setAttribute_9e7d603908f63705@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:844:66\nsvg_dom_graph_demo.wasm.<web_sys[b56fa8e7b6b1cade]::features::gen_Element::Element>::set_attribute::__wbg_setAttribute_9e7d603908f63705 externref shim@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4842]:0x2e4392\nsvg_dom_graph_demo.wasm.<web_sys[b56fa8e7b6b1cade]::features::gen_Element::Element>::set_attribute@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4327]:0x2df970\nsvg_dom_graph_demo.wasm.<svg_dom_graph_demo[5aa5746115c27453]::service_sim::dom::DomSessions as service_sim[43b0cec4f7f5db9e]::session::SessionHost>::build@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[307]:0xa6858\nsvg_dom_graph_demo.wasm.<service_sim[43b0cec4f7f5db9e]::session::Coordinator<svg_dom_graph_demo[5aa5746115c27453]::service_sim::dom::DomSessions>>::switch@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[361]:0xd99ce\nsvg_dom_graph_demo.wasm.svg_dom_graph_demo[5aa5746115c27453]::service_sim::controls::wire::{closure#8}@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[531]:0x1460b3\nsvg_dom_graph_demo.wasm.svg_dom_graph_demo[5aa5746115c27453]::service_sim::controls::wire::{closure#0}::{closure#0}@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4338]:0x2dfc1e\nsvg_dom_graph_demo.wasm.wasm_bindgen[7b0a4a0adf17f3da]::convert::closures::_::invoke::<web_sys[b56fa8e7b6b1cade]::features::gen_Event::Event, (), true>@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4614]:0x2e2bc6\nsvg_dom_graph_demo.wasm.wasm_bindgen[7b0a4a0adf17f3da]::convert::closures::_::invoke::<web_sys[b56fa8e7b6b1cade]::features::gen_Event::Event, (), true> externref shim@http://127.0.0.1:63170/pkg/svg_dom_graph_demo_bg.wasm:wasm-function[4818]:0x2e41ba\nwasm_bindgen_7b0a4a0adf17f3da___convert__closures_____invoke___web_sys_b56fa8e7b6b1cade___features__gen_Event__Event______true_@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1123:10\nreal@http://127.0.0.1:63170/pkg/svg_dom_graph_demo.js:1299:20\n@http://127.0.0.1:63170/:2:79\n@http://127.0.0.1:63170/:3:8\n). The previous scenario is still shown.",
+          "injection": {
+            "all": [
+              {
+                "label": false,
+                "method": "setAttribute",
+                "name": "inert",
+                "tag": "div"
+              }
+            ],
+            "counted": 6,
+            "fired": {
+              "label": false,
+              "method": "setAttribute",
+              "name": "inert",
+              "tag": "div"
+            }
+          }
+        },
+        "secondTry": {
+          "list": "five",
+          "refusal": null,
+          "scenes": 1
+        }
+      }
+    },
+    {
+      "name": "the layout in the viewport",
+      "seen": {
+        "controlsOutsideTheViewportSideways": [],
+        "inner": [500, 759],
+        "pageScrollsSideways": false,
+        "smallestControl": 3,
+        "stage": [272, 0, 181, 86],
+        "svg": [273, 1, 179, 84]
+      }
+    },
+    {
+      "name": "a screenshot was kept",
+      "seen": "dess/demo-panel/p4/evidence/firefox-interaction-narrow.png"
+    }
+  ]
+}
