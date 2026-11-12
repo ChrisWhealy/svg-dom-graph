@@ -1,7 +1,7 @@
 {
   "identity": {
-    "measured_at": "2026-11-11T16:26:55.594Z",
-    "git_sha": "d652bae891a6d03d855838c868a1cf3bba83dfb1",
+    "measured_at": "2026-11-12T10:09:15.358Z",
+    "git_sha": "2d8c271d8087d3d25fb5de8bd0d1bde18690785c",
     "git_dirty": false,
     "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
@@ -19,7 +19,7 @@
     "observations": {
       "mode": "none (control)",
       "built": true,
-      "elements": 135,
+      "elements": 140,
       "observed": {
         "connected": true,
         "checkVisibility": true,
@@ -34,7 +34,7 @@
         "boxIsFinite": true,
         "viewBox": "0 0 1000 480",
         "contentGroups": 1,
-        "textCount": 54,
+        "textCount": 59,
         "textMeasurable": true,
         "labelCount": 32,
         "presence": "Live",
@@ -49,14 +49,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },
@@ -104,7 +104,7 @@
     "opacity_inert": {
       "mode": "opacity_inert",
       "built": true,
-      "elements": 135,
+      "elements": 140,
       "observed": {
         "connected": true,
         "checkVisibility": true,
@@ -119,7 +119,7 @@
         "boxIsFinite": true,
         "viewBox": "0 0 1000 480",
         "contentGroups": 1,
-        "textCount": 54,
+        "textCount": 59,
         "textMeasurable": true,
         "labelCount": 32,
         "presence": "Live",
@@ -191,7 +191,7 @@
           "boxIsFinite": true,
           "viewBox": "0 0 1000 480",
           "contentGroups": 1,
-          "textCount": 54,
+          "textCount": 59,
           "textMeasurable": true,
           "labelCount": 32,
           "presence": "Live",
@@ -205,14 +205,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },
@@ -308,7 +308,7 @@
     "opacity_inert_absolute": {
       "mode": "opacity_inert_absolute",
       "built": true,
-      "elements": 135,
+      "elements": 140,
       "observed": {
         "connected": true,
         "checkVisibility": true,
@@ -323,7 +323,7 @@
         "boxIsFinite": true,
         "viewBox": "0 0 1000 480",
         "contentGroups": 1,
-        "textCount": 54,
+        "textCount": 59,
         "textMeasurable": true,
         "labelCount": 32,
         "presence": "Live",
@@ -395,7 +395,7 @@
           "boxIsFinite": true,
           "viewBox": "0 0 1000 480",
           "contentGroups": 1,
-          "textCount": 54,
+          "textCount": 59,
           "textMeasurable": true,
           "labelCount": 32,
           "presence": "Live",
@@ -409,14 +409,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },
@@ -512,7 +512,7 @@
     "offscreen_inert": {
       "mode": "offscreen_inert",
       "built": true,
-      "elements": 135,
+      "elements": 140,
       "observed": {
         "connected": true,
         "checkVisibility": true,
@@ -527,7 +527,7 @@
         "boxIsFinite": true,
         "viewBox": "0 0 1000 480",
         "contentGroups": 1,
-        "textCount": 54,
+        "textCount": 59,
         "textMeasurable": true,
         "labelCount": 32,
         "presence": "Live",
@@ -597,7 +597,7 @@
           "boxIsFinite": true,
           "viewBox": "0 0 1000 480",
           "contentGroups": 1,
-          "textCount": 54,
+          "textCount": 59,
           "textMeasurable": true,
           "labelCount": 32,
           "presence": "Live",
@@ -611,14 +611,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },
@@ -715,7 +715,7 @@
     "observations": {
       "mode": "opacity_aria_hidden",
       "built": true,
-      "elements": 135,
+      "elements": 140,
       "observed": {
         "connected": true,
         "checkVisibility": true,
@@ -730,7 +730,7 @@
         "boxIsFinite": true,
         "viewBox": "0 0 1000 480",
         "contentGroups": 1,
-        "textCount": 54,
+        "textCount": 59,
         "textMeasurable": true,
         "labelCount": 32,
         "presence": "Live",
@@ -805,7 +805,7 @@
           "boxIsFinite": true,
           "viewBox": "0 0 1000 480",
           "contentGroups": 1,
-          "textCount": 54,
+          "textCount": 59,
           "textMeasurable": true,
           "labelCount": 32,
           "presence": "Live",
@@ -819,14 +819,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },
@@ -873,14 +873,14 @@
           "names": 33,
           "exposed": 33,
           "exposedNames": [
-            "Waiting. Output to S0. Output to S1. Output to S2.",
-            "S0. Input from Waiting.",
-            "S1. Input from Waiting.",
-            "S2. Input from Waiting.",
-            "u64 data grid, 2 rows by 4 columns, 8 values",
+            "Job dispatch. Output to S0. Output to S1. Output to S2.",
+            "S0. Input from Job dispatch.",
+            "S1. Input from Job dispatch.",
+            "S2. Input from Job dispatch.",
+            "u64 data grid, 4 rows by 2 columns, 8 values",
             "row 0, column 0: 0",
             "row 0, column 1: 0",
-            "row 0, column 2: 0"
+            "row 1, column 0: 0"
           ],
           "tabbableProbe": true
         },

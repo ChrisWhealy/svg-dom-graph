@@ -1,6 +1,6 @@
 {
-  "measured_at": "2026-11-11T19:38:02.501Z",
-  "git_sha": "55734a7deebb3ba0cb364206851c73da38069602",
+  "measured_at": "2026-11-12T10:24:01.148Z",
+  "git_sha": "2d8c271d8087d3d25fb5de8bd0d1bde18690785c",
   "git_dirty": true,
   "caught": 10,
   "total": 10,
@@ -9,7 +9,7 @@
       "name": "taking the panel down leaves the page lifecycle listeners on",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19311,\"listeners\":114,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":536,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19298,\"listeners\":114,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":536,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
     },
     {
       "name": "taking the panel down leaves the watch on the gallery stage on",
@@ -33,7 +33,7 @@
       "name": "taking the panel down leaves what the build wrote into the markup",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19337,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19324,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
     },
     {
       "name": "the panel is not marked as unbuilt when it is taken down",
@@ -45,7 +45,7 @@
       "name": "taking the panel down leaks one JavaScript object a time, so that the table of externrefs does not grow",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19311,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":534,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
+      "first_failure": "FAIL after cycle 1 the counts are not the baseline: {\"n\":1,\"baseline\":{\"elements\":19298,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":534,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"f"
     },
     {
       "name": "a callback that is kept after the panel is taken down changes a text and adds no element",

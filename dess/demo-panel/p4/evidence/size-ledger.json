@@ -1,5 +1,5 @@
 {
-  "measured_at": "2026-11-11T16:21:32.930Z",
+  "measured_at": "2026-11-12T10:24:27.721Z",
   "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
   "command": "cargo run -p demo-server -- --build-only",
   "before": {
@@ -9,17 +9,17 @@
     "gzip": 2414830
   },
   "after": {
-    "commit": "41beb8e867e9735bfab7200ce44858b7ddc105a3",
+    "commit": "2d8c271d8087d3d25fb5de8bd0d1bde18690785c",
     "dirty": true,
     "file": "svg_dom_graph_demo_bg.wasm",
-    "bytes": 9915071,
-    "gzip": 2611905
+    "bytes": 9874789,
+    "gzip": 2615263
   },
   "delta": {
-    "bytes": 731448,
-    "bytes_percent": 7.96,
-    "gzip_bytes": 197075,
-    "gzip_percent": 8.16
+    "bytes": 691166,
+    "bytes_percent": 7.53,
+    "gzip_bytes": 200433,
+    "gzip_percent": 8.3
   },
   "crates_added": [
     "service-sim 0.1.0",

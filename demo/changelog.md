@@ -83,6 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update top-level README (`7d25d1c`)
 - Refactor all the CDP Integration Test modules (`ecc8338`)
 - Refactor all other modules > 1000 lines (`c33aacb`)
+- Refresh DESS evidence from `dess/gather-evidence.mjs` (``)
 
 ### Fixed
 
@@ -171,4 +172,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P4: Prevent publication from losing focus after the final controller check fails (`2c84797`)
 - DESS Demo P4: G20 measure `externref` leaks from occupied references not just table capacity (`55734a7`)
 - DESS Demo P4: G20 Strengthen stale-callback assertion (`3efd783`)
-- Correct Failing nightly run of W6 Service Layer C (``)
+- Correct Failing nightly run of W6 Service Layer C (`2d8c271`)

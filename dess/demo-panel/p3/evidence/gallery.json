@@ -1,7 +1,7 @@
 {
-  "measured_at": "2026-11-11T19:59:36.446Z",
-  "git_sha": "3efd7831ee99a597e06722fac8cb16c919c9455c",
-  "git_dirty": true,
+  "measured_at": "2026-11-12T10:09:53.661Z",
+  "git_sha": "2d8c271d8087d3d25fb5de8bd0d1bde18690785c",
+  "git_dirty": false,
   "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
   "tests": [
     {
@@ -38,7 +38,7 @@
         },
         {
           "ok": true,
-          "text": "and there is one frame for each of the 9 files that the registry lists (9)"
+          "text": "and there is one frame for each of the 11 files that the registry lists (11)"
         },
         {
           "ok": true,
@@ -360,7 +360,7 @@
         },
         {
           "ok": true,
-          "text": "the real timer, once at 1 Hz, committed a slice (1024 ms, which is told and not judged)"
+          "text": "the real timer, once at 1 Hz, committed a slice (1022 ms, which is told and not judged)"
         },
         {
           "ok": true,
@@ -1088,7 +1088,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2333} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2439} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2504})"
         },
         {
           "ok": true,
@@ -1112,7 +1112,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2504} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2504})"
         },
         {
           "ok": true,
@@ -1136,7 +1136,7 @@
         },
         {
           "ok": true,
-          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2398})"
+          "text": "and giving the focus back did not scroll the page or move the scene ({\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2504} then {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2504})"
         },
         {
           "ok": true,
@@ -1442,7 +1442,7 @@
         },
         {
           "ok": true,
-          "text": "after 3 further cycles the elements, listeners, observers, held externref slots, lost externref slots, table capacity and waiting callbacks are exactly the baseline ({\"elements\":19311,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"frames\":0}})"
+          "text": "after 3 further cycles the elements, listeners, observers, held externref slots, lost externref slots, table capacity and waiting callbacks are exactly the baseline ({\"elements\":19298,\"listeners\":111,\"observers\":1,\"externrefs\":{\"capacity\":2052,\"held\":532,\"undefinedSlots\":2},\"held\":{\"timers\":0,\"frames\":0}})"
         },
         {
           "ok": true,

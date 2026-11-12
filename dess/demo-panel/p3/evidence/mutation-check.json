@@ -1,9 +1,9 @@
 {
-  "measured_at": "2026-11-11T15:57:28.999Z",
-  "git_sha": "79e5efef9b3d54c82f3b3f7b664b630b4736b54f",
+  "measured_at": "2026-11-12T10:33:17.168Z",
+  "git_sha": "2d8c271d8087d3d25fb5de8bd0d1bde18690785c",
   "git_dirty": true,
-  "caught": 21,
-  "total": 21,
+  "caught": 23,
+  "total": 23,
   "mutations": [
     {
       "name": "a stop by hiding is not said",
@@ -51,7 +51,7 @@
       "name": "a candidate that was refused is left in the page",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL a failure at write 940 did not leave the old scene as it was: {\"before\":{\"select\":\"E0\",\"hosts\":[{\"id\":\"dess-host-5\",\"staged\":false}],\"svgs\":1,\"servers\":2,\"max\":\"12\",\"snapshot\":\"0 of 12\",\"errorSho"
+      "first_failure": "FAIL a failure at write 944 did not leave the old scene as it was: {\"before\":{\"select\":\"E0\",\"hosts\":[{\"id\":\"dess-host-5\",\"staged\":false}],\"svgs\":1,\"servers\":2,\"max\":\"12\",\"snapshot\":\"0 of 12\",\"errorSho"
     },
     {
       "name": "the scene that was replaced is left in the page",
@@ -63,7 +63,7 @@
       "name": "the dispatch node is not at the common midline of the servers",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL E0: the dispatch node's midline is the common midline of the 2 servers (854.0, 813.5)"
+      "first_failure": "FAIL E0: the dispatch node's midline is the common midline of the 2 servers (835.0, 794.5)"
     },
     {
       "name": "a connector is not forced to enter the west side",
@@ -99,13 +99,13 @@
       "name": "a message is put above the scene, so that it pushes the scene down",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL a failure at write 1 moved the scene or scrolled the page: {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,334],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,334]],\"document\":2352} then {\"rect\":[2"
+      "first_failure": "FAIL a failure at write 1 moved the scene or scrolled the page: {\"rect\":[273,222.59375,1179,554.296875],\"scrolls\":[[0,315],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,315]],\"document\":2439} then {\"rect\":[2"
     },
     {
       "name": "five servers are drawn at the pitch that four have room for",
       "built": true,
       "caught": true,
-      "first_failure": "FAIL five: every server box is inside the scene (801,882,963,1044,1125 of 1111)"
+      "first_failure": "FAIL five: every server box is inside the scene (782,863,944,1025,1106 of 1092)"
     },
     {
       "name": "the surface refuses a fifth server",
@@ -124,6 +124,18 @@
       "built": true,
       "caught": true,
       "first_failure": "FAIL snapshot 3: S0 is down and its box is rgb(238, 244, 255), not rgb(254, 202, 202)"
+    },
+    {
+      "name": "the saved focus is let go as soon as the readback passes",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL and the focus is back on a node inside the old scene (null)"
+    },
+    {
+      "name": "where the focus has to be is not checked",
+      "built": true,
+      "caught": true,
+      "first_failure": "FAIL the switch is refused at the handoff (The scenario could not be changed: Publish failed: the focus is still in the old scene. The previous)"
     },
     {
       "name": "a refusal is not shown in the error area",
