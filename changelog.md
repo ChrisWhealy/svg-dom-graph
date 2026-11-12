@@ -24,7 +24,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 ## Fixed
 
 - `Scene::set_edge_label` left partial artefacts in the document if a write failed during drawing (`885266b`)
-- Correct failing CI test (``)
+- Correct failing CI test (`8a03d21`)
 
 # [Released]
 
