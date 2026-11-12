@@ -50,15 +50,13 @@ const describeSamples = (binary, name, unit, values, mechanism) => {
   if (run.status !== 0) throw new Error(`describing ${name}: ${run.stderr}`)
   return JSON.parse(run.stdout)
 }
-const count = (name, unit, value, mechanism) => ({
-  name,
-  layer: 'C',
-  status: 'measured',
-  unit,
-  kind: 'count',
-  value,
-  mechanism
-})
+/** The units that the result schema allows a measured count to have. A time is a latency or a piece of configuration, and is never a count. */
+export const COUNT_UNITS = ['count', 'bytes']
+export const count = (name, unit, value, mechanism) => {
+  if (!COUNT_UNITS.includes(unit))
+    throw new Error(`${name} is a count in ${unit}, and the result schema allows only ${COUNT_UNITS.join(' or ')}`)
+  return { name, layer: 'C', status: 'measured', unit, kind: 'count', value, mechanism }
+}
 const unavailable = (name, reason) => ({ name, layer: 'C', status: 'unavailable', reason })
 
 /**
@@ -314,20 +312,12 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
       )
     if (playWanted && !rejected) {
       outcome.metrics.push(
-        count(
-          'simulation.play.interval',
-          'ms',
-          INTERVAL_MS,
-          'the configured playback interval, recorded apart from the latency'
-        )
-      )
-      outcome.metrics.push(
         describeSamples(
           binary,
           'simulation.play.click_to_timer_entry',
           'ms',
           clickToTimer,
-          'the wall clock from the real Play click to the entry of the timer callback, which includes the interval and is never part of the latency'
+          `the wall clock from the real Play click to the entry of the timer callback, which includes the configured playback interval of ${INTERVAL_MS} ms and is never part of the latency`
         )
       )
       outcome.samples['simulation.play.click_to_timer_entry'] = clickToTimer
@@ -340,7 +330,9 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
           'simulation.next.frames_unattributed',
           'count',
           nextLost,
-          nextLost ? `the trace could not place these in a frame: ${lostReasons}` : 'every measured click was placed in a frame'
+          nextLost
+            ? `the trace could not place these in a frame: ${lostReasons}`
+            : 'every measured click was placed in a frame'
         )
       )
     if (playWanted && !rejected)
@@ -349,7 +341,9 @@ export const runSimulationC = async ({ binary, manifest, seed, trace, series = [
           'simulation.play.frames_unattributed',
           'count',
           playLost,
-          playLost ? `the trace could not place these in a frame: ${lostReasons}` : 'every measured tick was placed in a frame'
+          playLost
+            ? `the trace could not place these in a frame: ${lostReasons}`
+            : 'every measured tick was placed in a frame'
         )
       )
     if (next.length) outcome.samples['simulation.next.input_to_presentation'] = next
