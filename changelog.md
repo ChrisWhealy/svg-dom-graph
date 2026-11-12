@@ -11,6 +11,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.51] - 2026-11-12
 
 ## Added
@@ -25,8 +27,6 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 - `Scene::set_edge_label` left partial artefacts in the document if a write failed during drawing (`885266b`)
 - Correct failing CI test (`8a03d21`)
-
-# [Released]
 
 ## [0.2.50] - 2026-11-10
 
