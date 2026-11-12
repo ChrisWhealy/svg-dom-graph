@@ -1,0 +1,37 @@
+# The release gate (docs/release-qualification.md): what has to hold of the exact commit that is about to be published.
+#
+# It requires that the commit's own CI run was a success, and then qualifies the proposed package from a clean tree with --release: the package
+# checks, the minimum Rust version, the documentation, the dependencies, the API against the latest published release, and an independent consumer
+# (the dess-app repository) built against the package, in place of the registry's copy.
+#
+# Started by hand, or by pushing a tag `v<version>`. It publishes nothing. After the publish, dess-app is moved to the new version and its own CI
+# has to pass against the registry (dess-app/scripts/adopt.sh).
+name: release-qualification
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  qualify:
+    name: release qualification of ${{ github.sha }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: The commit's own CI run was green
+        run: .github/scripts/require-green-ci.sh "$GITHUB_SHA"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny,cargo-semver-checks
+      - name: The independent consumer
+        run: git clone --depth 1 https://github.com/ChrisWhealy/dess-app "$RUNNER_TEMP/dess-app"
+      - name: Qualify the package, and the consumer against it
+        run: scripts/release-check.sh --release --consumer "$RUNNER_TEMP/dess-app"
