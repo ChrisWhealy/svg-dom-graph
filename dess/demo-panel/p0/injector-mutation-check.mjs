@@ -37,8 +37,8 @@ const MUTATIONS = [
   ],
   [
     'exception ignored',
-    '      if (armed.counted >= armed.index && armed.counted < armed.index + armed.times) {',
-    '      if (detach === null && armed.counted >= armed.index && armed.counted < armed.index + armed.times) {'
+    '      if (\n        (armed.counted >= armed.index && armed.counted < armed.index + armed.times) ||',
+    '      if (\n        (detach === null && armed.counted >= armed.index && armed.counted < armed.index + armed.times) ||'
   ],
   ['leaves the host', '      detach = null\n      return report', '      return report']
 ]
