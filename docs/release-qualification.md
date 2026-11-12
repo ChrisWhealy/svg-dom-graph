@@ -62,6 +62,16 @@ These are in addition to the acceptance gate, and are made on the commit that wi
 7. **The consumer against the published release.**<br>In [`dess-app`](https://github.com/ChrisWhealy/dess-app), `scripts/adopt.sh <version>` moves it to the version, updates its lock file and runs everything that its CI runs, with no local patch.
    Its CI then has to pass.
 
+   By hand, the same thing is the following, and the script is only these steps with the checks that CI also runs.
+
+   ```sh
+   # in dess-app: set svg-dom-graph = "<version>" in app/Cargo.toml and crates/service-sim/Cargo.toml, then
+   cargo update -p svg-dom-graph --precise <version>   # Cargo.lock must name the registry as the source
+   ```
+
+   Commit and push, and the application's CI runs the formatting, Clippy, the native tests, the site build, the browser tests and `cargo deny` against the registry's copy.
+   The release is done when that run is green.
+
 The `release-qualification` workflow does the checks of steps 3 and 4, and requires that the commit's CI run was green.
 It is started by hand, or by a `v*` tag, and it publishes nothing.
 

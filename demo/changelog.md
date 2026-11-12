@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P4: Evidence gathered by running script (`da62de2`)
 - Run `perf-baseline.yml` in CI to perform endurance soak test (`90bf506`)
 - Gather test evidence for Firefox and Safari browsers (`a7c9d7e`)
+- Update release qualification docs (``)
 
 ### Changed
 
@@ -175,4 +176,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P4: G20 measure `externref` leaks from occupied references not just table capacity (`55734a7`)
 - DESS Demo P4: G20 Strengthen stale-callback assertion (`3efd783`)
 - Correct Failing nightly run of W6 Service Layer C (`2d8c271`)
-- Correct Failing CI script (``)
+- Correct Failing CI script (`9b009fa`)
