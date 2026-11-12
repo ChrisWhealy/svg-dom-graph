@@ -324,6 +324,12 @@ mod exports {
         crate::recovery::build(manifest_json, slot, labelled)
     }
 
+    /// Puts a data node, or a nested scene for a container node, beside the scene on a slot. See `recovery`.
+    #[wasm_bindgen]
+    pub fn recovery_prepare(slot: u32, kind: &str) -> String {
+        crate::recovery::prepare(slot, kind)
+    }
+
     /// What the scene on a slot was asked to do, as the reference model has it. See `recovery`.
     #[wasm_bindgen]
     pub fn recovery_intend(slot: u32, op_json: &str) -> String {

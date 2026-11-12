@@ -346,6 +346,12 @@ jobs:
             run: node perf/runner/selftest-regression.mjs
           - name: simulator runners refuse, reject and fail
             run: node dess/s5/selftest.mjs --skip-classification
+          # The library's failure contracts, at every DOM call of each operation that can fail part way, on Layer B and C. A contract that no longer holds
+          # fails here, and so does a sweep that could not tell a library with no rollback from one with it.
+          - name: recovery sweeps hold the library's failure contracts
+            run: |
+              node perf/runner/run.mjs perf/manifests/w5-recovery-small.toml --mode recovery --out-dir target/recovery
+              node perf/runner/selftest-recovery.mjs
           # The session coordinator's tests are shown to fail when the coordinator is wrong: seventeen small breakages, one at a time, in a copy of the tree.
           - name: gallery panel session coordinator mutation check
             run: node dess/demo-panel/p1/mutation-check.mjs

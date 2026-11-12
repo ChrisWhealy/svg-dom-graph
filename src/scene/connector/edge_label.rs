@@ -86,6 +86,8 @@ impl EdgeLabel {
     /// `name` is the label's accessible name, which says which edge it is on.
     fn draw(svg: &SvgRoot, edge_index: usize, content: &str, name: &str) -> Result<Self, Error> {
         let text = svg.text(Point::origin(), content)?;
+        // Each of these is in the document as soon as it is made, so a failure after any of them has to take all of them out again.
+        let mut made = vec![text.clone()];
         let drawn = (|| -> Result<Self, Error> {
             text.set_font_family(LABEL_FONT_FAMILY)?;
             text.set_font_size(LABEL_FONT_SIZE)?;
@@ -96,12 +98,14 @@ impl EdgeLabel {
             let size = measured_box(&text)?;
 
             let background = svg.rect(Point::origin(), size)?;
+            made.push(background.clone());
             background.set_fill(EDGE_LABEL_FILL)?;
             background.set_stroke(EDGE_LABEL_STROKE)?;
             background.set_stroke_width(1.0)?;
             background.set_attr("rx", "3")?;
 
             let group = svg.group()?;
+            made.push(group.clone());
             group.append(&background)?;
             group.append(&text)?;
             centre_text(&text, size)?;
@@ -122,7 +126,9 @@ impl EdgeLabel {
             })
         })();
         if drawn.is_err() {
-            text.remove();
+            for node in &made {
+                node.remove();
+            }
         }
         drawn
     }

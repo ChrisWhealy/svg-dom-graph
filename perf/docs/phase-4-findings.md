@@ -58,3 +58,46 @@ The proof is in three places:
   It checks that the scene is as it was, and that the retry gives what an edge that never failed gives.
   It fails on the original library at the fifth write, and passes on the fixed one, in the 511 browser tests and 84 unit tests that pass in Chrome;
 - `selftest-recovery.mjs` shows that a library without the rollback is caught: with removal made to do nothing, 7 of the 10 fail.
+
+## A finding that was fixed: `set_edge_label` left its label's box in the document
+
+The sweep of `set_edge_label` found that a write that failed while the label was being drawn left some of the label behind, which its documentation says it does not.
+The label is made of a text, a box and a group, and each is in the document as soon as it is made.
+Only the text was removed when a later write failed, so 16 of the 34 calls left a stray box or an empty group.
+Every element that the draw made is now removed again, and all 34 leave nothing.
+The label's own text and its box are not part of the model, so a checkpoint did not see them, and the document comparison did.
+
+## Coverage added after the first sweep
+
+These hold at every DOM call, on Layer B (`evidence` is not kept for them: run the manifest):
+
+| Point | Failures injected | Result |
+|---|---|---|
+| `edge_label_draw` | 34 | Each reported, each left nothing, each retry reached the reference |
+| `edge_label_placement` | 1 | The label was drawn and not placed, and the same text placed it |
+| `elbow_edge_construction` | 10 | Each left nothing |
+| `connector_type_redraw` | 1 | The edge was as it was |
+| `connector_type_label` | 2 | The new type was drawn and the label was where it was |
+| `data_node_construction` | 163 | Each left nothing |
+| `data_values_update` | 4 | Some cells written, the same values finished it, and the old values put the node back |
+| `operator_construction` | 63 | Each left nothing, the input edge included |
+| `container_construction` | 25 | Each left both scenes as they were |
+
+## Failures inside the rollback
+
+The rollback of a node, a label and a data node only removes elements, and removing makes no call that can fail.
+So there is nothing to inject, and the sweep says so.
+The rollback of an edge, and of an operator, which wires an edge, writes the accessible name of each node that the edge joins, and those writes can fail.
+
+1. **Adding an edge, and adding an operator.** Three second failures were injected for each.
+   Two left the scene as it was.
+   The third, at the second name that the rollback writes, left a node's accessible name with the relationship in it for an edge that was not made.
+   The scene's checkpoint differed in its topology as the accessibility tree reports it, and nothing else changed.
+   Calling the operation again reached the state of a call that met no failure.
+   That is a state that is not documented and is not quite valid, since a name says that an edge exists.
+   It is repaired by calling again, as the others are, and nothing in the library says so.
+2. **Adding a container node.** A failure of the attach and then of the showing of the nested scene left it hidden, and nothing else changed.
+   That is the exception that the documentation names, and it is now a contract (`rollback_container_construction`).
+
+The first is left as a finding.
+Making the library's rollback of the names robust, or writing the state down as partly committed with its repair, is a decision for its owner.

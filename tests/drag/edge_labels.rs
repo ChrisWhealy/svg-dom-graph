@@ -4,7 +4,7 @@
 //! The placement rules themselves are checked without a browser, in `src/geometry/label`. These tests are about what
 //! reaches the page: the drawn label, where it ends up, and that it follows its connector.
 
-use crate::common::{FailingWrites, check, group_translate, make_svg, mutations_during};
+use crate::common::{FailingWrites, NthWriteFails, check, group_translate, make_svg, mutations_during};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     EdgeId, Error, NodeId,
@@ -491,6 +491,70 @@ fn a_label_that_failed_to_move_is_placed_again_by_a_move_that_changes_nothing() 
         transform_of("label-retry", 0)? != before,
         "the label was not placed again by a move that changed nothing",
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many elements the scene's `<svg>` holds, and how many of them are labels.
+fn census(id: &str) -> Result<(u32, u32), String> {
+    let svg = document()
+        .get_element_by_id(id)
+        .ok_or_else(|| format!("no svg with the id {id}"))?;
+    let all = svg.query_selector_all("*").map_err(|e| format!("{e:?}"))?.length();
+    let labels = svg
+        .query_selector_all("[data-svg-dom-graph-edge-label]")
+        .map_err(|e| format!("{e:?}"))?
+        .length();
+    Ok((all, labels))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A write that fails while a label is drawn leaves no part of it behind. A label that was drawn and attached and then
+/// failed to be placed is whole, and is the one that calling again places. The recovery sweep of the performance harness
+/// makes the same failures, and found the box and the group left behind before this was a rule.
+#[wasm_bindgen_test]
+fn a_write_that_fails_while_a_label_is_drawn_leaves_no_part_of_it_behind() -> Result<(), String> {
+    let _injector = NthWriteFails::install()?;
+    let make = |id: &str| -> Result<(Scene, EdgeId), String> {
+        let scene = new_scene(id)?;
+        let a = node(&scene, "A", 20.0, 40.0)?;
+        let b = node(&scene, "B", 300.0, 200.0)?;
+        let edge = scene.add_edge(a, b).map_err(e)?;
+        Ok((scene, edge))
+    };
+
+    let (twin, twin_edge) = make("label-sweep-twin")?;
+    let (bare, _) = census("label-sweep-twin")?;
+    NthWriteFails::arm(0)?;
+    twin.set_edge_label(twin_edge, Some("weight")).map_err(e)?;
+    let writes = NthWriteFails::disarm()?;
+    let (whole, whole_labels) = census("label-sweep-twin")?;
+    check(whole_labels == 1 && whole > bare, "the twin did not draw a label")?;
+    check(writes > 10, &format!("a label was drawn with only {writes} counted writes"))?;
+
+    for fail in 1..=writes {
+        let id = format!("label-sweep-{fail}");
+        let (scene, edge) = make(&id)?;
+        let before = census(&id)?;
+        NthWriteFails::arm(fail)?;
+        let result = scene.set_edge_label(edge, Some("weight"));
+        NthWriteFails::disarm()?;
+        check(result.is_err(), &format!("the failure of write {fail} was not reported"))?;
+        let after = census(&id)?;
+        // Either nothing was left, or the label is there whole, which is what a failure to place it leaves.
+        check(
+            after == before || after == (whole, 1),
+            &format!(
+                "write {fail} failed and left {after:?}, from {before:?}, where a whole label makes {:?}",
+                (whole, 1)
+            ),
+        )?;
+        scene.set_edge_label(edge, Some("weight")).map_err(e)?;
+        check(
+            census(&id)? == (whole, 1),
+            &format!("drawing the label again after write {fail} did not give the whole label"),
+        )?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

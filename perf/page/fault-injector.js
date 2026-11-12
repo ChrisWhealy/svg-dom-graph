@@ -11,6 +11,7 @@
 //
 //   __faults.record(true); ...; __faults.take()   describes every counted call that was made, in order
 //   __faults.arm(n); ...; __faults.disarm()       fails the nth counted call; gives how many were counted and which one failed
+//   __faults.arm(n, 1, g)                         also fails the call g calls after the nth, which is inside the rollback of the first failure
 //
 // A second mode puts a host in the document one write short of what a draw needs, and it is separate from the first. It is for the simulator's gallery
 // panel (design-specs/dess_demo.pdf, P0-F), whose draw has to meet a host that leaves in the middle of it:
@@ -56,7 +57,10 @@
       armed.counted++
       // The call that is armed fails, and with `times` more than one so do the calls straight after it, which is how a recovery that
       // itself meets a failure is tested. Only the first call that failed is reported.
-      if (armed.counted >= armed.index && armed.counted < armed.index + armed.times) {
+      if (
+        (armed.counted >= armed.index && armed.counted < armed.index + armed.times) ||
+        (armed.gap !== null && armed.counted === armed.index + armed.gap)
+      ) {
         if (armed.fired === null) armed.fired = call
         armed.all.push(call)
         throw new DOMException(`an injected failure of call ${armed.counted}, ${method}`, 'InvalidStateError')
@@ -266,8 +270,10 @@
       calls = []
       return taken
     },
-    arm: (index, times = 1) => {
-      armed = { index, times, counted: 0, fired: null, all: [] }
+    // With `gap`, the call that is `gap` calls after the failed one fails too, and the ones between it and the first do not. The calls just
+    // after a failure are the ones that the library's rollback makes, so this puts a second failure inside the rollback of the first.
+    arm: (index, times = 1, gap = null) => {
+      armed = { index, times, gap, counted: 0, fired: null, all: [] }
     },
     // Gives how many calls were counted while armed, and the one that failed, or null if fewer than `index` were made.
     suppressRemoval: on => {

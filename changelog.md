@@ -11,6 +11,12 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
+## [0.2.51] - 2026-11-12
+
+## Fixed
+
+- `Scene::set_edge_label` left partial artefacts in the document if a write failed during drawing (``)
+
 # [Released]
 
 ## [0.2.50] - 2026-11-10

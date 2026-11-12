@@ -66,6 +66,150 @@
       ]
     },
     {
+      "id": "edge_label_draw",
+      "operation": "Scene::set_edge_label, drawing a new label",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "A label that could not be drawn is not left behind. The label is drawn apart from the document, attached last, and removed again if attaching it fails, so the scene is as it was and the label count is unchanged.",
+      "differs": ["dom_identity"],
+      "retry": "Calling set_edge_label again with the same text.",
+      "sources": ["src/scene/connector/edge_label.rs:435-436", "src/scene/connector/edge_label.rs:464-468"]
+    },
+    {
+      "id": "edge_label_placement",
+      "operation": "Scene::set_edge_label, placing the label that was drawn",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "A label that could not be moved is where it was, and is moved the next time its connector is routed. The label is already drawn and attached, so the call returns the error and the label exists but is not placed.",
+      "differs": ["geometry"],
+      "retry": "Calling set_edge_label again with the text the label already has, which changes nothing and places the label again.",
+      "sources": [
+        "src/scene/connector/edge_label.rs:435-436",
+        "src/scene/connector/edge_label.rs:425-426",
+        "src/scene/connector/edge_label.rs:476-478"
+      ]
+    },
+    {
+      "id": "elbow_edge_construction",
+      "operation": "Scene::add_edge_with, with an elbow connector",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "Adding an edge is a transaction whatever its connector type: an elbow is routed and drawn by the same steps as a straight connector, and a failure at any write leaves the scene exactly as it was.",
+      "retry": "Calling add_edge_with again.",
+      "sources": ["src/scene/connector/mod.rs:395-406", "src/scene/connector/mod.rs:445-487"]
+    },
+    {
+      "id": "connector_type_redraw",
+      "operation": "Scene::set_connector_type, writing the new path",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "The stored connector type is only updated once the new path has actually been written. A failure of the path leaves the edge rendered and recorded exactly as it was before the call.",
+      "retry": "Calling set_connector_type again.",
+      "sources": ["src/scene/connector/mod.rs:551-554"]
+    },
+    {
+      "id": "connector_type_label",
+      "operation": "Scene::set_connector_type, placing the edge label after the redraw",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "The edge's label is placed after the redraw, and a failure there is returned, but the new type is already drawn and recorded: the call has partly succeeded. The label is where it was, and is placed again by the next call that places any label.",
+      "differs": ["geometry"],
+      "retry": "set_edge_label with the label's own text, since asking for the type the edge has is a no-op.",
+      "sources": ["src/scene/connector/mod.rs:555-559"]
+    },
+    {
+      "id": "data_node_construction",
+      "operation": "Scene::add_data_node",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "Drawing a node is a transaction: every element it made is removed again, the graph's model is only changed after the node is attached, and the scene is exactly as it was, so calling this again draws the node.",
+      "retry": "Calling add_data_node again.",
+      "sources": ["src/scene/node/data/construct.rs:55-58"]
+    },
+    {
+      "id": "data_values_update",
+      "operation": "Scene::set_data_values",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "The model commits the new values only once every cell has been written, so a failure part way leaves some cells rewritten and the old values in the model. Calling again with the same values finishes the change, and with the values the node held before puts the node back, in one call.",
+      "differs": ["content"],
+      "retry": "Calling set_data_values again with the same values, which writes every cell.",
+      "sources": ["src/scene/node/data/values.rs:78-82", "src/scene/node/data/values.rs:138-141"]
+    },
+    {
+      "id": "operator_construction",
+      "operation": "Scene::add_unary_operator_node, the node and its auto-wired input edge",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "A failure drawing the auto-wired input edge, after the node itself was already created, is rolled back too. The node is removed again, so a failed call never leaves a partial operator behind.",
+      "retry": "Calling add_unary_operator_node again.",
+      "sources": ["src/scene/node/operator/mod.rs:620-621", "src/scene/node/construction_guard.rs:5-24"]
+    },
+    {
+      "id": "container_construction",
+      "operation": "Scene::add_container_node, which takes a nested scene",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "Every fallible step happens before the child is folded into the scene tree, so a failed call leaves the child exactly as it was in every realistic case: its own standalone, focused root. The one exception is a failure to attach the box after the child's root was hidden, when the root is shown again and that is not itself guaranteed to succeed.",
+      "retry": "Calling add_container_node again.",
+      "sources": ["src/scene/node/container.rs:71-77"]
+    },
+    {
+      "id": "rollback_node_construction",
+      "operation": "Scene::add_node, when the rollback of a failure meets a failure of its own",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "The library says what a failure leaves, and nothing about a failure of the rollback that undoes it. The sweep breaks the operation at each DOM call, and then the rollback at each DOM call that it makes, and records what is left.",
+      "retry": "None is documented. The sweep records whether calling the operation again reaches the state of a call that met no failure.",
+      "sources": []
+    },
+    {
+      "id": "rollback_edge_construction",
+      "operation": "Scene::add_edge_with, when the rollback of a failure meets a failure of its own",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "The library says what a failure leaves, and nothing about a failure of the rollback that undoes it. The sweep breaks the operation at each DOM call, and then the rollback at each DOM call that it makes, and records what is left.",
+      "retry": "None is documented. The sweep records whether calling the operation again reaches the state of a call that met no failure.",
+      "sources": []
+    },
+    {
+      "id": "rollback_edge_label_draw",
+      "operation": "Scene::set_edge_label, drawing a new label, when the rollback of a failure meets a failure of its own",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "The library says what a failure leaves, and nothing about a failure of the rollback that undoes it. The sweep breaks the operation at each DOM call, and then the rollback at each DOM call that it makes, and records what is left.",
+      "retry": "None is documented. The sweep records whether calling the operation again reaches the state of a call that met no failure.",
+      "sources": []
+    },
+    {
+      "id": "rollback_data_node_construction",
+      "operation": "Scene::add_data_node, when the rollback of a failure meets a failure of its own",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "The library says what a failure leaves, and nothing about a failure of the rollback that undoes it. The sweep breaks the operation at each DOM call, and then the rollback at each DOM call that it makes, and records what is left.",
+      "retry": "None is documented. The sweep records whether calling the operation again reaches the state of a call that met no failure.",
+      "sources": []
+    },
+    {
+      "id": "rollback_operator_construction",
+      "operation": "Scene::add_unary_operator_node, when the rollback of a failure meets a failure of its own",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "The library says what a failure leaves, and nothing about a failure of the rollback that undoes it. The sweep breaks the operation at each DOM call, and then the rollback at each DOM call that it makes, and records what is left.",
+      "retry": "None is documented. The sweep records whether calling the operation again reaches the state of a call that met no failure.",
+      "sources": []
+    },
+    {
+      "id": "rollback_container_construction",
+      "operation": "Scene::add_container_node, when the rollback of a failure meets a failure of its own",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "If attaching the drawn box fails after the nested scene's root was hidden, the call shows the root again, and that attempt is not itself guaranteed to succeed. A failure of the box then leaves the nested scene hidden, and nothing else changed.",
+      "differs": ["dom_identity"],
+      "retry": "Calling add_container_node again, which hides the nested scene and draws the box.",
+      "sources": ["src/scene/node/container.rs:74-77"]
+    },
+    {
       "id": "scheduled_frame",
       "operation": "A view change written in an animation frame",
       "contract": "partly_committed",
@@ -126,7 +270,7 @@
       "contract": "partly_committed",
       "documented": "code",
       "says": "A failure part way through the cells leaves some cells rewritten and the node's values as they were, and marks the node. The next call, whatever values it asks for, writes every cell, changed or not, and clears the mark when it has written them all. Until finding F1 of the S0 audit was closed, a call that asked for the values the node still held changed nothing and left the node torn.",
-      "differs": ["content","accessibility"],
+      "differs": ["content", "accessibility"],
       "retry": "One call to Scene::set_data_values with the last committed values. The controller's repair is that call, as part of the full redraw.",
       "sources": ["src/scene/node/data/values.rs:77-84"]
     },
@@ -137,7 +281,7 @@
       "contract": "partly_committed",
       "documented": "code",
       "says": "A write that fails leaves the page partly written. No new slice is committed, the cursor and the model are as they were, playback is stopped, the page is marked dirty and one failure is reported. The controller then makes one immediate full redraw of the committed slice, and if that fails the page stays dirty and stopped.",
-      "differs": ["content","accessibility"],
+      "differs": ["content", "accessibility"],
       "retry": "Repair, which draws the committed slice again in full, and then the slice again.",
       "sources": ["service-sim/src/surface.rs:8-10", "service-sim/src/controller/inner.rs:166-167"]
     },

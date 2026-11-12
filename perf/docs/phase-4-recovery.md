@@ -29,6 +29,17 @@ A manifest names a fault point and what it expects (`nothing_committed`, `partly
 | `teardown` | Dropping the last handle with a frame pending | The frame is cancelled before its closure goes, the waiting view is written, the listeners are released | `frame_request.rs`, `scene_inner.rs` |
 | `mid_drag_teardown` | Dropping it between a pointer down and up | The handlers hold the scene weakly and do nothing once it is gone, and the grabbing cursor is taken off the node | `drag/handlers.rs`, `drag/style_restore.rs` |
 | `edge_construction` | `add_edge_with` | Nothing committed. Adding an edge is a transaction: no path left behind, neither name changed, the edge not in the graph. **This was undocumented, and not true, until the sweep found it and the library was fixed (below)** | `connector/mod.rs` (public) |
+| `edge_label_draw` | `set_edge_label`, drawing a new label | Nothing committed. A label that could not be drawn is not left behind. **The library left its box or its group in the document until the sweep found it** | `connector/edge_label.rs` (public) |
+| `edge_label_placement` | `set_edge_label`, placing the label | Partly committed. The label exists and is where it was, and calling again with its own text places it | `connector/edge_label.rs` (public) |
+| `elbow_edge_construction` | `add_edge_with` with an elbow connector | Nothing committed, as for a straight one | `connector/mod.rs` (public) |
+| `connector_type_redraw` | `set_connector_type`, the new path | Nothing committed. The type is recorded only after the path is written | `connector/mod.rs` (public) |
+| `connector_type_label` | `set_connector_type`, the label's place | Partly committed. The new type is drawn and recorded, and the label is where it was | `connector/mod.rs` (public) |
+| `data_node_construction` | `add_data_node` | Nothing committed. Drawing a node is a transaction | `node/data/construct.rs` (public) |
+| `data_values_update` | `set_data_values` | Partly committed. Some cells are written and the model keeps the old values. The same values again finish it, and the old values put the node back | `node/data/values.rs` (public) |
+| `operator_construction` | `add_unary_operator_node`, the node and its input edge | Nothing committed. A failure of the edge takes the node away again | `node/operator/mod.rs` (public) |
+| `container_construction` | `add_container_node`, which takes a nested scene | Nothing committed, and the nested scene stays visible | `node/container.rs` (public) |
+| `rollback_container_construction` | The same, with the showing of the nested scene failing too | Partly committed. The nested scene stays hidden. The documented exception | `node/container.rs` (public) |
+| `rollback_*` (five more) | A failure inside the rollback of node, edge, label, data node and operator construction | **Nothing documents it.** Findings: see [the findings](phase-4-findings.md) | none |
 | `removed_host` | Using a scene whose `<svg>` was removed | **Nothing** | none |
 
 ## How a failure is put in
@@ -90,13 +101,15 @@ In endurance, a leak of bytes, of a listener, of an element, and a slot lost tha
 - **Three outcomes, not two, in practice.** The design names nothing committed and partly committed.
   `undocumented` is the third, and is how the design's own rule (a finding, not a guess) is written into a manifest.
 - **A failure is a thrown DOM call.** It is the only kind a page can cause the library to meet.
-  A failure of the rollback itself is not injected.
-  Nor is a failure of a call that returns no error in `web-sys`, such as setting text or reading a rectangle.
+  A failure of a call that returns no error in `web-sys`, such as setting text, removing an element or reading a rectangle, is not injected.
   It could only escape as an exception through the wasm frames.
+  A failure of the rollback is injected where the rollback makes a call that can fail: a second failure is put at each such call, after the first.
 - **Chrome only, on one machine.** The heap is a Chrome diagnostic and not a gate.
 - **Label placement depends on history,** so a clean run is not a reference for it.
   A connector retry is held to the connectors.
-- **Not covered:** a label that cannot be drawn (`set_edge_label`), the elbow connector, failures in the nested-scene and operator constructors, and anything the nodes with data content do.
+- **Not covered:** the other node constructors (plot, markdown, text input, butterfly, ellipse), the binary and arithmetic operators, the other operations on a nested scene (`enter`, `exit`), the selection toolbar, and a failure of two calls that are not one rollback apart.
+  The new points break one operation of each kind, and the sweep is the same for the others.
+  The new points run on Layer B only, since none of them needs real input.
 - **Hour-scale runs** are the same manifest with more cycles.
   The 200 cycles recorded take seconds on Layer B.
 

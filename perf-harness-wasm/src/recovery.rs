@@ -23,7 +23,10 @@ use svg_dom::{
 };
 use svg_dom_graph::{
     EdgeId, NodeId,
-    scene::{CollisionPolicy, ConnectorOptions, ConnectorType, DragOptions, Scene},
+    scene::{
+        CollisionPolicy, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, GridLayout,
+        NodeValues, Scene, UnaryOperator,
+    },
 };
 
 const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -43,6 +46,10 @@ struct Stage {
     /// them.
     edge_keys: Vec<String>,
     model: Model,
+    /// The scene that `add_container_node` takes as its nested scene, made by `prepare`, and the hosts of every scene made here besides the
+    /// stage's own, which teardown removes.
+    child: Option<Scene>,
+    children: Vec<web_sys::Element>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -191,6 +198,8 @@ fn build_stage(manifest: &Manifest, slot: u32, labelled: bool) -> Result<serde_j
                 edges,
                 edge_keys,
                 model,
+                child: None,
+                children: Vec::new(),
             },
         );
     });
@@ -236,8 +245,11 @@ pub fn intend(slot: u32, op_json: &str) -> String {
                 x: number(&op, "x")?,
                 y: number(&op, "y")?,
             },
-            // Making a node draggable, or labelling an edge, is not in the model.
-            Some("make_draggable" | "set_edge_label") => return Ok(()),
+            // Making a node draggable, labelling an edge, changing a connector's type and the nodes with content are not in the model.
+            Some(
+                "make_draggable" | "set_edge_label" | "set_connector_type" | "add_data_node" | "set_data_values"
+                | "add_unary_operator" | "add_container",
+            ) => return Ok(()),
             other => return Err(format!("there is no operation {other:?}")),
         };
         with_stage(slot, |stage| stage.model.apply(&op))
@@ -251,7 +263,7 @@ pub fn intend(slot: u32, op_json: &str) -> String {
 pub fn act(slot: u32, op_json: &str) -> String {
     let result = (|| {
         let op: serde_json::Value = serde_json::from_str(op_json).map_err(|e| e.to_string())?;
-        let straight = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
+        let straight = ConnectorOptions::default().with_connector_type(connector_of(&op)?);
         let kind = op["op"].as_str().ok_or("the operation has no name")?.to_owned();
         with_stage(slot, |stage| {
             let scene = stage.scene.clone().ok_or("the scene was dropped")?;
@@ -296,11 +308,130 @@ pub fn act(slot: u32, op_json: &str) -> String {
                         .set_edge_label(edge, Some(&text(&op, "text")?))
                         .map_err(|e| e.to_string())?;
                 },
+                "set_connector_type" => {
+                    let edge = *stage.edges.get(number(&op, "edge")? as usize).ok_or("the edge is unknown")?;
+                    scene.set_connector_type(edge, connector_of(&op)?).map_err(|e| e.to_string())?;
+                },
+                "add_data_node" => {
+                    let key = text(&op, "key")?;
+                    let node = scene.add_data_node(
+                        Point::new(number(&op, "x")? as f64, number(&op, "y")? as f64),
+                        data_content(&op)?,
+                    );
+                    stage.nodes.insert(key, node.map_err(|e| e.to_string())?);
+                },
+                "set_data_values" => scene
+                    .set_data_values(known(stage, &text(&op, "key")?)?, NodeValues::U32(words(&op)?))
+                    .map_err(|e| e.to_string())?,
+                "add_unary_operator" => {
+                    let key = text(&op, "key")?;
+                    let input = known(stage, &text(&op, "input")?)?;
+                    let node = scene.add_unary_operator_node(
+                        Point::new(number(&op, "x")? as f64, number(&op, "y")? as f64),
+                        UnaryOperator::Not,
+                        input,
+                        DataNodeContent::new(NodeValues::U32(words(&op)?), DataFormat::Decimal),
+                    );
+                    stage.nodes.insert(key, node.map_err(|e| e.to_string())?);
+                },
+                "add_container" => {
+                    let key = text(&op, "key")?;
+                    let child = stage.child.clone().ok_or("no nested scene was prepared")?;
+                    let node = scene.add_container_node(
+                        Point::new(number(&op, "x")? as f64, number(&op, "y")? as f64),
+                        Size::new(number(&op, "w")? as f64, number(&op, "h")? as f64),
+                        key.clone(),
+                        child,
+                    );
+                    stage.nodes.insert(key, node.map_err(|e| e.to_string())?);
+                },
                 other => return Err(format!("there is no operation {other}")),
             }
             Ok(())
         })
     })();
+    result.map_or_else(error, |()| ok(serde_json::json!({})))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The connector an operation asks for: `straight`, which is the default, or `elbow` with a rounded corner.
+fn connector_of(op: &serde_json::Value) -> Result<ConnectorType, String> {
+    match op["connector"].as_str() {
+        None | Some("straight") => Ok(ConnectorType::Straight),
+        Some("elbow") => Ok(ConnectorType::Elbow { corner_radius: 8.0 }),
+        Some(other) => Err(format!("there is no connector {other}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The whole numbers in the `values` of an operation.
+fn words(op: &serde_json::Value) -> Result<Vec<u32>, String> {
+    op["values"]
+        .as_array()
+        .ok_or("the operation has no values")?
+        .iter()
+        .map(|value| {
+            value
+                .as_u64()
+                .and_then(|v| u32::try_from(v).ok())
+                .ok_or_else(|| "a value is not a 32-bit whole number".to_string())
+        })
+        .collect()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The content of a data node of the operation's values, in a grid of four columns with room for seven digits, so that later values fit the
+/// cells that were drawn.
+fn data_content(op: &serde_json::Value) -> Result<DataNodeContent, String> {
+    Ok(DataNodeContent::new(NodeValues::U32(words(op)?), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(4))
+        .with_cell_width_hint("0000000"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Puts what an operation needs beside the scene on `slot`: a data node `D0` to change or to feed an operator, or a nested scene for a
+/// container node to take. A scene built the same way twice has the same extras, so the twin and the one that is broken stay alike.
+pub fn prepare(slot: u32, kind: &str) -> String {
+    let result = with_stage(slot, |stage| {
+        let scene = stage.scene.clone().ok_or("the scene was dropped")?;
+        match kind {
+            "data" => {
+                let content = DataNodeContent::new(
+                    NodeValues::U32(vec![1_000_000, 2_000_000, 3_000_000, 4_000_000]),
+                    DataFormat::Decimal,
+                )
+                .with_layout(GridLayout::Columns(4))
+                .with_cell_width_hint("0000000");
+                let node = scene
+                    .add_data_node(Point::new(20.0, 20.0), content)
+                    .map_err(|e| e.to_string())?;
+                stage.nodes.insert("D0".to_owned(), node);
+            },
+            "container" => {
+                let document = web_sys::window().and_then(|w| w.document()).ok_or("there is no document")?;
+                let id = format!("{}-child", host_id(slot));
+                let svg = document.create_element_ns(Some(SVG_NS), "svg").map_err(|e| format!("{e:?}"))?;
+                for (name, value) in [
+                    ("id", id.clone()),
+                    ("width", "200".to_owned()),
+                    ("height", "120".to_owned()),
+                    ("viewBox", "0 0 200 120".to_owned()),
+                ] {
+                    svg.set_attribute(name, &value).map_err(|e| format!("{e:?}"))?;
+                }
+                document
+                    .body()
+                    .ok_or("there is no body")?
+                    .append_child(&svg)
+                    .map_err(|e| format!("{e:?}"))?;
+                let child = Scene::new(SvgRoot::attach(&id).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+                stage.child = Some(child);
+                stage.children.push(svg);
+            },
+            other => return Err(format!("there is nothing to prepare called {other}")),
+        }
+        Ok(())
+    });
     result.map_or_else(error, |()| ok(serde_json::json!({})))
 }
 
@@ -377,7 +508,11 @@ pub fn teardown(slot: u32) -> String {
     STAGES.with_borrow_mut(|stages| {
         if let Some(mut stage) = stages.remove(&slot) {
             stage.scene = None;
+            stage.child = None;
             stage.svg.remove();
+            for host in &stage.children {
+                host.remove();
+            }
         }
     });
     ok(serde_json::json!({}))

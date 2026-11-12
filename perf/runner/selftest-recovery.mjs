@@ -91,9 +91,16 @@ check(
   clean.status === 'ok' && clean.gates.every(g => g.status === 'pass'),
   `as it is: ${clean.status}, ${clean.gates.length} gates, ${clean.checkpoints_passed} failures recovered from`
 )
+// Every point that a manifest leaves undocumented, and the glue's behaviour, are findings. A documented one is a gate and is not among them.
+const undocumented = [
+  ...manifest.recovery.points.filter(p => p.expect === 'undocumented').map(p => p.point),
+  'externref_slot_per_failed_call'
+]
 check(
-  clean.findings.length === 2 && clean.findings.every(f => f.contract === 'undocumented'),
-  `the undocumented point and the glue's behaviour are findings (${clean.findings.map(f => f.point).join(', ')}) and not gates`
+  clean.findings.length === undocumented.length &&
+    clean.findings.every(f => f.contract === 'undocumented') &&
+    undocumented.every(point => clean.findings.some(f => f.point === point)),
+  `the undocumented points and the glue's behaviour are findings (${clean.findings.map(f => f.point).join(', ')}) and not gates`
 )
 const slotFinding = clean.findings.find(f => f.point === 'externref_slot_per_failed_call')
 check(
@@ -145,6 +152,48 @@ for (const [id, wrong] of [
   check(
     edgeVerdict?.status === 'fail',
     `and edge_construction, whose rollback is the same removal: ${edgeVerdict?.detail.slice(0, 130)}`
+  )
+}
+
+// 4. The points that were added after the first four are each shown able to fail, in the same two ways. Their rollbacks are removals as well,
+// so a library with none leaves the label, the node or the operator behind, and each sweep has to see it. And each is held to what it
+// says: given the other outcome, it fails.
+for (const id of ['edge_label_draw', 'data_node_construction', 'operator_construction', 'container_construction']) {
+  const outcome = await run(only([point(id, 'nothing_committed')]), { suppressRemoval: true })
+  const verdict = gate(outcome, `recovery.${id}.matches_the_contract`)
+  check(verdict?.status === 'fail', `with removal made to do nothing, ${id} fails: ${verdict?.detail.slice(0, 120)}`)
+}
+for (const [id, wrong] of [
+  ['edge_label_draw', 'partly_committed'],
+  ['edge_label_placement', 'nothing_committed'],
+  ['connector_type_redraw', 'partly_committed'],
+  ['connector_type_label', 'nothing_committed'],
+  ['data_node_construction', 'partly_committed'],
+  ['data_values_update', 'nothing_committed'],
+  ['operator_construction', 'partly_committed'],
+  ['container_construction', 'partly_committed']
+]) {
+  const verdict = gate(await run(only([point(id, wrong)])), `recovery.${id}.matches_the_contract`)
+  check(
+    verdict?.status === 'fail',
+    `${id} expected to be ${wrong.replace('_', ' ')}, against its contract: ${verdict?.status}`
+  )
+}
+{
+  // The failures of a rollback are found, and told apart: a second failure at a call that the rollback makes is injected, and what it
+  // leaves is a finding. Adding an edge has a rollback that writes names, so it has some, and adding a node has none.
+  const outcome = await run(
+    only([point('rollback_edge_construction', 'undocumented'), point('rollback_node_construction', 'undocumented')])
+  )
+  const edge = outcome.findings.find(f => f.point === 'rollback_edge_construction')
+  const node = outcome.findings.find(f => f.point === 'rollback_node_construction')
+  check(
+    edge?.details.observed.length > 0 && /inside the rollback/.test(edge.details.observed[0].what_was_left),
+    `a second failure is put inside the rollback of adding an edge: ${edge?.summary.slice(0, 100)}`
+  )
+  check(
+    node?.details.observed.length === 0,
+    `and adding a node has no rollback call to fail: ${node?.summary.slice(0, 90)}`
   )
 }
 

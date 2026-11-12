@@ -56,13 +56,23 @@ export const makeRecovery = (h, now, testing = {}) => {
         .map(label => label.getAttribute('transform'))
         .join('|'),
       paths: [...svg.querySelectorAll('path')].map(path => path.getAttribute('d')).join('|'),
-      styles: [...(group?.children ?? [])].map(child => child.getAttribute('style') ?? '').join('|')
+      styles: [...(group?.children ?? [])].map(child => child.getAttribute('style') ?? '').join('|'),
+      // What the nodes with content write: the text of every cell and every accessible name, and the state of the nested scene's own host.
+      texts: [...svg.querySelectorAll('text')].map(text => text.textContent).join('|'),
+      names: [...(group?.children ?? [])].map(child => child.getAttribute('aria-label') ?? '').join('|'),
+      hosts: [...document.querySelectorAll(`svg[id^="${OPEN}${slot}-child"]`)]
+        // What the host does, and not how it is written: hiding it and showing it again leaves a style that was not there, and a person sees the same.
+        .map(
+          host =>
+            `${getComputedStyle(host).visibility}/${getComputedStyle(host).display}/${host.getAttribute('aria-hidden') ?? ''}`
+        )
+        .join('|')
     }
   }
-  const sameRaw = (a, b, fields = ['elements', 'listeners', 'labels', 'paths', 'styles']) =>
-    fields.every(field => a[field] === b[field])
-  const rawDifferences = (a, b) =>
-    ['elements', 'listeners', 'labels', 'paths', 'styles'].filter(field => a[field] !== b[field])
+  const FIELDS = ['elements', 'listeners', 'labels', 'paths', 'styles']
+  const MORE_FIELDS = [...FIELDS, 'texts', 'names', 'hosts']
+  const sameRaw = (a, b, fields = FIELDS) => fields.every(field => a[field] === b[field])
+  const rawDifferences = (a, b, fields = FIELDS) => fields.filter(field => a[field] !== b[field])
 
   /** The accessible names of the nodes called `keys` on `slot`, which is where a relationship clause is written. */
   const endNames = (slot, keys) => {
@@ -129,6 +139,237 @@ export const makeRecovery = (h, now, testing = {}) => {
     options.cycle === undefined
       ? Array.from({ length: calls }, (_, index) => index + 1)
       : [((options.cycle - 1) % calls) + 1]
+
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   * Breaks one operation at each of its DOM calls and reads what is left, as every sweep above does, for the operations that follow. The
+   * twin (slot 1) makes the call with no fault and is the reference, and a fresh scene (slot 0) is made for each failure.
+   *
+   *   setup(slot)               builds the scene on the slot, with whatever the operation needs beside it, and says what it made
+   *   op(made)                  the operation, from what the twin made
+   *   pointOf(fired, dry)       the fault point that the failed call belongs to
+   *   retryOp(made, point)      what recovers from it. The operation again if it is not given
+   *   experiments(slot, made)   further things done to the healed scene, whose results are kept in the row
+   *   partial(before, after)    whether what a failure left is a state that the library documents as partly committed
+   */
+  const transaction = (manifest, options, spec) => {
+    const made = spec.setup(1)
+    const op = spec.op(made)
+    intend(1, op)
+    const dry = dryRun(1, op)
+    if (!dry.result.ok) throw new Error(`the unfaulted twin could not do ${op.op}: ${dry.result.error}`)
+    snapshot(1, 'ref')
+    const reference = raw(1)
+    const rows = []
+    const times = {}
+    for (const index of indicesFor(dry.calls.length, options)) {
+      spec.setup(0)
+      snapshot(0, 'before')
+      const before = raw(0)
+      const failure = faulted(0, op, index)
+      const snap = snapshot(0, 'after')
+      const after = raw(0)
+      const unchanged = snap.ok && differences('before', 'after').count === 0 && sameRaw(before, after, MORE_FIELDS)
+      const point = spec.pointOf(failure.fired, dry, index)
+      const retry = spec.retryOp ? spec.retryOp(made, point) : op
+      const recovery = retried(0, retry)
+      const healed = snapshot(0, 'healed')
+      const now_ = raw(0)
+      const reached = healed.ok && differences('ref', 'healed').count === 0 && sameRaw(now_, reference, MORE_FIELDS)
+      const extra = spec.experiments?.(0, made, { before, now_ }) ?? {}
+      ;(times[point] ??= []).push(failure.elapsed + recovery.elapsed)
+      rows.push(
+        row(point, index, failure.fired, {
+          error_surfaced: !failure.result.ok,
+          outcome: unchanged
+            ? 'nothing_committed'
+            : spec.partial?.(before, after, point)
+              ? 'partly_committed'
+              : 'changed',
+          left: unchanged
+            ? []
+            : [
+                ...(snap.ok ? differences('before', 'after').sections : ['unreadable']),
+                ...rawDifferences(before, after, MORE_FIELDS)
+              ],
+          retry: spec.retryName?.(point) ?? 'the same call again',
+          retry_ok: recovery.result.ok,
+          retry_reaches_reference: reached,
+          ...extra
+        })
+      )
+    }
+    return { rows, times, agrees: true, calls: dry.calls.length }
+  }
+
+  /** The position of the last call of `dry` that attaches an element, which is where a drawn label or node is put in the document. */
+  const lastAttach = dry =>
+    dry.calls.map(c => c.method).reduce((last, m, i) => (m === 'appendChild' || m === 'insertBefore' ? i + 1 : last), 0)
+  const writesLabelPlace = fired =>
+    Boolean(fired && fired.method === 'setAttribute' && fired.name === 'transform' && fired.tag === 'g' && fired.label)
+
+  const fresh = (manifest, slot, kind = null, labelled = true) => {
+    const built = build(manifest, slot, labelled)
+    if (kind) {
+      const prepared = call(h.recovery_prepare, slot, kind)
+      if (!prepared.ok) throw new Error(`preparing ${kind} on slot ${slot}: ${prepared.error}`)
+    }
+    return built
+  }
+
+  /** What each operation of the sweeps above needs, said once, so that its failures and the failures of its rollback are broken the same way. */
+  const operations = manifest => ({
+    node_construction: {
+      setup: slot => build(manifest, slot, false),
+      op: () => ({ op: 'add_node', key: 'fault-node', x: 40, y: 600, w: 80, h: 36 })
+    },
+    edge_construction: {
+      setup: slot => build(manifest, slot, false),
+      op: built => {
+        const [from, to] = built.nodes
+          .map(a => built.nodes.map(b => [a, b]))
+          .flat()
+          .find(([a, b]) => a !== b && !built.edges.some(([x, y]) => x === a && y === b))
+        return { op: 'add_edge', from, to }
+      }
+    },
+    edge_label: {
+      setup: slot => fresh(manifest, slot),
+      // The scene labels every second edge, so the first one it left alone is the one to label.
+      op: () => ({ op: 'set_edge_label', edge: 1, text: 'w-new' }),
+      pointOf: (fired, dry, index) => (index <= lastAttach(dry) ? 'edge_label_draw' : 'edge_label_placement'),
+      partial: (before, after, point) => point === 'edge_label_placement' && after.elements > before.elements,
+      retryName: point =>
+        point === 'edge_label_placement' ? 'the same text again, which places the label' : 'the same call again'
+    },
+    connector_type: {
+      setup: slot => fresh(manifest, slot),
+      // Edge 0 has a label, so the change places one.
+      op: () => ({ op: 'set_connector_type', edge: 0, connector: 'elbow' }),
+      pointOf: fired =>
+        fired?.tag === 'path' ? 'connector_type_redraw' : writesLabelPlace(fired) ? 'connector_type_label' : 'other',
+      partial: (before, after, point) => point === 'connector_type_label' && after.paths !== before.paths,
+      // Asking for the type the edge has is a no-op, so the label is placed again by labelling the edge with the text it has.
+      retryOp: (made, point) =>
+        point === 'connector_type_label'
+          ? { op: 'set_edge_label', edge: 0, text: 'w0' }
+          : { op: 'set_connector_type', edge: 0, connector: 'elbow' },
+      retryName: point =>
+        point === 'connector_type_label' ? 'the label again with its own text, which places it' : 'the same call again'
+    },
+    data_node_construction: {
+      setup: slot => fresh(manifest, slot),
+      op: () => ({
+        op: 'add_data_node',
+        key: 'D1',
+        x: 20,
+        y: 120,
+        values: [5_000_000, 6_000_000, 7_000_000, 8_000_000, 9_000_000, 1_100_000]
+      }),
+      pointOf: () => 'data_node_construction'
+    },
+    data_values_update: {
+      setup: slot => fresh(manifest, slot, 'data'),
+      op: () => ({ op: 'set_data_values', key: 'D0', values: [1_000_001, 2_000_002, 3_000_003, 4_000_004] }),
+      pointOf: () => 'data_values_update',
+      partial: (before, after) => after.texts !== before.texts,
+      retryName: () => 'the same values again, which writes every cell',
+      experiments: (slot, made, { before }) => {
+        // The values that the node held before put the node back, in one call, whatever the failed call wrote.
+        const back = act(slot, {
+          op: 'set_data_values',
+          key: 'D0',
+          values: [1_000_000, 2_000_000, 3_000_000, 4_000_000]
+        })
+        return { old_values_put_back: back.ok && raw(slot).texts === before.texts }
+      }
+    },
+    operator_construction: {
+      setup: slot => fresh(manifest, slot, 'data'),
+      op: () => ({ op: 'add_unary_operator', key: 'op0', input: 'D0', x: 220, y: 20, values: [4293967295] }),
+      pointOf: () => 'operator_construction'
+    },
+    container_construction: {
+      setup: slot => fresh(manifest, slot, 'container'),
+      op: () => ({ op: 'add_container', key: 'box', x: 20, y: 600, w: 120, h: 80 }),
+      pointOf: () => 'container_construction',
+      // The documented exception: the box could not be attached after the nested scene's root was hidden, and showing it again failed too.
+      rollbackPartial: fields => fields.length > 0 && fields.every(field => field === 'hosts')
+    }
+  })
+
+  /**
+   * Breaks an operation at each DOM call, and then breaks the rollback of that failure at each DOM call that the rollback makes. How many
+   * calls the rollback makes is read from the first failure: the calls counted after it, until the operation returns. An operation whose
+   * rollback is only the removal of elements makes none that can fail, and has no rows, which is said.
+   */
+  const rollbackSweep = (manifest, options, spec, point) => {
+    const made = spec.setup(1)
+    const op = spec.op(made)
+    intend(1, op)
+    const dry = dryRun(1, op)
+    if (!dry.result.ok) throw new Error(`the unfaulted twin could not do ${op.op}: ${dry.result.error}`)
+    snapshot(1, 'ref')
+    const reference = raw(1)
+    const rows = []
+    const times = {}
+    let rollbackCalls = 0
+    // The calls that failed in the probes, which no row records but which the glue pays for all the same.
+    const probed = []
+    for (const first of indicesFor(dry.calls.length, options)) {
+      spec.setup(0)
+      faults().arm(first)
+      act(0, op)
+      const probe = faults().disarm()
+      if (probe?.fired) probed.push(describeCall(probe.fired))
+      const following = probe ? probe.counted - first : 0
+      rollbackCalls += following
+      for (let gap = 1; gap <= following; gap++) {
+        spec.setup(0)
+        snapshot(0, 'before')
+        const before = raw(0)
+        faults().arm(first, 1, gap)
+        const started = now()
+        const failure = act(0, op)
+        const elapsed = now() - started
+        const fired = faults().disarm()
+        const snap = snapshot(0, 'after')
+        const after = raw(0)
+        const counts = call(h.recovery_counts, 0)
+        const unchanged = snap.ok && differences('before', 'after').count === 0 && sameRaw(before, after, MORE_FIELDS)
+        const recovery = retried(0, op)
+        const healed = snapshot(0, 'healed')
+        const reached = healed.ok && differences('ref', 'healed').count === 0 && sameRaw(raw(0), reference, MORE_FIELDS)
+        ;(times[point] ??= []).push(elapsed + recovery.elapsed)
+        rows.push(
+          row(point, first, fired?.fired, {
+            gap,
+            second_call: fired?.all?.[1] ? describeCall(fired.all[1]) : 'none',
+            all_calls: (fired?.all ?? []).map(describeCall),
+            error_surfaced: !failure.ok,
+            outcome: unchanged
+              ? 'nothing_committed'
+              : spec.rollbackPartial?.(rawDifferences(before, after, MORE_FIELDS))
+                ? 'partly_committed'
+                : 'changed',
+            retry: 'the same call again',
+            observed: {
+              checkpoint_readable: snap.ok,
+              checkpoint_error: snap.ok ? undefined : snap.error,
+              sections_changed: snap.ok ? differences('before', 'after').sections : [],
+              fields_changed: rawDifferences(before, after, MORE_FIELDS),
+              extra_elements: after.elements - before.elements,
+              paths_changed: after.paths !== before.paths,
+              edge_confirmed_by_the_call: counts.nodes + counts.edges
+            },
+            retry_ok: recovery.result.ok,
+            retry_reaches_reference: reached
+          })
+        )
+      }
+    }
+    return { rows, times, agrees: true, calls: dry.calls.length, rollbackCalls, probed }
+  }
 
   /** The sweeps that break one operation at every DOM call. Each gives the rows of its failures, and the times of its recoveries. */
   const sweeps = {
@@ -317,13 +558,13 @@ export const makeRecovery = (h, now, testing = {}) => {
     },
 
     // Adding an edge: nothing documents what a failure part way leaves, so each is observed and written down.
-    edge_construction: (manifest, options = {}) => {
+    edge_construction: (manifest, options = {}, kind = { point: 'edge_construction', connector: 'straight' }) => {
       const built = build(manifest, 1, false)
       const pair = built.nodes
         .map(from => built.nodes.map(to => [from, to]))
         .flat()
         .find(([from, to]) => from !== to && !built.edges.some(([a, b]) => a === from && b === to))
-      const op = { op: 'add_edge', from: pair[0], to: pair[1] }
+      const op = { op: 'add_edge', from: pair[0], to: pair[1], connector: kind.connector }
       intend(1, op)
       const dry = dryRun(1, op)
       if (!dry.result.ok) throw new Error(`the unfaulted twin could not add an edge: ${dry.result.error}`)
@@ -349,7 +590,7 @@ export const makeRecovery = (h, now, testing = {}) => {
         const healed = snapshot(0, 'healed')
         times.push(failure.elapsed + recovery.elapsed)
         rows.push(
-          row('edge_construction', index, failure.fired, {
+          row(kind.point, index, failure.fired, {
             error_surfaced: !failure.result.ok,
             outcome:
               snap.ok && differences('before', 'after').count === 0 && sameRaw(before, after) && named === 0
@@ -377,7 +618,49 @@ export const makeRecovery = (h, now, testing = {}) => {
         )
       }
       return { rows, times, agrees: true, calls: dry.calls.length }
-    }
+    },
+
+    // Labelling an edge: a label that cannot be drawn is not left behind, and one that cannot be placed is where it was.
+    edge_label: (manifest, options = {}) => transaction(manifest, options, operations(manifest).edge_label),
+
+    // Adding an edge that is an elbow: the same transaction as a straight one, with the routing of an elbow in it.
+    elbow_edge_construction: (manifest, options = {}) =>
+      sweeps.edge_construction(manifest, options, { point: 'elbow_edge_construction', connector: 'elbow' }),
+
+    // Changing a connector's type: a failure of the new path leaves the edge as it was, and one of its label's place leaves the new type drawn.
+    connector_type: (manifest, options = {}) => transaction(manifest, options, operations(manifest).connector_type),
+
+    // A data node: drawing is a transaction, and a failure of a data node's own cells leaves the scene as it was.
+    data_node_construction: (manifest, options = {}) =>
+      transaction(manifest, options, operations(manifest).data_node_construction),
+
+    // New values for a data node: the model keeps the old ones until every cell is written, and calling again heals it, with the same
+    // values, or with the old ones, which puts the node back.
+    data_values_update: (manifest, options = {}) =>
+      transaction(manifest, options, operations(manifest).data_values_update),
+
+    // An operator node: it is drawn, and its input edge wired, and a failure of either takes the node away again.
+    operator_construction: (manifest, options = {}) =>
+      transaction(manifest, options, operations(manifest).operator_construction),
+
+    // A container node, which owns a nested scene: a failure leaves both scenes as they were, and the nested one visible.
+    container_construction: (manifest, options = {}) =>
+      transaction(manifest, options, operations(manifest).container_construction),
+
+    // A failure inside the rollback of a failure. Each operation that undoes itself is broken at every DOM call, and then, for each of those,
+    // at every DOM call that the undoing makes. Nothing documents what is left, so each is observed and written down.
+    rollback_node_construction: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).node_construction, 'rollback_node_construction'),
+    rollback_edge_construction: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).edge_construction, 'rollback_edge_construction'),
+    rollback_edge_label_draw: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).edge_label, 'rollback_edge_label_draw'),
+    rollback_data_node_construction: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).data_node_construction, 'rollback_data_node_construction'),
+    rollback_operator_construction: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).operator_construction, 'rollback_operator_construction'),
+    rollback_container_construction: (manifest, options = {}) =>
+      rollbackSweep(manifest, options, operations(manifest).container_construction, 'rollback_container_construction')
   }
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -468,7 +751,20 @@ const GROUPS = [
   { sweep: 'node_construction', points: ['node_construction'] },
   { sweep: 'move_node', points: ['dom_transform', 'connector_update', 'label_update'] },
   { sweep: 'drag_install', points: ['drag_install'] },
-  { sweep: 'edge_construction', points: ['edge_construction'] }
+  { sweep: 'edge_construction', points: ['edge_construction'] },
+  { sweep: 'edge_label', points: ['edge_label_draw', 'edge_label_placement'] },
+  { sweep: 'elbow_edge_construction', points: ['elbow_edge_construction'] },
+  { sweep: 'connector_type', points: ['connector_type_redraw', 'connector_type_label'] },
+  { sweep: 'data_node_construction', points: ['data_node_construction'] },
+  { sweep: 'data_values_update', points: ['data_values_update'] },
+  { sweep: 'operator_construction', points: ['operator_construction'] },
+  { sweep: 'container_construction', points: ['container_construction'] },
+  { sweep: 'rollback_node_construction', points: ['rollback_node_construction'] },
+  { sweep: 'rollback_edge_construction', points: ['rollback_edge_construction'] },
+  { sweep: 'rollback_edge_label_draw', points: ['rollback_edge_label_draw'] },
+  { sweep: 'rollback_data_node_construction', points: ['rollback_data_node_construction'] },
+  { sweep: 'rollback_operator_construction', points: ['rollback_operator_construction'] },
+  { sweep: 'rollback_container_construction', points: ['rollback_container_construction'] }
 ]
 const MECHANISM =
   'performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval'
@@ -634,6 +930,14 @@ export const runRecovery = (h, manifest, testing = {}) => {
 
 // What was seen at an undocumented point, grouped, so that it reads as a finding and not as a table of rows.
 const summariseFinding = (point, rows) => {
+  if (rows.length === 0 && point.startsWith('rollback_'))
+    return {
+      point,
+      contract: 'undocumented',
+      summary:
+        'the rollback of this operation makes no DOM call that can fail, since it only removes elements, so there is no failure of the rollback to inject',
+      details: { observed: [] }
+    }
   const groups = new Map()
   for (const r of rows) {
     const o = r.observed ?? {}
@@ -642,14 +946,18 @@ const summariseFinding = (point, rows) => {
       o.checkpoint_readable === false
         ? `the scene could not be read back (${String(o.checkpoint_error).slice(0, 80)})`
         : `sections changed: ${(o.sections_changed ?? []).join(', ') || 'none'}`,
+      ...(r.gap === undefined ? [] : [`a second failure fell ${r.gap} calls after the first, inside the rollback`]),
+      ...(o.fields_changed === undefined ? [] : [`document fields changed: ${o.fields_changed.join(', ') || 'none'}`]),
       `${o.extra_elements} extra elements`,
       `connector paths ${o.paths_changed ? 'changed' : 'unchanged'}`,
-      `${o.ends_named} of the 2 ends of the edge say so`,
-      `the call confirmed ${o.edge_confirmed_by_the_call} edges`,
+      ...(o.ends_named === undefined ? [] : [`${o.ends_named} of the 2 ends of the edge say so`]),
+      `the call confirmed ${o.edge_confirmed_by_the_call} ${r.gap === undefined ? 'edges' : 'nodes and edges'}`,
       `a retry ${r.retry_reaches_reference ? 'reaches the reference' : 'does NOT reach the reference'}`
     ].join('; ')
     const entry = groups.get(signature) ?? { signature, calls: [] }
-    entry.calls.push(`${r.index} ${r.call}`)
+    entry.calls.push(
+      r.gap === undefined ? `${r.index} ${r.call}` : `${r.index}+${r.gap} ${r.call} then ${r.second_call}`
+    )
     groups.set(signature, entry)
   }
   const observed = [...groups.values()].map(g => ({
@@ -735,12 +1043,19 @@ export const runEndurance = (h, manifest, testing = {}) => {
   let judged = 0
   for (let cycle = 1; cycle <= total; cycle++) {
     const rows = []
+    const probedCalls = []
     for (const group of GROUPS) {
       if (!group.points.some(point => wanted.some(p => p.point === point))) continue
       // For the self-test and for finding where a leak comes from: the same DOM call is broken in every cycle.
-      rows.push(...R.sweeps[group.sweep](manifest, { cycle: testing.pin ?? cycle }).rows)
+      const swept = R.sweeps[group.sweep](manifest, { cycle: testing.pin ?? cycle })
+      rows.push(...swept.rows)
+      probedCalls.push(...(swept.probed ?? []))
     }
-    objectCallsFailed += rows.filter(r => RETURNS_AN_OBJECT.has(methodOf(r))).length
+    objectCallsFailed += probedCalls.filter(c => RETURNS_AN_OBJECT.has(methodOf({ call: c }))).length
+    objectCallsFailed += rows.reduce(
+      (sum, r) => sum + (r.all_calls ?? [r.call]).filter(c => RETURNS_AN_OBJECT.has(methodOf({ call: c }))).length,
+      0
+    )
     for (const { point, expect } of wanted.filter(p => p.expect !== 'undocumented' && !LAYER_C.has(p.point))) {
       const verdict = R.judge(point, expect, rows)
       if (verdict.status === 'inconclusive') continue
