@@ -35,7 +35,8 @@ Editing `demo/index.template.html`, `demo/panels/*/*.html`, or `demo/style.css` 
 - `demo-common/src/util.rs`<br>
   Small DOM/error helpers shared by more than one demo module.
   `demo-common` is a crate of its own, which `demo-app` depends on.
-  It also holds the `sorting/` module that every sorting demo shares. The SVG buttons and range sliders that demos put in a scene are the library's own `svg_dom_graph::controls`.
+  It also holds the `sorting/` module that every sorting demo shares.
+  The SVG buttons and range sliders that demos put in a scene are the library's own `svg_dom_graph::controls`.
 - `demo-app/src/source_frame.rs`<br>
   Builds each panel's own collapsible `<details>` block.
   The block shows the exact Rust source of the function that built the panel.
@@ -79,7 +80,10 @@ It also copies the window pages (`STATIC_ASSETS` in `demo-server/src/build/mod.r
 
 A new demo needs three things:
 
-* a panel fragment `demo/panels/NN-group-name/NN-demo-name.html`, whose `<section>` tag carries `id` and `data-label`<br>The menu group and the order come from the folder structure: the group folder's two-digit number orders the groups, its name (with hyphens as spaces) is the heading, and the fragment's two-digit number orders it within the group
+* a panel fragment `demo/panels/NN-group-name/NN-demo-name.html`, whose `<section>` tag carries `id` and `data-label`<br>
+  The menu group and the order come from the folder structure.
+  The group folder's two-digit number orders the groups, and its name (with hyphens as spaces) is the heading.
+  The fragment's two-digit number orders it within the group.
 * a `demo_gallery!` entry in `demo-app/src/lib.rs`
 * for a demo that opens in a window, a page in `demo/` that is added to `STATIC_ASSETS`
 

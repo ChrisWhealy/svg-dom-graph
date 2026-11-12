@@ -44,18 +44,18 @@ The design's section 7 names the points.
 A contract is published only after the code that implements it exists, with exact source lines that pass `test-contracts.mjs`.
 Until then a point is `undocumented`, and an observed recovery does not count as a documented pass.
 
-| Point | Expectation to validate | What S0 found |
-|---|---|---|
-| `service_data_node_construction` | `nothing_committed` | Measured: 208 of 208 write positions leave nothing, and a retry draws the node |
-| `service_data_setter` | `partly_committed`, repaired by the failed call and then the committed values | Measured: 8 of 8 positions partly written, the same call heals, and one call with the old values does not (finding F1) |
-| `service_overlay_write` | `partly_committed` in the DOM, and the logical cursor unchanged | Not measured: the overlay is application code that does not exist yet |
-| `service_control_aria` | `partly_committed`, and no automatic Play | Not measured |
-| `service_timer_request` | `nothing_committed` | Not measured |
-| `service_frame_request` | `nothing_committed` | Not measured |
-| `service_gallery_hidden` | `nothing_committed` | The hint and the predicate are chosen, and not yet run against a controller |
-| `service_detached_before_draw` | `nothing_committed`, by an application guard | Not measured |
-| `service_detached_during_draw` | `partly_committed`, and the post-draw guard refuses the commit | Not measured |
-| `service_teardown_late_tick` | `nothing_committed`, and the callback inert | The stand-in controller ignored a forced late tick, as the design wants |
+| Point                            | Expectation to validate                                                       | What S0 found                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `service_data_node_construction` | `nothing_committed`                                                           | Measured: 208 of 208 write positions leave nothing, and a retry draws the node                                         |
+| `service_data_setter`            | `partly_committed`, repaired by the failed call and then the committed values | Measured: 8 of 8 positions partly written, the same call heals, and one call with the old values does not (finding F1) |
+| `service_overlay_write`          | `partly_committed` in the DOM, and the logical cursor unchanged               | Not measured: the overlay is application code that does not exist yet                                                  |
+| `service_control_aria`           | `partly_committed`, and no automatic Play                                     | Not measured                                                                                                           |
+| `service_timer_request`          | `nothing_committed`                                                           | Not measured                                                                                                           |
+| `service_frame_request`          | `nothing_committed`                                                           | Not measured                                                                                                           |
+| `service_gallery_hidden`         | `nothing_committed`                                                           | The hint and the predicate are chosen, and not yet run against a controller                                            |
+| `service_detached_before_draw`   | `nothing_committed`, by an application guard                                  | Not measured                                                                                                           |
+| `service_detached_during_draw`   | `partly_committed`, and the post-draw guard refuses the commit                | Not measured                                                                                                           |
+| `service_teardown_late_tick`     | `nothing_committed`, and the callback inert                                   | The stand-in controller ignored a forced late tick, as the design wants                                                |
 
 The first two are library contracts, and their code exists now.
 They can be added to `perf/fault-contracts.json` with sources in `src/scene/node/data/`, once the `FaultPoint` enum has them.
@@ -65,12 +65,12 @@ That change waits for S4 so that the enum, the schema and the contracts move tog
 
 The service executor is new code, and it shares the rest of the harness with the graph executor.
 
-| New | Reused |
-|---|---|
-| `perf-harness-wasm/src/service_recovery.rs`, for building a controller and a surface in a page, and reading checkpoints | `perf/page/fault-injector.js`, which fails the Nth DOM call |
-| `perf/runner/page/service-recovery.js`, with a sweep for each service point | The Chrome session, the result writer, the findings and cases tables |
-| `perf/runner/layer-c/service-recovery.mjs`, for the points that need real input or a frame | The externref slot accounting of the endurance gates |
-| Checkpoint hashes in the workload report of a service manifest | The contract checker, with the new points in its list |
+| New                                                                                                                     | Reused                                                               |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `perf-harness-wasm/src/service_recovery.rs`, for building a controller and a surface in a page, and reading checkpoints | `perf/page/fault-injector.js`, which fails the Nth DOM call          |
+| `perf/runner/page/service-recovery.js`, with a sweep for each service point                                             | The Chrome session, the result writer, the findings and cases tables |
+| `perf/runner/service-recovery.mjs`, for the sweeps and the judging of the service points                                | The externref slot accounting of the endurance gates                 |
+| Checkpoint hashes in the workload report of a service manifest                                                          | The contract checker, with the new points in its list                |
 
 Not reused: the graph twin executor, the graph reference model, and the sweeps of `recovery.js`, since none of them knows what a controller is.
 

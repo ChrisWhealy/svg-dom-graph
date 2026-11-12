@@ -75,7 +75,7 @@ A run that times nothing is now said, and is not a result.
 - The ABAB alternation of baseline and candidate runs (design section 6) is not done by `perf-smoke`.
   The baseline is a committed set of earlier runs, and not a run made beside the candidate.
   A comparison across time shares the machine only as far as the runner class does, and the report says so by naming both commits and both dates.
-- The first CI run of the harness passed, and no timing from a CI runner has been recorded here yet.
-  The job is written to the pattern of the existing ones and its YAML parses.
-- Hour-scale endurance is not in any CI profile.
-  It is a manifest run by hand, or on a schedule that does not exist yet.
+- Baselines from CI runners are committed, with 3 runs for each environment, which is fewer than the 10 that approving one needs.
+  See [Qualifying the baselines](qualification.md).
+- Hour-scale endurance is in no per-commit CI profile.
+  It has a workflow of its own, `perf-endurance.yml`, which is started by hand, and no schedule.

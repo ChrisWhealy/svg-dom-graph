@@ -56,7 +56,8 @@ Nothing on the page is kept between steps.
 So going back is the same call as going forward.
 
 * **A Try** outlines its square with a solid blue outline, and draws three rays through it: its column and both diagonals, from edge to edge of the board.
-  The rays are the same whether or not the square turns out to be free, and whether or not a queen is in the way, so a Try never gives the outcome away.
+  The rays are the same whether or not the square turns out to be free, and whether or not a queen is in the way.
+  So a Try never gives the outcome away.
 * **A Reject** outlines the square with a dashed red outline and a cross.
   The three rays stay, and the one that is the reason is drawn thick and solid while the other two are thin and dashed, even if they also conflict.
   The status names the reason, and adds "first of K conflicting directions" only when K is more than 1.
@@ -143,7 +144,8 @@ Only when all of that has worked is the new board swapped in, and nothing after 
 
 All timing goes through a small `Scheduler` trait.
 The page uses the browser's timers.
-A test can ask for a scheduler that runs a tick only when it is told to, by putting `?manual-clock` in the address or setting `window.__nQueensManualClock` before the panel is built.
+A test can ask for a scheduler that runs a tick only when it is told to.
+It does so by putting `?manual-clock` in the address, or by setting `window.__nQueensManualClock` before the panel is built.
 Then `window.__nQueensAdvance(n)` runs up to `n` ticks, and `window.__nQueensPending()` says how many are waiting.
 The hooks belong to the manual clock, and are not left behind.
 When the page is left, the controller is torn down, and that takes the hooks off the window and frees them.
@@ -190,4 +192,5 @@ The board is right then, so the page is not dirty, and pressing Play again carri
 * `dom.rs` has the few helpers that make and write SVG elements.
 
 The CDP tests in `cdp-integration-test/tests/cdp/n_queens/unit_tests.rs` drive the built page with a real browser.
-They check the layers and the grid, what each kind of step draws, the range, the buttons at their ends, playback on a manual clock, the keys and the ring, a new size, and writes that fail.
+They check the layers and the grid, what each kind of step draws, the range, and the buttons at their ends.
+They also check playback on a manual clock, the keys and the ring, a new size, and writes that fail.

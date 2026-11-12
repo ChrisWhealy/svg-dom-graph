@@ -27,7 +27,8 @@ On the circle, 0.2 units is 33.3 pixels, and 30 degrees is the same number of pi
 So the angle axes are as long as the side of the circle, 400 pixels for 360 degrees.
 The sine is 430 pixels wide and 400 high, and the cosine is 400 wide and 430 high.
 The extra 30 pixels is a margin at the end of the angle axis, so that the label of 360° is not cut off.
-The circle has no margin, and the margins of the other two are not along an axis that is shared with the circle, so a height or a width is the same distance in all three.
+The circle has no margin, and the margins of the other two are not along an axis that is shared with the circle.
+So a height or a width is the same distance in all three.
 The axes that show a size are labelled the same way in all three scenes, and stop at 1, the radius.
 
 ## The titles
@@ -64,11 +65,13 @@ The angle wraps in both directions, and a key, like a drag, stops C going round 
 "Pause" and "Play" stop and start C.
 The button is drawn in the circle scene, and works from the keyboard.
 Text under the heading gives the angle, W and H as numbers, one to a line.
-It is plain text with line breaks and spaces in it, which the page shows as they are, so that the names line up, and it is never read as markup.
+It is plain text with line breaks and spaces in it, which the page shows as they are, so that the names line up.
+It is never read as markup.
 Someone who has asked for less motion starts with C still, and can still drag it or move it with the keys.
 A gap between frames of more than 100 ms is not counted, so a page that was in the background does not jump.
 
 ## How it is checked
 
 `sine_cosine/plots/unit_tests.rs` checks what is drawn for an angle, and that the plots share their scales, in pixels.
-`sine_cosine.rs` in the CDP tests checks the sizes of the three scenes, the labels of the circle, dragging C forwards and backwards, the keys that move it, the dotted lines, and the button.
+`sine_cosine/unit_tests.rs` in the CDP tests checks the sizes of the three scenes, the labels of the circle, and dragging C forwards and backwards.
+It checks the keys that move it, the dotted lines, and the button.

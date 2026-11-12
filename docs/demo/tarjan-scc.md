@@ -21,7 +21,8 @@ A test pins the sorted edge list with a SHA-256 hash.
 
 `solver` runs Tarjan's algorithm with a stack of calls of its own, and keeps a full snapshot after every event.
 There are 252 events and 253 snapshots, and event k makes snapshot k.
-`Enter` gives a vertex its index and lowlink, `Inspect` looks at an edge, `Return` carries a child's lowlink up, `Closed` pops a whole component at once, and `Complete` ends the run.
+`Enter` gives a vertex its index and lowlink, `Inspect` looks at an edge, and `Return` carries a child's lowlink up.
+`Closed` pops a whole component at once, and `Complete` ends the run.
 An edge to a vertex on the stack lowers a lowlink with the target's index, and not its lowlink.
 An edge to a vertex that is already in a component changes nothing.
 Going back is choosing an earlier snapshot, and never undoing a step.
@@ -44,13 +45,16 @@ A test finds that no straight arrow comes within about 10 units of a node that i
 
 ## Where the view goes
 
-The window opens as large as the screen allows, with the whole scene scaled down to fit it, at a scale of at least 0.25, and with its left edge at the left of the scene.
+The window opens as large as the screen allows, with the whole scene scaled down to fit it.
+The scale is at least 0.25, and the left edge of the window is at the left of the scene.
 While the whole picture is in view no vertex is near the edge, and the page never pans.
 A slider seek and a restart never move the view.
 When a person zooms in, following keeps the vertex that a step is about inside the middle 70 percent of the view.
-A Play tick or a single Next or Previous pans by the least that does it when the vertex is near the edge, and puts it in the middle when it is off the screen.
+A Play tick or a single Next or Previous pans by the least that does it when the vertex is near the edge.
+It puts the vertex in the middle when it is off the screen.
 Following never zooms.
-Next SCC, Previous SCC and Jump to final put the middle of the vertices of the component that they land on in the middle of the view, whether following is on or off.
+Next SCC, Previous SCC and Jump to final put the middle of the vertices of the component that they land on in the middle of the view.
+They do so whether following is on or off.
 Zoom to active vertex puts that vertex in the middle at a scale of 1.
 Whatever the page does, it says when the attention vertex is near the edge or off the screen.
 A person's own pan or zoom turns following off, and only the button turns it on again.
@@ -62,7 +66,8 @@ A gesture that has not finished stops the controller moving the view until it ha
 When the last step is shown, every arrow of the condensation becomes a spring and its ten nodes are let go, for up to six seconds of physics.
 The solver is the one that the weighted springs demo uses, in `demo-common`.
 No value in the calculation gives an arrow a tension to follow: each comes from one bridge, and the algorithm gives it nothing but its two ends.
-So every spring has the same weight and the same rest length of 190 units, and the nodes settle into a compact network in which every arrow is about the same length.
+So every spring has the same weight and the same rest length of 190 units.
+The nodes settle into a compact network in which every arrow is about the same length.
 The nodes are circles of 54 units, so two boxes never touch, and they cannot leave the area under the roster.
 Going back to any other step puts every node back in its place in the table.
 The graph of 64 vertices is not affected.
@@ -72,9 +77,11 @@ The scene says what the springs are doing in `data-tj-springs`, which is `idle`,
 ## The layout
 
 The vertices are on a staggered grid of 10 columns and 7 rows, in an order that does not follow the components.
-A picture that put the vertices of a component next to each other would give the answer away, and the algorithm would only be drawing a box round a group that was already there.
+A picture that put the vertices of a component next to each other would give the answer away.
+The algorithm would only be drawing a box round a group that was already there.
 Here a component is found by the search, and shown by the colour of its vertices, the label above each, and a dashed outline round each one.
-The order was chosen by a search that puts as few connectors as it can through a vertex that is not theirs, and then as few crossings as it can, while it asks that the bounds of each large component hold at least as many other vertices as its own.
+The order was chosen by a search that puts as few connectors as it can through a vertex that is not theirs, and then as few crossings as it can.
+The search also asks that the bounds of each large component hold at least as many other vertices as its own.
 It is kept in `SLOT`, and a test checks all three.
 The layout is worked out from the size that one vertex's node really has, which the page measures, and the places are a multiple of it apart.
 At the left of the graph are the stack, the roster and the condensation, so the whole picture is about 2,900 by 1,100 scene units.
@@ -93,5 +100,6 @@ Each of the six, and the other arcs at vertex 62, can be picked one at a time by
 
 The native tests are beside each module and cover the fixture, the solver, the condensation, the layout, the view rules, the projection and the controller.
 The browser tests are in `cdp-integration-test/tests/cdp/tarjan/unit_tests.rs`.
-They drive real pointer and keyboard input, a pan by hand, the playback on a clock that the test advances, and a failed write, and the comparison of a diffed page with a full one.
+They drive real pointer and keyboard input, a pan by hand, the playback on a clock that the test advances, and a failed write.
+They also compare a diffed page with a full one.
 One test asks Chrome which listeners are on the page before and after it is left.

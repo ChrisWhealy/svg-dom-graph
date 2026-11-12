@@ -29,7 +29,9 @@ The cut is the original edges that go from S to the rest, and its capacity equal
 A run is a list of events, and a snapshot of the whole state after each, which `solver/` makes before anything is drawn.
 Snapshot 0 is the empty flow, and event `k` makes snapshot `k`.
 The events are `Initial`, `SearchStarted`, `VertexDequeued`, `ArcExamined`, `VertexDiscovered`, `PathFound`, `BottleneckDetermined`, `FlowAugmented`, `SearchExhausted` and `MinCutShown`.
-A snapshot holds the flows, the total, the state of the search (the queue, what was reached and how, and the transition that was last looked at), the path, the bottleneck, and the augmentation.
+A snapshot holds the flows, the total, and the state of the search.
+The state of the search is the queue, what was reached and how, and the transition that was last looked at.
+A snapshot also holds the path, the bottleneck, and the augmentation.
 The augmentation holds the flows before and after, so a snapshot can say what changed without the one before it.
 No snapshot shows a path half augmented, since the flows change only at `FlowAugmented`.
 
@@ -45,7 +47,8 @@ The edge `e5` goes from T to S and is not counted.
 
 The second graph is built so that its second path goes back along `e0`.
 Its first path is `s-v1-v3-t` by 2.
-Its second is `s-v4-v3-v1-v2-t` by 1, and its `v3→v1` step is the reverse transition of `e0`, so `e0` goes from 2 to 1 while the total goes from 2 to 3.
+Its second is `s-v4-v3-v1-v2-t` by 1.
+Its `v3→v1` step is the reverse transition of `e0`, so `e0` goes from 2 to 1 while the total goes from 2 to 3.
 The tie that makes this happen is that `s-v1-v3-t` and `s-v1-v2-t` are the same length, and `e0` has the lower ID.
 A different rule would not take flow back.
 
@@ -54,7 +57,8 @@ A different rule would not take flow back.
 The solver takes a directed multigraph of 2 to 12 vertices and up to 48 edges, with `u32` capacities.
 Flows, bottlenecks, totals and cuts are `u64`.
 The largest possible sum of capacities is 48 × (2³²−1), which is far below `u64::MAX`, so there is no overflow error.
-Every other fault has a typed error, which is checked in this order: the vertices, then the source and the sink, then the edges' count and IDs, then every end of every edge, and last the loops.
+Every other fault has a typed error, which is checked in this order.
+The order is the vertices, then the source and the sink, then the edges' count and IDs, then every end of every edge, and last the loops.
 So a loop on a vertex that is not there is an unknown endpoint, and not a loop.
 A trace is limited to 20,000 snapshots, and a run that needs more is refused whole, with the number that it would have needed.
 The limit can be given to the builder, so a test reaches it on a small graph.
@@ -93,9 +97,11 @@ So the three differ in shape, in dash and in words, and not only in colour.
 The edges between a pair of vertices are spread to either side of the straight line, in the order of their IDs, so `e2` and `e3` are on opposite sides.
 The residual lanes of the pair are a family of their own outside them, two for each edge, keyed by the edge and the direction.
 A lane with no room is hidden and the others stay where they were, so nothing jumps.
-Labels are placed one after another, each at the first place along its curve where a box wide enough for the longest label of its kind meets no other label and no vertex.
+Labels are placed one after another.
+Each goes at the first place along its curve where a box wide enough for the longest label of its kind meets no other label and no vertex.
 So no two labels can meet at any step of either graph, which a test checks.
-The state that no run makes, `e2` at 3 of 10 and `e3` at 2 of 4, gives six distinct curves between `v1` and `v2`, with the lanes 7, rev 3, 2 and rev 2.
+The state that no run makes gives six distinct curves between `v1` and `v2`.
+That state is `e2` at 3 of 10 and `e3` at 2 of 4, and the lanes are 7, rev 3, 2 and rev 2.
 The presenter draws it without checking that flow is conserved.
 
 Every ID in a scene carries the instance, the generation and the graph, as in `ek-1-g0-canonical-edge-e3`.
@@ -110,10 +116,13 @@ The page has a fixed list of slots, one for each vertex, edge, residual lane and
 `present` gives each a class, its `aria-label` and `tabindex` or `aria-hidden`, and its text, and gives the text panel its fields.
 `diff` gives the writes that bring one presentation to another, and `full` gives all of them, and removes what a slot does not have.
 So a page that is diffed step by step is the same page, as the DOM, as one that is drawn in full at each step.
-Tests check this in a model of the page for every step of both graphs in all eight combinations of the preferences, and in a browser for every step and for seeks in any order.
+Tests check this in a model of the page for every step of both graphs, in all eight combinations of the preferences.
+They also check it in a browser, for every step and for seeks in any order.
 That found one fault: a full redraw did not remove an attribute, so a lane that was hidden kept the name that it had when it was shown.
 
-The text panel says all that the picture says: the step, the phase, the event, the queue, what was reached, how, what was looked at, the path, the bottleneck, what the augmentation changed, the total, and the cut with the equation "max flow = min cut = 23".
+The text panel says all that the picture says.
+That is the step, the phase, the event, the queue, what was reached, how, and what was looked at.
+It is also the path, the bottleneck, what the augmentation changed, the total, and the cut with the equation "max flow = min cut = 23".
 The line for the event begins with the step's number, so it changes at every step, even one that changes nothing in the picture.
 
 ## The controls
@@ -134,7 +143,8 @@ The line for the event begins with the step's number, so it changes at every ste
 
 A button that has nowhere to go is `aria-disabled` and dimmed, and never natively disabled, so it keeps its place in the tab order and the focus.
 It still takes a press.
-The press first draws a page that is out of date, and then says "Already at the first step", "Already at the last step", "No earlier augmentation" or "No later augmentation".
+The press first draws a page that is out of date.
+Then it says "Already at the first step", "Already at the last step", "No earlier augmentation" or "No later augmentation".
 
 ## Failed writes and the repair
 
@@ -165,7 +175,8 @@ A move of the range, a frame and a tick all carry the generation, and one from b
 
 Playing is whether a tick is waiting for the current epoch, and nothing is stored.
 Playback has an epoch, which is counted up at every logical stop, whether or not anything was playing and whether or not taking the tick back worked.
-The stops are Pause, every move by hand including a press that has nowhere to go, a new speed, the last step, a failure to draw or to schedule, every switch, and teardown.
+The stops are Pause, every move by hand including a press that has nowhere to go, and a new speed.
+They are also the last step, a failure to draw or to schedule, every switch, and teardown.
 A tick that is on its way when one of these happens carries the old epoch and does nothing.
 Taking a tick on the way is not a stop.
 
@@ -189,7 +200,8 @@ The page then puts the old scene back.
   This moves only the focus, and never the step.
 * A residual transition is not a target.
   A click on one focuses the edge that it belongs to.
-* An edge is named with its ID, its ends, its flow and capacity, and both its residuals, as in "e0 v1 to v3; flow 1 of 2; forward residual 1; reverse residual 1".
+* An edge is named with its ID, its ends, its flow and capacity, and both its residuals.
+  For example: "e0 v1 to v3; flow 1 of 2; forward residual 1; reverse residual 1".
   A residual transition says which edge it belongs to and which way it goes, as in "reverse of e0 v3 to v1, capacity 2".
   A lane with no room is `aria-hidden`.
 * Playback announces only a found path, an augmentation and the cut.

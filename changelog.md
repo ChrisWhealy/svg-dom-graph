@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 This file only records changes to the `svg-dom--graph` library.
 Changes to the demo gallery, the demo server and the tests are recorded separately in [`demo/changelog.md`](demo/changelog.md), as they do not affect the library version.
-CI fails a change to `src/` only if the version in `Cargo.toml` is already published on crates.io, so changes can go into one version until it is published, and need a new one after.
+CI fails a change to `src/` only if the version in `Cargo.toml` is already published on crates.io.
+So changes can go into one version until it is published, and need a new one after.
 Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]

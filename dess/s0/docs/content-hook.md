@@ -9,14 +9,14 @@ S0 pinned what the design relies on, and decided what to promise.
 
 The tests are in `tests/drag/content_group_hook.rs`.
 
-| Test | Pins |
-|---|---|
-| `a_scene_has_one_content_group_and_its_nodes_are_inside_it` | One `<g class="svg-dom-graph-content">` is a direct child of the `<svg>`, and a node is inside it |
-| `an_element_in_the_content_group_follows_the_view_as_a_node_does` | After `set_view`, an overlay element and a node scale by the same factor and keep their distance in proportion |
-| `using_the_scene_leaves_an_application_element_in_the_group_alone` | Drawing nodes and edges, moving a node, setting data values and changing the view leave the overlay alone |
-| `a_node_drawn_after_the_overlay_is_painted_over_it` | The group paints in append order, so the overlay is added once the scene's nodes are drawn |
-| `a_second_scene_on_the_same_svg_adds_a_second_content_group` | Dropping a scene leaves its group, and a second scene on the same `<svg>` adds a second one |
-| `a_thousand_commits_through_one_data_node_add_no_elements` | 1,000 commits through one data node, with a write to each of 12 overlay slots beside each, change no element count |
+| Test                                                               | Pins                                                                                                               |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `a_scene_has_one_content_group_and_its_nodes_are_inside_it`        | One `<g class="svg-dom-graph-content">` is a direct child of the `<svg>`, and a node is inside it                  |
+| `an_element_in_the_content_group_follows_the_view_as_a_node_does`  | After `set_view`, an overlay element and a node scale by the same factor and keep their distance in proportion     |
+| `using_the_scene_leaves_an_application_element_in_the_group_alone` | Drawing nodes and edges, moving a node, setting data values and changing the view leave the overlay alone          |
+| `a_node_drawn_after_the_overlay_is_painted_over_it`                | The group paints in append order, so the overlay is added once the scene's nodes are drawn                         |
+| `a_second_scene_on_the_same_svg_adds_a_second_content_group`       | Dropping a scene leaves its group, and a second scene on the same `<svg>` adds a second one                        |
+| `a_thousand_commits_through_one_data_node_add_no_elements`         | 1,000 commits through one data node, with a write to each of 12 overlay slots beside each, change no element count |
 
 The view test was checked to be able to fail.
 With the overlay appended to the `<svg>` and not to the group, it reports that the overlay was not scaled.
@@ -35,8 +35,9 @@ An application may append elements to the group, and the library leaves them alo
 A change to the class name is a breaking change.
 
 The decision is not applied yet.
-CI fails any change to `src/` while the version in `Cargo.toml` is the published one, and 0.2.48 is published.
-So the documentation and its changelog entry are prepared here, for the next version.
+CI fails any change to `src/` while the version in `Cargo.toml` is the published one.
+So the documentation and its changelog entry are prepared here, for a version that is not yet published.
+This has not been applied: the library does not yet document the group.
 The tests live in `tests/`, which the version check does not gate, and they are in place now.
 
 ### Prepared documentation
@@ -69,5 +70,5 @@ Add this under the library's next version in `changelog.md`.
 - `Scene` now documents the content group, `svg-dom-graph-content`, as a supported hook for drawing next to the scene
 ```
 
-Applying both needs the version in `Cargo.toml` to move to 0.2.49.
+Applying both is a change to `src/`, so it needs a version in `Cargo.toml` that is not yet published.
 That is a release decision, and it is not made here.

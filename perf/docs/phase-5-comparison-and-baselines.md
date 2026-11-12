@@ -79,8 +79,8 @@ It copies and writes files and does not commit them: the person promoting review
 `--allow-dirty` is for trying the command out, and says that the result is not for committing.
 `PERF_BASELINES_DIR` moves the directory, to try a promotion without touching the committed one.
 
-No baseline is committed yet.
+Baselines are committed for the CI runner's environments, with 3 runs each.
 A baseline is only meaningful for the environment it was measured in, and the one that matters is the CI runner's.
-So the first is made from the `perf-smoke` artifact of a run on the runner class.
+A new one is made from the `perf-smoke` or `perf-baseline` artifact of a run on the runner class.
 Download it, promote it on a clean commit, and commit `perf/baselines/`.
-Until then `perf-smoke` says, for each layer, that there is no baseline and how to make one.
+Where there is none for an environment, `perf-smoke` says so for each layer and says how to make one.

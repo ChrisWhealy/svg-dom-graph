@@ -17,7 +17,8 @@ Each hash demo's own panel also has a test that it shows the calculation and the
 * the vertical slider is turned so that its minimum is at the bottom
 * where a thumb sits for a value
 * the rounding of a value to a step, never to a negative zero
-* the style gives the thumb the width that the frame allows for, in both browsers, takes its colour from the slider, shows the focus, and dims a slider that is disabled
+* the style gives the thumb the width that the frame allows for, in both browsers
+* the style takes the thumb's colour from the slider, shows the focus, and dims a slider that is disabled
 
 `pythagoras/figure/unit_tests.rs` checks the triangle and the squares of the Pythagoras demo, which needs no browser:
 

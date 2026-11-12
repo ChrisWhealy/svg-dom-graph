@@ -24,17 +24,23 @@ It starts at 3 Hz, where there is none of either wave and the areas cancel.
 * **The two products.**<br>
   400 by 250 pixels each, side by side: the signal times the cosine, and the signal times the sine.
   They are drawn to the same scale of height as the signal, from -1.8 to 1.8.
-  The area between each product and the axis is shaded blue where the product is above the axis and orange where it is below, at 40% opacity so that the grid shows through.
+  The area between each product and the axis is shaded blue where the product is above the axis and orange where it is below.
+  The shading is at 40% opacity, so that the grid shows through.
   The product's line is drawn over the shading.
-  Three numbers are written at the top: the area above, the area below, and the integral, which is the one plus the other, since the area below is written as a negative number.
+  Three numbers are written at the top: the area above, the area below, and the integral.
+  The integral is the one plus the other, since the area below is written as a negative number.
 * **The spectrum.**<br>
   800 by 260 pixels.
-  It has the amplitude that is found at every frequency of the slider, a dotted line down from the frequency of the probe, and a dot at the amplitude found there.
-  Under the axis, in two lines, it says what was found: `a` and `b` as twice the integrals that are written in the products, and then the amplitude and the phase.
+  It has the amplitude that is found at every frequency of the slider.
+  A dotted line comes down from the frequency of the probe, with a dot at the amplitude found there.
+  Under the axis, in two lines, it says what was found.
+  The first line has `a` and `b`, as twice the integrals that are written in the products.
+  The second has the amplitude and the phase.
 
 ## What the numbers mean
 
-For a wave `A · sin(2π · f · t + φ)` that is looked at for a whole number of cycles, twice the integral of its product with the cosine is `A · sin φ`, and twice the integral of its product with the sine is `A · cos φ`.
+For a wave `A · sin(2π · f · t + φ)` that is looked at for a whole number of cycles, twice the integral of its product with the cosine is `A · sin φ`.
+Twice the integral of its product with the sine is `A · cos φ`.
 Those are `a` and `b` in the writing, so the amplitude is `√(a² + b²)`, and the phase is the angle `atan2(a, b)`.
 At 2 Hz the page says `a = 2 × 0.32 = +0.64`, `b = 2 × 0.38 = +0.77`, an amplitude of 1.00 and a phase of 40°, which are the numbers of the first wave.
 At 5 Hz it says an amplitude of 0.60 and a phase of 110°, which are those of the second.
@@ -42,28 +48,36 @@ At a whole frequency that is in neither, such as 3 Hz, both integrals are nothin
 The page then writes no phase, since a wave that is not there has none.
 
 A frequency that does not make a whole number of cycles in the second finds a little of each wave.
-This is spectral leakage, which comes from looking at the signal for a window that does not hold a whole number of cycles of the probe, and it is why the spectrum has small bumps between its peaks, and why a peak can be a step away from the frequency of its wave, as the leakage of each wave adds to the other.
+This is spectral leakage.
+It comes from looking at the signal for a window that does not hold a whole number of cycles of the probe.
+It is why the spectrum has small bumps between its peaks.
+It is also why a peak can be a step away from the frequency of its wave, as the leakage of each wave adds to the other.
 
 ## Correlation, normalisation and the conventions
 
 **What the sums are.**
-Multiplying the signal by a probe and adding up the result is a correlation, or a projection of the signal onto the probe, and not a convolution in the usual sense.
+Multiplying the signal by a probe and adding up the result is a correlation, or a projection of the signal onto the probe.
+It is not a convolution in the usual sense.
 A convolution flips one function in time and slides it across the other, but here nothing is slid and each frequency gives one number.
 The panel keeps the name "Convolution", and its text says so.
 
 **Raw integrals and recovered amplitudes.**
 The three numbers written in a product plot are raw: the area above, the area below, and the integral.
 For a wave `A · sin(2π · f · t + φ)` over whole cycles, the raw integral with the cosine is `A/2 · sin φ`, since the average of a sine squared is a half.
-So `a` and `b` in the spectrum are twice the raw integrals, which is `2/T` for a window of `T` = 1 second, and the spectrum says so in its first line: `a = 2 × 0.32 = +0.64`.
+So `a` and `b` in the spectrum are twice the raw integrals, which is `2/T` for a window of `T` = 1 second.
+The spectrum says so in its first line: `a = 2 × 0.32 = +0.64`.
 Without the 2 the amplitudes found would be half as tall as the waves that made the signal.
 
 **Zero frequency.**
 This is a special case.
-The cosine probe is always 1 and the sine probe is always 0, so the integral with the cosine is the mean of the signal, and the integral with the sine is nothing.
-The amplitude is the size of the constant that the signal is offset by, which is the mean itself and not twice it, so the factor is 1 and not `2/T`.
+The cosine probe is always 1 and the sine probe is always 0.
+So the integral with the cosine is the mean of the signal, and the integral with the sine is nothing.
+The amplitude is the size of the constant that the signal is offset by.
+That is the mean itself and not twice it, so the factor is 1 and not `2/T`.
 A constant is not a wave, so the page says no phase for it, and `Finding::has_phase` is false.
 In the transform the bin for 0 Hz is `X = N · a`, where the others are `X = N/2 · (a − i·b)`.
-The signal of the demo has a mean of nothing, so the page shows `a = 1 × 0.00` at 0 Hz, and a constant that is added to it is found at 0 Hz and nowhere else.
+The signal of the demo has a mean of nothing, so the page shows `a = 1 × 0.00` at 0 Hz.
+A constant that is added to it is found at 0 Hz and nowhere else.
 The same is true of a phase at no amplitude: the page does not say one, since a wave that is not there has none.
 
 **The conventions of the FFT demo.**
@@ -85,7 +99,8 @@ The CDP test checks the same against the shading that the browser draws, to with
 ## The shading
 
 `PlotArea` takes a line, a baseline, a colour for the part above and one for the part below, and an opacity.
-It cuts the line where it crosses the baseline, so that each shaded piece is wholly on one side, and it cuts the shading to the plotted area as a line is cut.
+It cuts the line where it crosses the baseline, so that each shaded piece is wholly on one side.
+It cuts the shading to the plotted area as a line is cut.
 A point that is not finite breaks the area in two, as it breaks a line.
 It is drawn in the order that it is given, so the demo gives it before the product's line.
 
@@ -100,7 +115,12 @@ The frequency that the demo remembers is only changed once all four are drawn, a
 
 ## How it is checked
 
-`convolution/analysis/unit_tests.rs` checks the areas, including a segment that crosses the axis, that a whole cycle of a sine is as much below as above, that the probe of each wave's own frequency finds its amplitude and phase, that a whole frequency that is not there finds nothing, and the peaks of the spectrum.
-`convolution/plots/unit_tests.rs` checks what is drawn: the order of the lines, the colours and opacity of the shading, the writing, and that the three plots of time have one scale of height.
-The library's own tests check `PlotArea`: where the line is cut, the area of each piece against that of a sine, the cutting to the plotted area, and that the browser draws a polygon of each colour.
-`convolution.rs` in the CDP tests checks the sizes of the scenes, the slider and its keys and pointer, that every scene follows it, and that the area of the shading in the browser is the area that is written.
+`convolution/analysis/unit_tests.rs` checks the areas, including a segment that crosses the axis.
+It checks that a whole cycle of a sine is as much below as above, and that the probe of each wave's own frequency finds its amplitude and phase.
+It checks that a whole frequency that is not there finds nothing, and the peaks of the spectrum.
+`convolution/plots/unit_tests.rs` checks what is drawn: the order of the lines, the colours and opacity of the shading, and the writing.
+It also checks that the three plots of time have one scale of height.
+The library's own tests check `PlotArea`: where the line is cut, and the area of each piece against that of a sine.
+They also check the cutting to the plotted area, and that the browser draws a polygon of each colour.
+`convolution/unit_tests.rs` in the CDP tests checks the sizes of the scenes, and the slider with its keys and pointer.
+It checks that every scene follows the slider, and that the area of the shading in the browser is the area that is written.

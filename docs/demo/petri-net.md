@@ -81,7 +81,8 @@ The library's own nodes and connectors are the picture and are hidden from assis
 An overlay in the same transformed group holds everything that changes or can be selected.
 
 A snapshot is projected to a list of slots and the fields of the text panel.
-The page writes the whole projection, or only the slots that differ from the one before, and a test checks that the two give the same page for every pair of snapshots.
+The page writes the whole projection, or only the slots that differ from the one before.
+A test checks that the two give the same page for every pair of snapshots.
 A write that fails marks the page dirty, and the next action draws the committed snapshot again in full.
 Every tick and every seek carries the playback epoch and the history generation, so a callback that was asked for before a stop or a change of history does nothing.
 
@@ -89,4 +90,5 @@ Every tick and every seek carries the playback epoch and the history generation,
 
 The native tests are in `unit_tests.rs` beside each module and cover the net, the scripts, the history, the layout, the projection and the controller.
 The browser tests are in `cdp-integration-test/tests/cdp/petri_net/unit_tests.rs`.
-They measure the real geometry, including the smallest clearance between a spoke and the hub it does not belong to, and drive the keyboard, the pointer, the playback, a failed write and the comparison of a diffed page with a full one.
+They measure the real geometry, including the smallest clearance between a spoke and the hub it does not belong to.
+They drive the keyboard, the pointer, the playback and a failed write, and compare a diffed page with a full one.

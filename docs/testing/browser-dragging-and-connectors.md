@@ -6,7 +6,11 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
 - listener and scene lifetime, so a dropped `Scene` leaves no dangling drag handler
 - multiple simultaneous pointers, so one pointer cannot drive or end another pointer's drag
 - self-loop rejection
-- adding an edge as a transaction (`Scene::add_edge_with`), in `tests/drag/edge_construction_failure.rs`. Every one of its DOM writes is made to fail in turn. The call has to report the error, leave the scene exactly as it was (the same elements, no connector, neither node's name or tooltip changed), and give the scene an edge that never failed has when it is repeated
+- adding an edge as a transaction (`Scene::add_edge_with`), in `tests/drag/edge_construction_failure.rs`.
+  Every one of its DOM writes is made to fail in turn.
+  The call has to report the error, and leave the scene exactly as it was.
+  That means the same elements, no connector, and neither node's name or tooltip changed.
+  Repeating the call has to give the scene the edge that a call that never failed gives it
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node

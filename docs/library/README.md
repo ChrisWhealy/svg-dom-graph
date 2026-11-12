@@ -7,38 +7,37 @@
 
 ## Modules
 
-| Module | Description | Visibility | Tested Using |
-|---|---|---|---|
-| `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li><li>zoom and pan arithmetic (`ViewTransform`)</li></ul> | public: `Side` and `ViewTransform` are re-exported from `scene`, and `geometry` itself is public. | `cargo test`
-| `src/model/`  | DOM-free graph topology and node content<ul><li>`Graph`, `Node` and `Edge`</li><li>`DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout`, `ByteOrder` and `LabellingStyle`</li><li>`Selection` and the three operator enums</li></ul> | crate-private: exposes opaque `NodeId`/`EdgeId` handles, and re-exports the content types through `scene` | `cargo test`
-| `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants | public: `Error` only | `cargo test`
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>plot nodes</li><li>nested scenes</li></ul>
-| public | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md))
+| Module          | Description                                                                                                                                                                                                                                                                                                              | Visibility                                                                                                | Tested Using                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li><li>zoom and pan arithmetic (`ViewTransform`)</li></ul>                                                                                                         | public: `Side` and `ViewTransform` are re-exported from `scene`, and `geometry` itself is public.         | `cargo test`                                                                           |
+| `src/model/`    | DOM-free graph topology and node content<ul><li>`Graph`, `Node` and `Edge`</li><li>`DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout`, `ByteOrder` and `LabellingStyle`</li><li>`Selection` and the three operator enums</li></ul>                                                                              | crate-private: exposes opaque `NodeId`/`EdgeId` handles, and re-exports the content types through `scene` | `cargo test`                                                                           |
+| `src/error/`    | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants                                                                                                                                                                                                                                | public: `Error` only                                                                                      | `cargo test`                                                                           |
+| `src/scene/`    | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>plot nodes</li><li>nested scenes</li></ul> | public                                                                                                    | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md)) |
 
 ## `Scene`'s Public API
 
 `Scene` is a cheap, cloneable handle, and its public API is grouped by area:
 
-| Page | What it covers |
-|---|---|
-| [Nodes](nodes.md) | Plain, data, named data and operator nodes, and measuring, placing and changing them |
-| [Floating Point Values](floating-point.md) | `F32` and `F64`, `FloatFormat`, decimal places against significant digits, special values and widths |
-| [128-bit Values and UUIDs](uuids-and-128-bit-values.md) | `U128`, `I128`, `Uuid`, `UuidFormat`, the byte layouts of a UUID and why no operator accepts one |
-| [Booleans and Pointer-sized Integers](bools-and-sizes.md) | `Bool`, `BoolFormat`, `Usize`, `Isize`, which operators accept a Boolean, and the width of the target |
-| [Complex Numbers](complex-numbers.md) | `Complex32`, `Complex64`, `ComplexNumberFormat`, `ComplexStyle`, `AngleUnit`, the matrix form, and which operators accept a complex number |
-| [Butterfly](butterfly.md) | `add_butterfly_node`: a multiplication, an addition and a subtraction drawn and dragged as one unit |
-| [Observing a Drag](drag-observation.md) | `make_draggable_with_observer`, `DragPhase`, `DragObserverHandle`, what each event carries, who owns the callback, and the commit order of `move_node` |
-| [Ellipse Nodes](ellipse-nodes.md) | `add_ellipse_node`, circles and ellipses, how a label grows the shape, the centre convention, clock positions on connectors, and what is refused |
-| [Text Cells](text-cells.md) | `Text`, `DataFormat::Text`, what a cell may hold, how its width is found, and the cell-width hint |
-| [Plot Nodes](plot-nodes.md) | `add_plot_node`: a graph of the real or the complex plane, linear or logarithmic axes, ticks, a grid, what is plotted on it, and a click handler |
-| [Text Nodes](text-nodes.md) | Markdown nodes, the Markdown they understand, and text input nodes |
-| [Row Labels and Text Measurement](labels-and-text.md) | `LabellingStyle`, and how this crate sizes anything that contains text |
-| [Selection and Marking Cells](selection.md) | `Selection`, secondary cells, unreached cells, a ring around a whole node, and the selection toolbar |
-| [Connectors](connectors.md) | `add_edge`, connector types, forced sides, fixing points, and `Side` |
-| [Dragging](dragging.md) | `make_draggable`, bounds and collision handling |
-| [The Toolbar, Zoom and the View](toolbar-and-zoom.md) | The zoom toolbar, `zoom_in` and friends, and `view` and `set_view` |
-| [Pan and Wheel Zoom](pan-and-wheel-zoom.md) | The pan and wheel-zoom gestures, their keyboard handling, and `InputMode` |
-| [Responsive Layouts](responsive-layouts.md) | `refresh_layout`, and how the visible area is found |
-| [How View Updates Are Written](view-updates.md) | Why zooming and panning are cheap, and how a failed or interrupted write is handled |
-| [The Scene Title](scene-title.md) | `show_scene_title` and `SceneTitleOptions` |
-| [Nested Scenes](nested-scenes.md) | Container nodes, `enter` and `exit` |
+| Page                                                      | What it covers                                                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Nodes](nodes.md)                                         | Plain, data, named data and operator nodes, and measuring, placing and changing them                                                                   |
+| [Floating Point Values](floating-point.md)                | `F32` and `F64`, `FloatFormat`, decimal places against significant digits, special values and widths                                                   |
+| [128-bit Values and UUIDs](uuids-and-128-bit-values.md)   | `U128`, `I128`, `Uuid`, `UuidFormat`, the byte layouts of a UUID and why no operator accepts one                                                       |
+| [Booleans and Pointer-sized Integers](bools-and-sizes.md) | `Bool`, `BoolFormat`, `Usize`, `Isize`, which operators accept a Boolean, and the width of the target                                                  |
+| [Complex Numbers](complex-numbers.md)                     | `Complex32`, `Complex64`, `ComplexNumberFormat`, `ComplexStyle`, `AngleUnit`, the matrix form, and which operators accept a complex number             |
+| [Butterfly](butterfly.md)                                 | `add_butterfly_node`: a multiplication, an addition and a subtraction drawn and dragged as one unit                                                    |
+| [Observing a Drag](drag-observation.md)                   | `make_draggable_with_observer`, `DragPhase`, `DragObserverHandle`, what each event carries, who owns the callback, and the commit order of `move_node` |
+| [Ellipse Nodes](ellipse-nodes.md)                         | `add_ellipse_node`, circles and ellipses, how a label grows the shape, the centre convention, clock positions on connectors, and what is refused       |
+| [Text Cells](text-cells.md)                               | `Text`, `DataFormat::Text`, what a cell may hold, how its width is found, and the cell-width hint                                                      |
+| [Plot Nodes](plot-nodes.md)                               | `add_plot_node`: a graph of the real or the complex plane, linear or logarithmic axes, ticks, a grid, what is plotted on it, and a click handler       |
+| [Text Nodes](text-nodes.md)                               | Markdown nodes, the Markdown they understand, and text input nodes                                                                                     |
+| [Row Labels and Text Measurement](labels-and-text.md)     | `LabellingStyle`, and how this crate sizes anything that contains text                                                                                 |
+| [Selection and Marking Cells](selection.md)               | `Selection`, secondary cells, unreached cells, a ring around a whole node, and the selection toolbar                                                   |
+| [Connectors](connectors.md)                               | `add_edge`, connector types, forced sides, fixing points, and `Side`                                                                                   |
+| [Dragging](dragging.md)                                   | `make_draggable`, bounds and collision handling                                                                                                        |
+| [The Toolbar, Zoom and the View](toolbar-and-zoom.md)     | The zoom toolbar, `zoom_in` and friends, and `view` and `set_view`                                                                                     |
+| [Pan and Wheel Zoom](pan-and-wheel-zoom.md)               | The pan and wheel-zoom gestures, their keyboard handling, and `InputMode`                                                                              |
+| [Responsive Layouts](responsive-layouts.md)               | `refresh_layout`, and how the visible area is found                                                                                                    |
+| [How View Updates Are Written](view-updates.md)           | Why zooming and panning are cheap, and how a failed or interrupted write is handled                                                                    |
+| [The Scene Title](scene-title.md)                         | `show_scene_title` and `SceneTitleOptions`                                                                                                             |
+| [Nested Scenes](nested-scenes.md)                         | Container nodes, `enter` and `exit`                                                                                                                    |

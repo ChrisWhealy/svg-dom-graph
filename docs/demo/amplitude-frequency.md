@@ -37,7 +37,8 @@ The wave is 512 straight segments, which is 64 for each cycle at 8 Hz.
 ## The sliders
 
 A slider is the browser's own `<input type="range">`, in a `<foreignObject>` of the scene's `<svg>`, with its name and its value written above it as SVG text.
-The browser does the dragging with a pointer or a finger, the keys, and the accessibility, so assistive technology says its name, its range and its value, such as "2.0 Hz".
+The browser does the dragging with a pointer or a finger, the keys, and the accessibility.
+So assistive technology says its name, its range and its value, such as "2.0 Hz".
 The page's own code only says where a slider goes and how it looks.
 
 * Right and Up move it a step, and Left and Down move it back a step.
@@ -54,7 +55,8 @@ The function given to `sliders::watch` is told, from the `input` event, which sl
 The connector routing, fixing points, ellipses and complex number panels have sliders too, and all use the same module.
 
 What makes a slider as long as an axis is the arithmetic in `sliders::frame`, which touches no DOM.
-A native slider's thumb travels from half its own width inside one end of the element to half its own width inside the other, so the element is made one thumb wider than the track.
+A native slider's thumb travels from half its own width inside one end of the element to half its own width inside the other.
+So the element is made one thumb wider than the track.
 The thumb is given a fixed width by a style that the module puts in the page, since the browsers' own differ.
 A vertical slider is the same element turned a quarter turn.
 
@@ -65,6 +67,8 @@ So the slider is the same element before the scene is drawn again and after, a d
 
 ## How it is checked
 
-`amplitude_frequency/plots/unit_tests.rs` checks the configuration, the wave, that it never goes beyond its amplitude, that a wave of n cycles has the right number of turns, the dotted lines, and the formula, and that it is below where the wave goes.
+`amplitude_frequency/plots/unit_tests.rs` checks the configuration, the wave, and that it never goes beyond its amplitude.
+It checks that a wave of n cycles has the right number of turns, the dotted lines, and the formula.
+It also checks that the formula is below where the wave goes.
 `src/controls/sliders/unit_tests.rs` checks where a slider goes, how a value is rounded, and the style that the thumbs are given.
-`amplitude_frequency.rs` in the CDP tests checks the size of the scene, the three sliders, the pointer and the keys, and that the wave changes.
+`amplitude_frequency/unit_tests.rs` in the CDP tests checks the size of the scene, the three sliders, the pointer and the keys, and that the wave changes.

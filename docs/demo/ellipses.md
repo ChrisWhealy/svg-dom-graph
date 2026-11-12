@@ -45,5 +45,6 @@ Beside the name of the slider, the scene says how many degrees the minute is clo
 Every node can be dragged, and the connectors follow.
 The slider draws the scene again, but not itself, so a drag of the slider carries on and the keyboard focus is kept.
 It keeps the zoom and pan, and where each node was dragged to.
-The slider is a range input in the strip at the bottom of the scene, which the nodes cannot be dragged into, and it stays where it is when the scene is zoomed or panned.
+The slider is a range input in the strip at the bottom of the scene, which the nodes cannot be dragged into.
+It stays where it is when the scene is zoomed or panned.
 The circle that the clock connector points at is not kept, since the minute decides where it goes.

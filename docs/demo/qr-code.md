@@ -18,7 +18,8 @@ A node the walk has not reached yet is drawn faint by `Scene::set_unreached_cell
 
 The matrix of 21 by 21 modules is on the right.
 It is plain SVG in the scene's own layer, drawn with a fixed handful of elements however many modules have a colour.
-There are three paths, one each for the modules that are dark, light and not yet coloured, and one path each for the outline of a role and the highlight of a step.
+There are three paths, one each for the modules that are dark, light and not yet coloured.
+There is also one path each for the outline of a role and the highlight of a step.
 A module that has no colour yet is pale blue, so that it cannot be taken for a light one.
 
 The text input node holds at most 17 characters.

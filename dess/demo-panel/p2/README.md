@@ -7,15 +7,15 @@ Switching to another scenario is P3.
 
 ## What P2 adds
 
-| Piece | Where |
-|---|---|
-| The fragment, numbered after Petri Net | `demo/panels/16-concurrency/02-service-simulator.html` |
-| The registry entry and the source frame | `demo_gallery!` in `demo-app/src/lib.rs`, `service_sim::build_service_simulator_demo` |
-| The controls, the inspector and the page's hooks | `demo-app/src/service_sim/controls.rs` and `mod.rs` |
-| The page side of a session | `demo-app/src/service_sim/dom.rs`, which implements `SessionHost` |
-| The catalogue and its preflight | `service-sim/src/catalogue.rs` |
-| The acceptance tests | `dess/demo-panel/test-gallery.mjs` |
-| The CI job | `dess-gallery` in `.github/workflows/ci.yml` |
+| Piece                                            | Where                                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| The fragment, numbered after Petri Net           | `demo/panels/16-concurrency/02-service-simulator.html`                                |
+| The registry entry and the source frame          | `demo_gallery!` in `demo-app/src/lib.rs`, `service_sim::build_service_simulator_demo` |
+| The controls, the inspector and the page's hooks | `demo-app/src/service_sim/controls.rs` and `mod.rs`                                   |
+| The page side of a session                       | `demo-app/src/service_sim/dom.rs`, which implements `SessionHost`                     |
+| The catalogue and its preflight                  | `service-sim/src/catalogue.rs`                                                        |
+| The acceptance tests                             | `dess/demo-panel/test-gallery.mjs`                                                    |
+| The CI job                                       | `dess-gallery` in `.github/workflows/ci.yml`                                          |
 
 No simulator rule is in `demo-app`.
 The engine is `service-sim-engine`, and the projection, the surface, the controller and the coordinator are `service-sim`.
@@ -25,12 +25,12 @@ The engine is `service-sim-engine`, and the projection, the surface, the control
 `service_sim::catalogue::catalogue()` lists the four scenarios of design D1 in order.
 Each has the totals that it is known to come to, and its ceilings are those totals.
 
-| Id | Servers | Slices | Pops |
-|---|---|---|---|
-| E0 | 2 | 12 | 19 |
-| E3-NOOP | 1 | 9 | 9 |
-| scaled | 3 | 487 | 1,009 |
-| W6 | 3 | 5,464 | 11,214 |
+| Id      | Servers | Slices | Pops   |
+| ------- | ------- | ------ | ------ |
+| E0      | 2       | 12     | 19     |
+| E3-NOOP | 1       | 9      | 9      |
+| scaled  | 3       | 487    | 1,009  |
+| W6      | 3       | 5,464  | 11,214 |
 
 A native test replays all four to their ends and finds exactly these totals.
 The gallery replays the first one before it builds anything, and the range's maximum is the number that the replay found.
@@ -63,18 +63,18 @@ The oracle is the independent JavaScript engine, which shares no code with the p
 Timers and frames are held by the page-level injector, so that no test waits for an interval, and a DOM call is made to fail by the same injector.
 One test lets the browser's own timer run once at 1 Hz, and says how long that took without judging it.
 
-| Test | What it shows |
-|---|---|
-| G01 | The menu, the deep link and the source frames agree with the registry |
-| G02 | A revisit adds no SVG, host, observer, listener or id |
-| G03 | The first draw is snapshot 0 of the walkthrough |
-| G04 | Twelve Next clicks match the engine at every snapshot, and the data node's ordinal advances by one |
-| G05 | Previous, Restart and seeks equal a full redraw, and five arrow keys are five requests with the last one winning |
-| G06 | One slice per timer at 1, 2, 5 and 10 Hz, rate replacement, and Play at the end of a clean and of a dirty page |
-| G07 | A timer or frame that was taken back is gone, and the last request wins |
-| G08 | Repair restores the picture, the overlay and the Play control, after a failure at each of five writes after a failed write of the Play control, and after a failed write of a boundary attribute |
-| G09 | Selecting and clearing a job agree across the scene, the inspector and the accessible names |
-| G10 | Names, roles, aria-disabled, Tab order, Enter, Space, arrow keys, focus retention and no shortcut |
+| Test | What it shows                                                                                                                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| G01  | The menu, the deep link and the source frames agree with the registry                                                                                                                            |
+| G02  | A revisit adds no SVG, host, observer, listener or id                                                                                                                                            |
+| G03  | The first draw is snapshot 0 of the walkthrough                                                                                                                                                  |
+| G04  | Twelve Next clicks match the engine at every snapshot, and the data node's ordinal advances by one                                                                                               |
+| G05  | Previous, Restart and seeks equal a full redraw, and five arrow keys are five requests with the last one winning                                                                                 |
+| G06  | One slice per timer at 1, 2, 5 and 10 Hz, rate replacement, and Play at the end of a clean and of a dirty page                                                                                   |
+| G07  | A timer or frame that was taken back is gone, and the last request wins                                                                                                                          |
+| G08  | Repair restores the picture, the overlay and the Play control, after a failure at each of five writes after a failed write of the Play control, and after a failed write of a boundary attribute |
+| G09  | Selecting and clearing a job agree across the scene, the inspector and the accessible names                                                                                                      |
+| G10  | Names, roles, aria-disabled, Tab order, Enter, Space, arrow keys, focus retention and no shortcut                                                                                                |
 
 `dess/demo-panel/p2/mutation-check.mjs` breaks the page in 15 ways, one at a time, in a copy of the tree, and a test has to fail for each.
 Its result is in `evidence/mutation-check.json`, and the run of the ten tests that was measured is in `evidence/gallery.json`.
@@ -83,8 +83,8 @@ It rebuilds the demo for each mutation and takes about half an hour, so CI does 
 ## What P2 does not do, and why
 
 - **W6 on the arrow keys.** G05 asks for rapid arrow keys on the 5,464 snapshots of W6.
-  That scenario has three servers, and the page cannot yet switch from two, so the keys are run on the walkthrough's 12.
-  The W6 run is P3.
+  That scenario has three servers, and at P2 the page could not yet switch from two, so the keys were run on the walkthrough's 12.
+  The W6 run is in P3.
 - **A stale callback that the browser still calls.** G07 cannot call one, since the page's scheduler frees a closure that was taken back, so the real page has none to call.
   The native controller tests do it, with a scheduler that keeps cancelled tasks.
 - **Pause with a seek waiting.** The page has no way to pause while a seek is waiting, since a seek stops playback.

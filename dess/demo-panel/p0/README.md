@@ -31,13 +31,13 @@ dess/demo-panel/
 └── test-gallery.mjs          # Added in a later phase
 ```
 
-| File | Holds |
-|---|---|
-| `staging.mjs` | The staging probe: presence, geometry, focus, pointer and accessibility of a candidate host |
-| `injector.mjs` | The self-test of the shared injector's detach mode |
-| `evidence/staging.json` | What the staging probe observed |
-| `evidence/injector.json` | The armed and fired records of the detach self-test, with the call counts before and after |
-| `evidence/features.txt` | The two `cargo tree` outputs of the feature-isolation check |
+| File                     | Holds                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| `staging.mjs`            | The staging probe: presence, geometry, focus, pointer and accessibility of a candidate host |
+| `injector.mjs`           | The self-test of the shared injector's detach mode                                          |
+| `evidence/staging.json`  | What the staging probe observed                                                             |
+| `evidence/injector.json` | The armed and fired records of the detach self-test, with the call counts before and after  |
+| `evidence/features.txt`  | The two `cargo tree` outputs of the feature-isolation check                                 |
 
 ## P0 implementation notes
 
@@ -97,13 +97,13 @@ A failed required gate blocks P1.
 
 When P0 is run, this section is completed with the following.
 
-| Record | Content |
-|---|---|
-| Tested commit | The git commit that was measured |
-| Chrome version | The browser that the staging and injector results come from |
-| Commands | The exact commands that produced each piece of evidence |
-| Observed results | The measurements, readbacks and armed and fired records |
-| Conclusions | Pass or fail for each gate, with the chosen staging strategy |
+| Record           | Content                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| Tested commit    | The git commit that was measured                             |
+| Chrome version   | The browser that the staging and injector results come from  |
+| Commands         | The exact commands that produced each piece of evidence      |
+| Observed results | The measurements, readbacks and armed and fired records      |
+| Conclusions      | Pass or fail for each gate, with the chosen staging strategy |
 
 Distinguish a gate that was designed from a result that was measured.
 Chrome is the release gate, and Firefox and Safari results are recorded as observations.
@@ -113,17 +113,17 @@ Chrome is the release gate, and Firefox and Safari results are recorded as obser
 Run it with `node dess/demo-panel/p0/staging.mjs`, which writes `evidence/staging.json`.
 It builds the real simulator surface and controller into a connected host under each candidate's CSS, and then probes it.
 
-| Item | Value |
-|---|---|
-| Browser | HeadlessChrome 157.0.0.0 |
-| Toolchain | rustc 1.99.1, wasm-pack 0.15.1, Node v26.13.0 |
-| Tree | Commit 9d0af83, with uncommitted changes, so the run is to be repeated from a clean commit before it is cited |
+| Item      | Value                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------- |
+| Browser   | HeadlessChrome 157.0.0.0                                                                                      |
+| Toolchain | rustc 1.99.1, wasm-pack 0.15.1, Node v26.13.0                                                                 |
+| Tree      | Commit 9d0af83, with uncommitted changes, so the run is to be repeated from a clean commit before it is cited |
 
-| Candidate | CSS and attributes | Result |
-|---|---|---|
-| `opacity_inert` | `opacity:0; pointer-events:none` and `inert`, in the flow of the panel | Passes S1 to S4, fails S5 |
-| `opacity_inert_absolute` | The same, with `position:absolute; left:0; top:0; width:1000px` | Passes S1 to S5 |
-| `offscreen_inert` | `position:absolute; left:-20000px; width:1000px` and `inert` | Passes S1 to S5 |
+| Candidate                | CSS and attributes                                                     | Result                    |
+| ------------------------ | ---------------------------------------------------------------------- | ------------------------- |
+| `opacity_inert`          | `opacity:0; pointer-events:none` and `inert`, in the flow of the panel | Passes S1 to S4, fails S5 |
+| `opacity_inert_absolute` | The same, with `position:absolute; left:0; top:0; width:1000px`        | Passes S1 to S5           |
+| `offscreen_inert`        | `position:absolute; left:-20000px; width:1000px` and `inert`           | Passes S1 to S5           |
 
 S5 is a gate that a review added: the staged host must not move the live scene, what follows it, or the height of the page.
 A host in the flow of the panel occupies its own height even when nobody can see it.
@@ -165,29 +165,29 @@ The mode is `__faults.armDetach({ svgId, method, nth })`, with `disarmDetach()` 
 It makes the nth call of `method` inside the `<svg>` natively, and then removes the `<svg>` before control returns to the caller.
 It is off until it is armed, it is one-shot, and it is refused while an exception is armed or a detach already is.
 
-| Check | Observed |
-|---|---|
-| Compatibility, unarmed | One slice makes the same 8 counted calls in the same order, and arming three ordinals counts and fails what it did before |
-| Firing | Armed at calls 1, 4 and 8 of 8, it fires once at that call, and the report names the method, the ordinal, the tag and the attribute |
-| Controller outcome | `Unavailable`, the cursor unmoved, the page dirty and the host `Detached` |
-| Recovery | After `reattach()` a repair makes the page the committed slice again, and the next slice commits |
-| Not firing | An ordinal past the last reports not fired, and the helper that demands a firing throws |
-| Counting while armed | With a detach armed that cannot fire, recording and an armed exception count what they do without it |
-| Cleanup | No arm state, timer, frame or listener is left, and the counting afterwards is the prior vector again |
-| Shared injector | The graph recovery self-test, `selftest-recovery.mjs`, still passes |
+| Check                  | Observed                                                                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Compatibility, unarmed | One slice makes the same 8 counted calls in the same order, and arming three ordinals counts and fails what it did before           |
+| Firing                 | Armed at calls 1, 4 and 8 of 8, it fires once at that call, and the report names the method, the ordinal, the tag and the attribute |
+| Controller outcome     | `Unavailable`, the cursor unmoved, the page dirty and the host `Detached`                                                           |
+| Recovery               | After `reattach()` a repair makes the page the committed slice again, and the next slice commits                                    |
+| Not firing             | An ordinal past the last reports not fired, and the helper that demands a firing throws                                             |
+| Counting while armed   | With a detach armed that cannot fire, recording and an armed exception count what they do without it                                |
+| Cleanup                | No arm state, timer, frame or listener is left, and the counting afterwards is the prior vector again                               |
+| Shared injector        | The graph recovery self-test, `selftest-recovery.mjs`, still passes                                                                 |
 
 The self-test fails for the right reasons, and that is repeatable.
 `node dess/demo-panel/p0/injector-mutation-check.mjs` changes a copy of the injector in six small ways, one at a time, and the self-test has to notice each.
 The repository's injector is never touched.
 
-| Mutation | What the self-test notices |
-|---|---|
-| The detach fires one call late | The firing ordinal is wrong |
-| The detach never fires | The report says not fired |
-| The detach fires more than once | The one-shot check, and the reattachment that it breaks |
-| Counting is skipped while a detach is armed | Recording sees fewer calls than without it |
-| An exception armed beside a detach is ignored | The exception does not fail its call |
-| Disarming does not forget the detach | A second disarm still reports an arm |
+| Mutation                                      | What the self-test notices                              |
+| --------------------------------------------- | ------------------------------------------------------- |
+| The detach fires one call late                | The firing ordinal is wrong                             |
+| The detach never fires                        | The report says not fired                               |
+| The detach fires more than once               | The one-shot check, and the reattachment that it breaks |
+| Counting is skipped while a detach is armed   | Recording sees fewer calls than without it              |
+| An exception armed beside a detach is ignored | The exception does not fail its call                    |
+| Disarming does not forget the detach          | A second disarm still reports an arm                    |
 
 The first version of the check missed two of these, so it was tightened.
 The one-shot check and the disarm check were added.
@@ -201,12 +201,12 @@ G14 repeats it on the finished gallery in P2.
 Run it with `node dess/demo-panel/p0/features.mjs`, which writes the two complete trees to `evidence/features.txt`.
 It reads the resolved feature graph of each build with `cargo tree -p <package> --target wasm32-unknown-unknown -e features`.
 
-| Build | Needs to show | Observed |
-|---|---|---|
-| `svg-dom-graph-demo` | No `service-sim` feature `fault-hook` | Not present |
-| `perf-harness-wasm` | `service-sim` feature `fault-hook`, as the positive control | Present |
+| Build                | Needs to show                                               | Observed    |
+| -------------------- | ----------------------------------------------------------- | ----------- |
+| `svg-dom-graph-demo` | No `service-sim` feature `fault-hook`                       | Not present |
+| `perf-harness-wasm`  | `service-sim` feature `fault-hook`, as the positive control | Present     |
 
-The demo does not yet depend on `service-sim`, so before P2 its graph has no `fault-hook` because it has no `service-sim`.
+Before P2 the demo did not depend on `service-sim`, so its graph had no `fault-hook` because it had no `service-sim`.
 That is recorded as what it is, and not as a result about the hook.
 
 Three things show that the check can tell.
@@ -234,10 +234,11 @@ That run is the one remaining formal acceptance condition for P0.
 
 All three gates have a result.
 
-| Gate | Result |
-|---|---|
-| Staging strategy | `opacity:0` plus `inert` passes, and the off-screen fallback also passes |
+| Gate               | Result                                                                         |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Staging strategy   | `opacity:0` plus `inert` passes, and the off-screen fallback also passes       |
 | Synchronous detach | Proven on a real surface draw, with the shared injector unchanged when unarmed |
-| Feature isolation | The demo graph has no `fault-hook`, with a positive control |
+| Feature isolation  | The demo graph has no `fault-hook`, with a positive control                    |
 
-Not yet done: a repeat of the evidence from a clean commit, and Firefox and Safari observations.
+Not yet done: a repeat of the evidence from a clean commit.
+Firefox and Safari were observed in P4: see `../p4/browser-observations.md`.

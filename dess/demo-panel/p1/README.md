@@ -9,13 +9,13 @@ Nothing in `demo-app` changes in this phase, and no simulator rule is added to t
 
 ## What P1 builds
 
-| Piece | What it is |
-|---|---|
-| `Spec` | A scenario: its identity, its server count, how to make its engine and what it is known to come to |
-| `Spec::preflight` | Checks the engine's own server count, then runs it to its end, counting slices and pops, against exact totals and ceilings |
-| `SessionHost` | The one trait that touches the page: build a candidate, verify it, hand the page over, read the handoff back, confirm it, undo it, discard and finalize |
-| `Coordinator` | The state machine: Idle, Staging, Publishing, then Committed or RolledBack |
-| `Target` and `TargetHook` | The one place the current controller is kept, and the weak handle that a page's hooks hold |
+| Piece                     | What it is                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Spec`                    | A scenario: its identity, its server count, how to make its engine and what it is known to come to                                                      |
+| `Spec::preflight`         | Checks the engine's own server count, then runs it to its end, counting slices and pops, against exact totals and ceilings                              |
+| `SessionHost`             | The one trait that touches the page: build a candidate, verify it, hand the page over, read the handoff back, confirm it, undo it, discard and finalize |
+| `Coordinator`             | The state machine: Idle, Staging, Publishing, then Committed or RolledBack                                                                              |
+| `Target` and `TargetHook` | The one place the current controller is kept, and the weak handle that a page's hooks hold                                                              |
 
 A gallery binds `SessionHost` to its DOM in P3, and the tests bind it to a fake.
 
@@ -70,15 +70,15 @@ Nothing owns anything in a circle, which a test shows by counting the hosts that
 
 Three small additions, with no change to what the controller does.
 
-| Addition | Why |
-|---|---|
-| `Factory` is public | A scenario's engine maker is part of a `Spec` |
-| `Controller::speed_ms()` | The coordinator carries the speed to the new controller |
+| Addition                    | Why                                                               |
+| --------------------------- | ----------------------------------------------------------------- |
+| `Factory` is public         | A scenario's engine maker is part of a `Spec`                     |
+| `Controller::speed_ms()`    | The coordinator carries the speed to the new controller           |
 | `Controller::is_disposed()` | A test, and a caller, can tell that a replaced controller is gone |
 
 ## Tests
 
-There are 22 tests, all native, with a fake host and a manual scheduler.
+There are 24 tests, all native, with a fake host and a manual scheduler.
 
 - **Preflight:** E0 gives 12 slices and 19 pops, E3-NOOP gives 9 and 9, and the scaled run gives 487 and 1,009.
   A bad server count, a count that is not the engine's own, a passed ceiling, a total that differs and a failing engine are each refused.

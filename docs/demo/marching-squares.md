@@ -11,7 +11,8 @@ A field is a grid of samples, row by row, with row 0 at the top.
 The cell `(r, c)` has the corners TL, TR, BR and BL, and `g` is a sample minus the level.
 A corner is set when `g > 0`, with TL = 1, TR = 2, BR = 4 and BL = 8, which gives a mask from 0 to 15.
 Each mask says which sides of the cell the contour crosses and how the crossings are joined.
-A crossing is calculated once for each grid edge, in the same direction every time, and both cells that share the edge use it, so the coordinates are the same bits.
+A crossing is calculated once for each grid edge, in the same direction every time.
+Both cells that share the edge use it, so the coordinates are the same bits.
 A sample exactly at a level is refused with `VertexOnLevel`, since that is a plateau and not a saddle.
 
 The masks 5 and 10 are ambiguous: the two corners above the level are opposite each other.
@@ -29,7 +30,8 @@ Keys are ordered by kind (`H`, `V`, `SaddleV`, `SaddleH`), then row, then column
 A cycle is rotated to its lowest key and goes the way with the lower sequence.
 The result does not depend on the order of the segments.
 For the first `k` cells, the same stitcher runs on the segments of those cells.
-A crossing on the edge of the cells visited has one segment, so it is a provisional open end, and nothing is joined across a cell that has not been visited.
+A crossing on the edge of the cells visited has one segment, so it is a provisional open end.
+Nothing is joined across a cell that has not been visited.
 A loop is closed only once all its cells have been visited.
 `Trace::digest` hashes the keys and the bits of every coordinate.
 
@@ -42,7 +44,8 @@ A loop is closed only once all its cells have been visited.
 | Coarse saddle waves | 9 × 7 of `sin(x)·sin(y)` | −0.10, +0.10, +0.20 |
 | Saddle lab | five 2 × 2 cells at threshold zero | −0.5, 0, +0.5 |
 
-The three Ripple levels each have one ambiguous cell: case 10, `Q` negative at (4, 1), case 10, `Q` negative at (14, 12), and case 5, `Q` positive at (13, 22).
+The three Ripple levels each have one ambiguous cell.
+They are case 10 with `Q` negative at (4, 1), case 10 with `Q` negative at (14, 12), and case 5 with `Q` positive at (13, 22).
 The middle level is +0.101 and not +0.100, because +0.100 is exactly the sample at row 14, column 12.
 Their `rho` is 0.892, 0.425 and 0.416, and the two segments of each are 0.85, 0.71 and 0.76 of a grid unit apart, so the decision can be seen.
 Moving the middle level to +0.102 keeps case 10, but `Q` becomes positive and the pairing turns to T–R and B–L.
@@ -53,20 +56,25 @@ The same solver makes all of them.
 ## The page
 
 The stage is one `<svg>`.
-The controls are in it, above the scene, and they never zoom: five buttons from the library's `svg_buttons`, the range from its `sliders`, and the selectors and the number as the browser's own controls in a `<foreignObject>`.
+The controls are in it, above the scene, and they never zoom.
+There are five buttons from the library's `svg_buttons`, the range from its `sliders`, and the selectors and the number as the browser's own controls in a `<foreignObject>`.
 Below them is a group that each scene is swapped into.
 A scene is a `Scene` with one `PlotNode`, drawn at the grid's own coordinates on axes padded by 0.25, with a toolbar for the zoom and the pan.
-The plot items are the samples, an outline for each ambiguous cell that has been visited, the contours with a pattern for each level, and an outline for the inspected cell.
+The plot items are the samples, and an outline for each ambiguous cell that has been visited.
+They also include the contours, with a pattern for each level, and an outline for the inspected cell.
 A loop repeats its first point, which leaves a notch at the seam, so a dot as wide as the line goes there.
 The inspector beside the plot draws the inspected cell enlarged: its samples, its crossings and its segments.
 
 The plot fills the scene, so the surface behind it that the library pans with is never pressed, and a drag on the plot would not pan.
-The page pans it itself: a press on the plot that moves 4 pixels or more sets the view, which is the same view that the toolbar, the wheel and the keyboard change.
+The page pans it itself.
+A press on the plot that moves 4 pixels or more sets the view, which is the same view that the toolbar, the wheel and the keyboard change.
 The click that ends such a drag is swallowed, so panning does not choose a cell, and a press that does not move still does.
 A press on the toolbar or on the keyboard's pan target does not start a pan.
 
-The scene is built in a hidden `<svg>` that is in the document, so that it can be measured, and it is swapped in with one call to `replaceChildren` only when all of it has been built.
-The zoom and the pan are carried over to the new scene before the swap if the field has the same axes, and a view that cannot be set aborts the swap.
+The scene is built in a hidden `<svg>` that is in the document, so that it can be measured.
+It is swapped in with one call to `replaceChildren` only when all of it has been built.
+The zoom and the pan are carried over to the new scene before the swap if the field has the same axes.
+A view that cannot be set aborts the swap.
 Every scene has an ID of its own, so a retry never reuses one.
 Focus in the scene is put back by the name of the control.
 
@@ -84,7 +92,9 @@ The controller has the same `Surface` and `Scheduler` as the other demos.
 A draw that fails before the page is touched keeps the state.
 One that fails after, or a rollback that was not whole, marks the page dirty, and the next action draws it again first, even one with nowhere to go.
 Range input is coalesced to one draw for each frame.
-The generation counts the traces and scenes that are on the page, and the attempt counts every try to replace one, including a try that failed, so that no two tries share a number and a request from before a replacement does nothing.
+The generation counts the traces and scenes that are on the page.
+The attempt counts every try to replace one, including a try that failed.
+So no two tries share a number, and a request from before a replacement does nothing.
 Each frame carries the generation and a token of its own, so a frame that was taken back but arrives cannot overwrite a newer move.
 
 ## Tests
@@ -93,8 +103,10 @@ Each frame carries the generation and a token of its own, so a frame that was ta
 The hooks come off the window when the page is left.
 A browser test makes a write fail by overriding `Element.prototype.setAttribute` for a name, and makes the swap throw by overriding `replaceChildren`, before it changes the host or after.
 
-An independent check reads the page: it learns the plot's own mapping from the outline of a cell, whose corners are whole numbers, and turns each vertex of each contour back into the grid's coordinates.
-Each must be on a grid edge, at the place where the interpolation of the two samples gives the level, which is worked out in the test from the field's formula.
+An independent check reads the page.
+It learns the plot's own mapping from the outline of a cell, whose corners are whole numbers, and turns each vertex of each contour back into the grid's coordinates.
+Each must be on a grid edge, at the place where the interpolation of the two samples gives the level.
+The test works that place out from the field's formula.
 It does not use the solver.
 The solver is also checked in native tests against a second reading of the same grids, which does not use the case table or the stitcher.
 
@@ -112,4 +124,5 @@ The solver is also checked in native tests against a second reading of the same 
 | Hidden candidate | The scene is built attached and hidden, view carried over, and swapped. A failed build, set of the view or swap leaves the old scene, its view and its focus |
 
 Not checked: how the seam dot looks on a screen reader, since the plot is read as an image from its description, and a screenshot of every zoom limit.
-Selectors were not tested with the arrow keys on a closed `<select>`, which headless Chrome on macOS does not change, and so they are reached by Tab and changed by their events.
+Selectors were not tested with the arrow keys on a closed `<select>`, which headless Chrome on macOS does not change.
+So they are reached by Tab and changed by their events.

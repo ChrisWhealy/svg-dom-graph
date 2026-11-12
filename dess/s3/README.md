@@ -16,31 +16,31 @@ It is not a page yet: there is no panel, no buttons and no stylesheet, which are
 
 ## What S3 contains
 
-| Path | Holds |
-|---|---|
-| `service-sim/src/scheduler.rs` | The `Scheduler` trait, and `ManualScheduler`, which has a clock that a test moves, keeps cancelled callbacks, and can be made to fail |
-| `service-sim/src/controller/` | The controller, its `Host` trait, and 70 native tests with a fake host and a manual clock |
-| `service-sim/src/host.rs` | The browser's side: the scheduler on the page's timers and frames, the host with its visibility predicate, and the gallery hint. It builds for `wasm32-unknown-unknown` only |
-| `service-sim/tests/controller_browser.rs` | Nine tests in Chrome, on the real surface with real timers, frames, a real detach and a real hidden panel |
-| `dess/s3/gallery-order.mjs` | The order test of S0, run on the real gallery |
-| `dess/s3/mutation-check.mjs` | Breaks the controller and its browser side in thirty-four ways, to show that the tests notice |
+| Path                                      | Holds                                                                                                                                                                        |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `service-sim/src/scheduler.rs`            | The `Scheduler` trait, and `ManualScheduler`, which has a clock that a test moves, keeps cancelled callbacks, and can be made to fail                                        |
+| `service-sim/src/controller/`             | The controller, its `Host` trait, and 70 native tests with a fake host and a manual clock                                                                                    |
+| `service-sim/src/host.rs`                 | The browser's side: the scheduler on the page's timers and frames, the host with its visibility predicate, and the gallery hint. It builds for `wasm32-unknown-unknown` only |
+| `service-sim/tests/controller_browser.rs` | Nine tests in Chrome, on the real surface with real timers, frames, a real detach and a real hidden panel                                                                    |
+| `dess/s3/gallery-order.mjs`               | The order test of S0, run on the real gallery                                                                                                                                |
+| `dess/s3/mutation-check.mjs`              | Breaks the controller and its browser side in thirty-four ways, to show that the tests notice                                                                                |
 
 ## Pages
 
-| Page | What it covers |
-|---|---|
+| Page                                 | What it covers                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | [The controller](docs/controller.md) | The state, the commit, the tokens, hiding and detaching, failure and repair, and what each test proves |
 
 ## Running the S3 checks
 
-| Command | Runs |
-|---|---|
-| `cargo test -p service-sim --lib` | The 70 native tests of the controller and the scheduler, and the projection's |
-| `wasm-pack test --headless --chrome service-sim` | The surface's 13 tests and the controller's 9, on a real page. They need Chrome |
-| `cargo clippy -p service-sim --all-targets -- -D warnings` | Lints the controller natively |
-| `cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings` | Lints the browser side and its tests |
-| `node dess/s3/gallery-order.mjs` | The order test on the real gallery, which needs `cargo run -p demo-server -- --build-only` first |
-| `node dess/s3/mutation-check.mjs` | The sensitivity check, a few minutes, which needs Chrome and restores the source |
+| Command                                                                                    | Runs                                                                                             |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `cargo test -p service-sim --lib`                                                          | The 77 native tests of the controller, the scheduler and the projection                          |
+| `wasm-pack test --headless --chrome service-sim`                                           | The surface's 13 tests and the controller's 12, on a real page. They need Chrome                 |
+| `cargo clippy -p service-sim --all-targets -- -D warnings`                                 | Lints the controller natively                                                                    |
+| `cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings` | Lints the browser side and its tests                                                             |
+| `node dess/s3/gallery-order.mjs`                                                           | The order test on the real gallery, which needs `cargo run -p demo-server -- --build-only` first |
+| `node dess/s3/mutation-check.mjs`                                                          | The sensitivity check, a few minutes, which needs Chrome and restores the source                 |
 
 All but the sensitivity check are in CI.
 

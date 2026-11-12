@@ -98,16 +98,17 @@ In endurance, a leak of bytes, of a listener, of an element, and a slot lost tha
 
 ## Limits, and where this departs from the design
 
-- **Three outcomes, not two, in practice.** The design names nothing committed and partly committed.
+- **Three outcomes, not two, in practice.**<br>The design names nothing committed and partly committed.
   `undocumented` is the third, and is how the design's own rule (a finding, not a guess) is written into a manifest.
-- **A failure is a thrown DOM call.** It is the only kind a page can cause the library to meet.
+- **A failure is a thrown DOM call.**<br>It is the only kind a page can cause the library to meet.
   A failure of a call that returns no error in `web-sys`, such as setting text, removing an element or reading a rectangle, is not injected.
   It could only escape as an exception through the wasm frames.
   A failure of the rollback is injected where the rollback makes a call that can fail: a second failure is put at each such call, after the first.
-- **Chrome only, on one machine.** The heap is a Chrome diagnostic and not a gate.
+- **Chrome only, on one machine.**<br>The heap is a Chrome diagnostic and not a gate.
 - **Label placement depends on history,** so a clean run is not a reference for it.
   A connector retry is held to the connectors.
-- **Not covered:** the other node constructors (plot, markdown, text input, butterfly, ellipse), the binary and arithmetic operators, the other operations on a nested scene (`enter`, `exit`), the selection toolbar, and a failure of two calls that are not one rollback apart.
+- **Not covered:**<br>The other node constructors (plot, markdown, text input, butterfly, ellipse), the binary and arithmetic operators, and the other operations on a nested scene (`enter`, `exit`).
+  Also the selection toolbar, and a failure of two calls that are not one rollback apart.
   The new points break one operation of each kind, and the sweep is the same for the others.
   The new points run on Layer B only, since none of them needs real input.
 - **Hour-scale runs** are the same manifest with more cycles.

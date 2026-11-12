@@ -22,14 +22,14 @@ scene.set_plot_items(plot, &[PlotLine::new(points, "#e5534b").into()])?;
 scene.on_plot_click(plot, |scene, plot, click| { /* click.x, click.y */ })?;
 ```
 
-| Method | What it does |
-|---|---|
+| Method                                   | What it does                                                                             |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `add_plot_node` and `add_plot_node_with` | Draw the box, the plotted area, the grid, the axes, the ticks, the titles and the legend |
-| `set_plot_items` | Draws lines, shaded areas, dots and labels, in place of whatever was drawn before |
-| `set_plot_description` | Changes what assistive technology reads |
-| `plot_area` | The plotted area in the scene's own space, for laying out something against it |
-| `plot_point_to_scene` | Where a value is in the scene's own space |
-| `on_plot_click` | Reports a click inside the plotted area as the values of the axes |
+| `set_plot_items`                         | Draws lines, shaded areas, dots and labels, in place of whatever was drawn before        |
+| `set_plot_description`                   | Changes what assistive technology reads                                                  |
+| `plot_area`                              | The plotted area in the scene's own space, for laying out something against it           |
+| `plot_point_to_scene`                    | Where a value is in the scene's own space                                                |
+| `on_plot_click`                          | Reports a click inside the plotted area as the values of the axes                        |
 
 ## The configuration
 
@@ -45,12 +45,12 @@ Its horizontal axis is the real part and its vertical axis is the imaginary part
 
 A complex plot differs from a real one only in what it assumes when a setting is left out.
 
-| Left out | Real | Complex |
-|---|---|---|
-| Axis titles | none | `Re` and `Im` |
-| Tick labels on the vertical axis | the number | the number and `i` |
-| Where the tick labels are | in the margin | beside the axes |
-| The accessible name | "Real plane plot: …" | "Complex plane plot: …" |
+| Left out                         | Real                 | Complex                 |
+| -------------------------------- | -------------------- | ----------------------- |
+| Axis titles                      | none                 | `Re` and `Im`           |
+| Tick labels on the vertical axis | the number           | the number and `i`      |
+| Where the tick labels are        | in the margin        | beside the axes         |
+| The accessible name              | "Real plane plot: …" | "Complex plane plot: …" |
 
 Points are `(x, y)` pairs either way, and a `Complex` converts to one.
 A click on a complex plot gives `PlotClick::complex()`.
@@ -59,17 +59,17 @@ A click on a complex plot gives `PlotClick::complex()`.
 
 A `PlotAxis` has these settings.
 
-| Setting | Default | What it does |
-|---|---|---|
-| `min` and `max` | given | The range. They need not be the same on the two axes |
-| `scale` | `Linear` | `PlotAxis::logarithmic` makes it logarithmic, and both ends must then be above zero |
-| `title` | none, or the plane's | Text that names the axis |
-| `major_interval` | a round one, about six | A difference of value, or for a logarithmic axis a number of decades |
-| `minor` | none, or `Decade` on a logarithmic axis | `MinorTicks::Divisions(n)` splits each major interval, and `Decade` ticks 2 to 9 times each power of ten |
-| `tick_labels` | `Auto` | `None` writes none, and `Custom` puts a tick and a name at each value given |
-| `tick_suffix` | none, or the plane's | Written after each automatic label |
-| `position` | `AtZero` | Where the axis line is drawn: a value on the other axis, or one of its edges |
-| `arrow` | off | An arrowhead at the greater end of the axis line |
+| Setting          | Default                                 | What it does                                                                                             |
+| ---------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `min` and `max`  | given                                   | The range. They need not be the same on the two axes                                                     |
+| `scale`          | `Linear`                                | `PlotAxis::logarithmic` makes it logarithmic, and both ends must then be above zero                      |
+| `title`          | none, or the plane's                    | Text that names the axis                                                                                 |
+| `major_interval` | a round one, about six                  | A difference of value, or for a logarithmic axis a number of decades                                     |
+| `minor`          | none, or `Decade` on a logarithmic axis | `MinorTicks::Divisions(n)` splits each major interval, and `Decade` ticks 2 to 9 times each power of ten |
+| `tick_labels`    | `Auto`                                  | `None` writes none, and `Custom` puts a tick and a name at each value given                              |
+| `tick_suffix`    | none, or the plane's                    | Written after each automatic label                                                                       |
+| `position`       | `AtZero`                                | Where the axis line is drawn: a value on the other axis, or one of its edges                             |
+| `arrow`          | off                                     | An arrowhead at the greater end of the axis line                                                         |
 
 `Custom` tick labels replace the automatic ticks and the interval.
 They are how a tick is put at a value that has a name, such as a quarter of a window.
@@ -108,27 +108,28 @@ It does not say what is plotted, so a caller that changes that should say so wit
 
 `set_plot_items` takes a list of items, drawn in order, so a later one is over an earlier one.
 
-| Item | What it is |
-|---|---|
-| `PlotLine` | Straight segments through points, with a colour, a width and a dash pattern |
-| `PlotArea` | The area between a line and a baseline, shaded in one colour above the baseline and another below it, at an opacity |
-| `PlotPoints` | Dots, with a fill, a radius and an outline |
-| `PlotLabel` | A line of text at a point, moved by an offset in user units, turned, and on a halo of the background |
+| Item         | What it is                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `PlotLine`   | Straight segments through points, with a colour, a width and a dash pattern                                         |
+| `PlotArea`   | The area between a line and a baseline, shaded in one colour above the baseline and another below it, at an opacity |
+| `PlotPoints` | Dots, with a fill, a radius and an outline                                                                          |
+| `PlotLabel`  | A line of text at a point, moved by an offset in user units, turned, and on a halo of the background                |
 
 Items are placed by the value they stand for.
 A label's offset is in user units and not in values.
 So a label stays the same distance from its point however the axes are scaled.
 
-* A line is cut where it leaves the plotted area, and so is a shaded area.
-* A shaded area is cut where its line crosses the baseline, so each piece is on one side, and it is drawn in the order given. Give it before the line that it is under.
-* A shaded area shows an integral and does not work it out.
+- A line is cut where it leaves the plotted area, and so is a shaded area.
+- A shaded area is cut where its line crosses the baseline, so each piece is on one side, and it is drawn in the order given.
+  Give it before the line that it is under.
+- A shaded area shows an integral and does not work it out.
   The area is the same shape as the line through the same points, so the trapezoid rule on those points gives the area that is shaded.
-* A point that cannot be placed breaks a shaded area in two, as it breaks a line.
+- A point that cannot be placed breaks a shaded area in two, as it breaks a line.
   A baseline that cannot be placed, which is zero or less on a logarithmic axis, shades nothing.
-* The plot is an image to assistive technology, so the shading is not read.
+- The plot is an image to assistive technology, so the shading is not read.
   Say in the description what the areas above and below are, as the colours are not the only way to tell them apart.
-* A dot or a label whose point is outside it is not drawn.
-* A point that cannot be placed is skipped, and breaks a line there.
+- A dot or a label whose point is outside it is not drawn.
+- A point that cannot be placed is skipped, and breaks a line there.
   So a gap in the data is a gap in the line.
   That is a point that is not finite, or is zero or less on a logarithmic axis.
 
@@ -159,13 +160,13 @@ A configuration that cannot be drawn is refused with `Error::InvalidPlotConfig`,
 It says which axis is at fault where that applies.
 The checks are made before anything is drawn, so a rejected call leaves the scene as it was.
 
-* A size that is not finite, or margins that leave no plotted area.
-* An axis that does not run from a finite value to a greater one.
-* A logarithmic axis that starts at zero or below.
-* An interval that is not above zero, or that would make more than 400 ticks.
-* Minor ticks that do not suit the scale: `Divisions` on a logarithmic axis, or `Decade` on a linear one.
-* A custom tick that is not a usable value.
-* A background that is not a hex colour.
-* A width that is not above zero, and an empty description.
+- A size that is not finite, or margins that leave no plotted area.
+- An axis that does not run from a finite value to a greater one.
+- A logarithmic axis that starts at zero or below.
+- An interval that is not above zero, or that would make more than 400 ticks.
+- Minor ticks that do not suit the scale: `Divisions` on a logarithmic axis, or `Decade` on a linear one.
+- A custom tick that is not a usable value.
+- A background that is not a hex colour.
+- A width that is not above zero, and an empty description.
 
 A plot method given a node of another kind returns `Error::NotAPlot`.

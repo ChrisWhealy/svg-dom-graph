@@ -18,11 +18,12 @@ Moving it out of the contract means saying so here, and the Safari observations 
 ## The floor
 
 These are the oldest versions that have the features the library and the demo use.
-They come from the platform's own compatibility tables and are to be checked against them before the contract is published.
+They are from MDN's browser compatibility data, which was read on 2026-11-12.
+The table is to be checked again when the contract is published.
 
 | Feature                                   | Used by                                   | Chrome | Firefox | Safari                     |
 | ----------------------------------------- | ----------------------------------------- | ------ | ------- | -------------------------- |
-| WebAssembly reference types (`externref`) | every wasm build                          | 96     | 79      | 15                         |
+| WebAssembly reference types (`externref`) | every wasm build                          | 96     | 79      | 15.1                       |
 | `foreignObject` controls                  | the gallery panels                        | any    | any     | any, with the checks below |
 | `inert`                                   | the staged scene of the service simulator | 102    | 112     | 15.5                       |
 | `:has()`                                  | the colours of the server boxes           | 105    | 121     | 15.4                       |
