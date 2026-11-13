@@ -1,6 +1,6 @@
 # P0-D: the feature graphs of the demo build and the harness build
-# cargo 1.99.1 (5f94df478 2026-08-27)
-# measured 2026-11-12T10:09:39.226Z
+# cargo 1.100.0 (3acc79c0c 2026-11-05)
+# measured 2026-11-13T10:27:42.851Z
 # demo has service-sim: true; demo has fault-hook: false; harness has fault-hook: true
 
 ## cargo tree -p svg-dom-graph-demo --target wasm32-unknown-unknown -e features --charset utf8 --color never
@@ -258,7 +258,7 @@ svg-dom-graph-demo v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/demo-app)
 │       │   └── web-sys v0.3.106 (*)
 │       ├── web-sys feature "default" (*)
 │       └── svg-dom-graph feature "default"
-│           └── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph)
+│           └── svg-dom-graph v0.2.51 (/Users/chris/Developer/rust/svg-dom-graph)
 │               ├── wasm-bindgen feature "default" (*)
 │               ├── svg-dom feature "default" (*)
 │               ├── web-sys feature "Document" (*)
@@ -788,7 +788,7 @@ perf-harness-wasm v0.1.0 (/Users/chris/Developer/rust/svg-dom-graph/perf-harness
 │       │   └── web-sys v0.3.106 (*)
 │       ├── web-sys feature "default" (*)
 │       └── svg-dom-graph feature "default"
-│           └── svg-dom-graph v0.2.50 (/Users/chris/Developer/rust/svg-dom-graph)
+│           └── svg-dom-graph v0.2.51 (/Users/chris/Developer/rust/svg-dom-graph)
 │               ├── wasm-bindgen feature "default" (*)
 │               ├── svg-dom feature "default" (*)
 │               ├── web-sys feature "Document" (*)

@@ -13,19 +13,32 @@ publish = false
 # `rlib` too, so that the counting allocator's arithmetic can be unit tested natively.
 crate-type = ["cdylib", "rlib"]
 
-[dependencies]
+# Everything in this crate that uses a dependency is compiled only for wasm32 (see lib.rs), and the native build is only of the counting
+# allocator's arithmetic, for its unit tests. So a native build has no use for any of them, and Rust 1.100 says so. They are declared where
+# they are used. The service simulator's `fault-hook` is therefore in the dependency graph of the wasm build, which is the build that
+# dess/demo-panel/p0/features.mjs checks.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 perf-harness = { path = "../perf-harness", default-features = false }
-svg-dom-graph = { path = ".." }
-# The service simulator's controller and surface, which the service target of the recovery workload breaks. Its fault hook is the
-# harness's and not the product's: only this build has it.
 service-sim = { path = "../service-sim", features = ["fault-hook"] }
+svg-dom-graph = { path = ".." }
 service-sim-engine = { path = "../service-sim-engine" }
+serde = { version = "1", features = ["derive"] }
 svg-dom = "^0.2.17"
+serde_json = "1"
 wasm-bindgen = "0.2"
 js-sys = "0.3"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 
-[dependencies.web-sys]
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3"
-features = ["Window", "Document", "Element", "HtmlElement", "HtmlCollection", "Node", "NodeList", "Performance", "console", "DomTokenList"]
+features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlCollection",
+    "Node",
+    "NodeList",
+    "Performance",
+    "console",
+    "DomTokenList",
+]
