@@ -4,14 +4,14 @@
   "layer": "B",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-13T11:16:32.885Z",
+    "promoted_at": "2026-11-13T13:37:25.927Z",
     "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
     "workload_hash": "e5d1d9d0e839dbfd07f79491c48bdee8d65f8dd79d24c0cbdb7745c28acac685",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-9v45-96-core-processor-157.0.8103.50-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "4f0e2034d019a49b8758c18488829a3d15c3f6d0c2f7365e07ddc2da3d222310",
-  "reason": "First 12-run baselines",
+  "reason": "Refresh baselines",
   "runs": [
     "w3-scene-lifecycle-smoke-B-performance-r0-20261112T112448",
     "w3-scene-lifecycle-smoke-B-performance-r1-20261112T112541",
@@ -32,6 +32,9 @@
     "ratio_tolerance": 0.1,
     "confidence": 0.95
   },
-  "previous": null,
+  "previous": {
+    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
+    "promoted_at": "2026-11-13T11:16:32.885Z"
+  },
   "accepted_regression": null
 }
