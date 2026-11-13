@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add `perf-detection.yml` so `selftest-regression.mjs` can run against a committed baseline (`d540f8c`)
 - Automate performance baseline adoption process (`5464715`)
 - Add weekly CI job to check whether `perf-baseline` needs to be rerun (`8e10e20`)
-- Refresh baseline measurements (``)
+- Refresh baseline measurements (`5675b7f`)
 
 ### Changed
 
