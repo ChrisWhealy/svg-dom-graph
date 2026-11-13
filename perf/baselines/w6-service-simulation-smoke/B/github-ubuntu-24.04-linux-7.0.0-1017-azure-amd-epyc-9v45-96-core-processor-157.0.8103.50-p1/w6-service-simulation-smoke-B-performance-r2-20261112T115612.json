@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "run_id": "w6-service-simulation-smoke-B-performance-r2-20261112T115612",
+  "started_at": "2026-11-12T11:56:12.290Z",
+  "repetition": 2,
+  "sequence_position": 10,
+  "environment": {
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "157.0.8103.50",
+    "os": "Linux 7.0.0-1017-azure",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "memory_bytes": 16760344576,
+    "runner_class": "github-ubuntu-24.04",
+    "timer_resolution_us": 4.999999888241291,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.0",
+    "crate_version": "0.2.50",
+    "git_sha": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
+    "git_dirty": false,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w6-service-simulation-smoke",
+    "sha256": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "cce8d6847dc1919a9c7202334ece6ab36079e225b9a8275f651f28651d17afbb",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "service_simulation",
+      "seed": 20261106,
+      "prng": "splitmix64",
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance",
+          "endurance"
+        ],
+        "warmup_iterations": 10,
+        "measurement_iterations": 60,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false
+      },
+      "simulation": {
+        "scenario": "mixed_outage",
+        "servers": 3,
+        "queue_capacity": 12,
+        "max_attempts": 2,
+        "retry_deferral_cap": 4,
+        "min_pops": 10000,
+        "batch_slices": 4
+      },
+      "limits": {
+        "wall_ms": 600000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now read before the first of four synchronous next calls and after the last, the four slices having been worked out first: the data node setter, the overlay writes, the connectedness guards and the commit bookkeeping are inside it, and no layout is read",
+      "name": "simulation.render_commit.four_slices",
+      "outliers_flagged": 4,
+      "samples": 60,
+      "status": "measured",
+      "summary": {
+        "max": 614.9999997578561,
+        "min": 100.00000009313226,
+        "p50": 145.00000001862645
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 49.999999813735485,
+        "mean": 165.58333333426467,
+        "stddev": 85.23691640180913,
+        "tukey_high": 249.9999995343387,
+        "tukey_low": 50.00000027939677
+      },
+      "resolution_limited": true
+    },
+    {
+      "name": "simulation.actual_pops_in_batches",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 574,
+      "mechanism": "the independent engine's popped heap events, stale ones included, over every warm-up and measured batch"
+    }
+  ],
+  "checkpoints_passed": 492,
+  "checkpoints_failed": [],
+  "gates": [
+    {
+      "name": "simulation.windows_are_not_wrapped",
+      "status": "pass",
+      "detail": "10 warm-up and 60 measured batches of 4 slices: the measured ones began at slice 297 and ended at 536, and the fixed windows have them begin at 297 and end at 536, inside the 536 slices"
+    },
+    {
+      "name": "simulation.engine_is_not_stepped_in_a_timed_interval",
+      "status": "pass",
+      "detail": "the four slices of every batch were worked out before the clock was read, so the interval is the render and the commit"
+    },
+    {
+      "name": "simulation.no_layout_is_read_in_a_timed_interval",
+      "status": "pass",
+      "detail": "the controller under test asks whether the host may be drawn on by a cached activation flag and isConnected, and never by checkVisibility or a bounding box"
+    }
+  ],
+  "raw_samples": "target/perf-smoke/w6-service-simulation-smoke/w6-service-simulation-smoke-B-performance-r2-20261112T115612.samples.ndjson",
+  "cases": "target/perf-smoke/w6-service-simulation-smoke/w6-service-simulation-smoke-B-performance-r2-20261112T115612.cases.json",
+  "simulation": {
+    "generator_revision": "mixed_outage/7",
+    "seed": 20261106,
+    "qualification": {
+      "generator_revision": "mixed_outage/7",
+      "seed": 20261106,
+      "qualified": true,
+      "reasons": [],
+      "metrics": {
+        "occupancyMean": 0.49722222222222207,
+        "waitingNonemptyFraction": 1,
+        "popsPerSlice": 2.058333333333333,
+        "busyFraction": 1,
+        "halfOccupancyDifference": 0.03888888888888864,
+        "halfPopsDifference": 0.06477732793522266
+      },
+      "occupancy_histogram": [
+        0,
+        0,
+        3,
+        16,
+        45,
+        50,
+        44,
+        24,
+        27,
+        18,
+        7,
+        4,
+        2
+      ],
+      "measured_window": {
+        "slices": 240,
+        "occupancy_mean": 0.49722222222222207,
+        "waiting_nonempty_fraction": 1,
+        "pops_per_slice": 2.058333333333333,
+        "busy_fraction": 1
+      },
+      "interactive_window": {
+        "slices": 30,
+        "occupancy_mean": 0.5111111111111112,
+        "waiting_nonempty_fraction": 1,
+        "pops_per_slice": 2,
+        "busy_fraction": 1
+      },
+      "minimums": {
+        "slices": {
+          "required": 536,
+          "actual": 5464,
+          "met": true
+        },
+        "pops": {
+          "required": 10000,
+          "actual": 11214,
+          "met": true
+        }
+      },
+      "bounds": {
+        "occupancyMean": [
+          0.25,
+          0.9
+        ],
+        "waitingNonemptyMin": 0.5,
+        "popsPerSlice": [
+          1.5,
+          32
+        ],
+        "busyMin": 0.5,
+        "halfOccupancyDifferenceMax": 0.2,
+        "halfPopsDifferenceMax": 0.25
+      }
+    },
+    "counts": {
+      "arrivals": 4000,
+      "pops": 11214,
+      "stale_pops": 3002,
+      "noop_pops": 107,
+      "slices": 5464,
+      "stale_fraction": 0.26770108792580705,
+      "pops_per_slice": 2.0523426061493413
+    },
+    "hashes": {
+      "input_stream_sha256": "411e2bb54bc537a15ad2e1b58f1cc3d4cac72a360a470ea12600cfdde1355837",
+      "event_pop_sha256": "c13521648f841a31b2b4042e708aa713a4eb9d13c3a55b6f51490b4ff901a291",
+      "checkpoint_chain_sha256": "37adae16b4f3c0f482372f0f7a57e11b94c4697c94b35fe3e5df6f6663b63fda"
+    }
+  }
+}

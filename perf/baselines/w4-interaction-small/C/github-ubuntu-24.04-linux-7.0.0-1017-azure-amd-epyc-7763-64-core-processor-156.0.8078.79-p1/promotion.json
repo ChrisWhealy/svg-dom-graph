@@ -4,18 +4,27 @@
   "layer": "C",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-10T16:29:26.844Z",
-    "commit": "f4990cb115ecfb8348c074b5e1106506c2412c2c",
+    "promoted_at": "2026-11-13T11:16:32.270Z",
+    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
     "workload_hash": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-7763-64-core-processor-156.0.8078.79-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
-  "reason": "Second baseline on github-ubuntu-24.04",
+  "reason": "First 12-run baselines",
   "runs": [
-    "w4-interaction-small-C-performance-r0-20261110T155225",
-    "w4-interaction-small-C-performance-r1-20261110T155334",
-    "w4-interaction-small-C-performance-r2-20261110T155537"
+    "w4-interaction-small-C-performance-r0-20261112T113217",
+    "w4-interaction-small-C-performance-r1-20261112T113327",
+    "w4-interaction-small-C-performance-r10-20261112T114824",
+    "w4-interaction-small-C-performance-r11-20261112T115027",
+    "w4-interaction-small-C-performance-r2-20261112T113531",
+    "w4-interaction-small-C-performance-r3-20261112T113642",
+    "w4-interaction-small-C-performance-r4-20261112T113752",
+    "w4-interaction-small-C-performance-r5-20261112T113955",
+    "w4-interaction-small-C-performance-r6-20261112T114105",
+    "w4-interaction-small-C-performance-r7-20261112T114216",
+    "w4-interaction-small-C-performance-r8-20261112T114511",
+    "w4-interaction-small-C-performance-r9-20261112T114714"
   ],
   "comparison_method": {
     "statistic": "ratio of repetition medians",
@@ -23,6 +32,9 @@
     "ratio_tolerance": 0.1,
     "confidence": 0.95
   },
-  "previous": null,
+  "previous": {
+    "commit": "f4990cb115ecfb8348c074b5e1106506c2412c2c",
+    "promoted_at": "2026-11-10T16:29:26.844Z"
+  },
   "accepted_regression": null
 }

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w3-scene-lifecycle-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-13T11:16:32.885Z",
+    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
+    "workload_hash": "e5d1d9d0e839dbfd07f79491c48bdee8d65f8dd79d24c0cbdb7745c28acac685",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-9v45-96-core-processor-157.0.8103.50-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "4f0e2034d019a49b8758c18488829a3d15c3f6d0c2f7365e07ddc2da3d222310",
+  "reason": "First 12-run baselines",
+  "runs": [
+    "w3-scene-lifecycle-smoke-B-performance-r0-20261112T112448",
+    "w3-scene-lifecycle-smoke-B-performance-r1-20261112T112541",
+    "w3-scene-lifecycle-smoke-B-performance-r10-20261112T112917",
+    "w3-scene-lifecycle-smoke-B-performance-r11-20261112T113010",
+    "w3-scene-lifecycle-smoke-B-performance-r2-20261112T112542",
+    "w3-scene-lifecycle-smoke-B-performance-r3-20261112T112543",
+    "w3-scene-lifecycle-smoke-B-performance-r4-20261112T112543",
+    "w3-scene-lifecycle-smoke-B-performance-r5-20261112T112637",
+    "w3-scene-lifecycle-smoke-B-performance-r6-20261112T112637",
+    "w3-scene-lifecycle-smoke-B-performance-r7-20261112T112638",
+    "w3-scene-lifecycle-smoke-B-performance-r8-20261112T112731",
+    "w3-scene-lifecycle-smoke-B-performance-r9-20261112T112824"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

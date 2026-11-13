@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w2-connector-rerouting-smoke",
+  "layer": "A",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-13T11:16:32.732Z",
+    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
+    "workload_hash": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-9v45-96-core-processor-native-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61",
+  "reason": "First 12-run baselines",
+  "runs": [
+    "w2-connector-rerouting-smoke-A-performance-r0-20261112T111924",
+    "w2-connector-rerouting-smoke-A-performance-r1-20261112T111924",
+    "w2-connector-rerouting-smoke-A-performance-r10-20261112T112352",
+    "w2-connector-rerouting-smoke-A-performance-r11-20261112T112446",
+    "w2-connector-rerouting-smoke-A-performance-r2-20261112T111925",
+    "w2-connector-rerouting-smoke-A-performance-r3-20261112T112018",
+    "w2-connector-rerouting-smoke-A-performance-r4-20261112T112111",
+    "w2-connector-rerouting-smoke-A-performance-r5-20261112T112112",
+    "w2-connector-rerouting-smoke-A-performance-r6-20261112T112112",
+    "w2-connector-rerouting-smoke-A-performance-r7-20261112T112206",
+    "w2-connector-rerouting-smoke-A-performance-r8-20261112T112206",
+    "w2-connector-rerouting-smoke-A-performance-r9-20261112T112259"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

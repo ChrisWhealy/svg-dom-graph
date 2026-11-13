@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "approved_at": "2026-11-13T11:16:34.218Z",
+  "reason": "First 12-run baselines",
+  "accepted_noise": null,
+  "runs_to_block": 10,
+  "runs": [
+    "w2-connector-rerouting-smoke-A-performance-r0-20261112T111741",
+    "w2-connector-rerouting-smoke-A-performance-r1-20261112T111834",
+    "w2-connector-rerouting-smoke-A-performance-r10-20261112T112356",
+    "w2-connector-rerouting-smoke-A-performance-r11-20261112T112449",
+    "w2-connector-rerouting-smoke-A-performance-r2-20261112T111927",
+    "w2-connector-rerouting-smoke-A-performance-r3-20261112T111928",
+    "w2-connector-rerouting-smoke-A-performance-r4-20261112T111929",
+    "w2-connector-rerouting-smoke-A-performance-r5-20261112T112022",
+    "w2-connector-rerouting-smoke-A-performance-r6-20261112T112115",
+    "w2-connector-rerouting-smoke-A-performance-r7-20261112T112208",
+    "w2-connector-rerouting-smoke-A-performance-r8-20261112T112302",
+    "w2-connector-rerouting-smoke-A-performance-r9-20261112T112302"
+  ],
+  "spread": [
+    {
+      "name": "rust.connector_endpoints",
+      "layer": "A",
+      "unit": "us",
+      "runs": 12,
+      "median": 0.019506493506493507,
+      "highest_over_lowest": 1.2770210752968814,
+      "coefficient_of_variation": 0.11658312819301485
+    }
+  ]
+}

@@ -4,18 +4,27 @@
   "layer": "A",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-10T16:29:26.905Z",
-    "commit": "f4990cb115ecfb8348c074b5e1106506c2412c2c",
+    "promoted_at": "2026-11-13T11:16:32.353Z",
+    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
     "workload_hash": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-7763-64-core-processor-native-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "cce8d6847dc1919a9c7202334ece6ab36079e225b9a8275f651f28651d17afbb",
-  "reason": "Second baseline on github-ubuntu-24.04",
+  "reason": "First 12-run baselines",
   "runs": [
-    "w6-service-simulation-smoke-A-performance-r0-20261110T155822",
-    "w6-service-simulation-smoke-A-performance-r1-20261110T155924",
-    "w6-service-simulation-smoke-A-performance-r2-20261110T160025"
+    "w6-service-simulation-smoke-A-performance-r0-20261112T115128",
+    "w6-service-simulation-smoke-A-performance-r1-20261112T115230",
+    "w6-service-simulation-smoke-A-performance-r10-20261112T120235",
+    "w6-service-simulation-smoke-A-performance-r11-20261112T120429",
+    "w6-service-simulation-smoke-A-performance-r2-20261112T115424",
+    "w6-service-simulation-smoke-A-performance-r3-20261112T115618",
+    "w6-service-simulation-smoke-A-performance-r4-20261112T115812",
+    "w6-service-simulation-smoke-A-performance-r5-20261112T115913",
+    "w6-service-simulation-smoke-A-performance-r6-20261112T120014",
+    "w6-service-simulation-smoke-A-performance-r7-20261112T120116",
+    "w6-service-simulation-smoke-A-performance-r8-20261112T120217",
+    "w6-service-simulation-smoke-A-performance-r9-20261112T120226"
   ],
   "comparison_method": {
     "statistic": "ratio of repetition medians",
@@ -23,6 +32,9 @@
     "ratio_tolerance": 0.1,
     "confidence": 0.95
   },
-  "previous": null,
+  "previous": {
+    "commit": "f4990cb115ecfb8348c074b5e1106506c2412c2c",
+    "promoted_at": "2026-11-10T16:29:26.905Z"
+  },
   "accepted_regression": null
 }
