@@ -185,3 +185,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ensure local and CI Rust toolchain versions match (`b3079aa`)
 - Move `wasm32` dependencies into architecture specific section of `Cargo.toml` (`a2ce479`)
 - Correct failing CDP `sine_cosine` test due to slow CI runner (`4ffd6ec`)
+- Attempt to correct failing CI W3 `perf-endurance` soak test (``)

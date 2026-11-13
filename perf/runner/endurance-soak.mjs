@@ -39,6 +39,10 @@ fs.mkdirSync(outDir, { recursive: true })
  * `RuntimeError: unreachable` after half an hour. Two million is under a tenth of the memory.
  */
 const MAX_CYCLES = 2_000_000
+/** How much longer the long calibration run has to be than the short one for the difference to be believed, which is well over the noise of a start. */
+const CLEAR_SECONDS = 60
+/** The most cycles that calibration will try. */
+const MAX_CALIBRATION_CYCLES = 1_000_000
 /** The least time of a cycle that is believed. A calibration that gives less is noise, and is refused and not used. */
 const LEAST_SECONDS_A_CYCLE = 2e-5
 for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_harness_wasm_bg.wasm'])
@@ -90,9 +94,18 @@ const timed = (name, measured) => {
   }
   return { cycles: warmup + measured, seconds: result.seconds }
 }
-// The long run has to be long enough for its extra cycles to be more than the noise of starting a browser, which on a shared runner is seconds.
+// The extra cycles of the long run have to be more than the noise of starting a browser, which on a shared runner is seconds, and has been over
+// a hundred seconds for the start itself. So the long run is made four times longer until it is longer than the short one by `CLEAR_SECONDS`.
 const short = timed('calibration-short.toml', setting(text, 'measurement_iterations'))
-const long = timed('calibration-long.toml', Math.max(setting(text, 'measurement_iterations') * 20, 20_000))
+let long = timed('calibration-long.toml', Math.max(setting(text, 'measurement_iterations') * 20, 20_000))
+
+while (long.seconds - short.seconds < CLEAR_SECONDS && long.cycles * 4 <= MAX_CALIBRATION_CYCLES) {
+  console.log(
+    `${long.cycles} cycles took ${(long.seconds - short.seconds).toFixed(1)} s more than ${short.cycles}: too little to tell from noise, so it is tried longer`
+  )
+  long = timed('calibration-long.toml', long.cycles * 4 - warmup)
+}
+
 const perCycle = (long.seconds - short.seconds) / (long.cycles - short.cycles)
 console.log(
   `${perCycle.toFixed(5)} s a cycle (${short.seconds.toFixed(1)} s for ${short.cycles}, ${long.seconds.toFixed(1)} s for ${long.cycles})`
