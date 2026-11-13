@@ -119,21 +119,37 @@ The approval is committed, so it is reviewed like the baseline is.
 
 ## Endurance
 
-`perf-endurance.yml` soaks the W3 and W5 endurance manifests for the hours that it is given, at most four and a half, since a hosted job stops at six.
-`endurance-soak.mjs` times the manifest at two lengths, works out the cycles that fill the hours, and runs them with the gates that every endurance run has.
+`perf-endurance.yml` soaks the W3 and W5 endurance manifests.
+Nothing in it predicts how long a run will take.
+Two attempts to do that from the time of short runs were wrong on a hosted runner.
+The start of a run there takes between one and two minutes, and a W5 cycle costs more the longer the run is.
+It took 0.095 s at 800 cycles and 0.24 s at 12,810.
+So each manifest is given what it can honour exactly, and what it cannot be given is written down afterwards.
+
+- W5 is driven from the page one cycle at a time, so it is given hours, and ends at the first cycle that starts after them.
+  The record has `cycles_completed`, and every gate judges the cycles that were made.
+- W3 runs its operation stream in wasm in one call, whose hash is compared with the whole of the intended stream, so it cannot be stopped part-way.
+  It is given a count of cycles, and the record has `hours_run`, the time that they took.
+
+Both are stopped at a ceiling, so that a run that is stuck does not hold a job until the job's own limit.
+The ceiling is 1.5 times the hours for W5, and 5.4 hours for W3, which is under the six that a hosted job is allowed.
+A run that hit its ceiling has `timed_out` and no gates, so it is a failure and not evidence.
+
+`endurance-soak.mjs` runs what is already built, with the gates that every endurance run has.
 Those are exact: elements and listeners back to their baseline after every teardown, live bytes not growing after the warm-up, and every recovery reaching the state its contract promises.
 Each soak writes `endurance-record.json`, and the ones to keep go in `perf/evidence/endurance/`.
 Endurance counts as qualified when a soak of 3 hours or more passed every gate.
+`endurance-scaling.mjs`, or `scaling` in the workflow, shows how the time of a run grows on the machine that it runs on.
+The cause of the growth in W5 is in its fault sweeps, and has not been found.
 
 The first CI soak showed what limits one.
 The harness keeps about 230 bytes of its wasm memory for each cycle, which is 22.9 MB at 100,000 cycles of the W3 manifest, and wasm32 has 4 GiB.
 A run that asked for 36 million cycles stopped after half an hour with `RuntimeError: unreachable`.
-The cause was the calibration, which had timed a build as well as the cycles and so believed that a cycle took no time.
-So a soak now runs what is already built, refuses a calibration it cannot believe, and caps one run at 2 million cycles.
-The record says `capped_by_memory` when the cap and not the hours decided the length, and a capped run counts only for the hours that it ran.
-A W3 cycle takes about a millisecond on a laptop, so W3 reaches about half an hour on a laptop and a little over an hour on a runner.
-Hours beyond that need cycles that cost more, such as the W5 recovery manifest, or a harness that does not keep memory for each cycle.
-And "multi-hour" in one job is at most four and a half, so a longer soak needs the same run repeated and the records read together.
+So a run is capped at 2 million cycles, and the record says `capped_by_memory` when the cap decided the length.
+A W3 cycle takes about a millisecond on a laptop and three on a runner.
+So the cap is about half an hour on a laptop and a little under two hours on a runner.
+So a W3 soak cannot reach three hours, and the three-hour soak is the W5 one, which is given hours and not cycles.
+A longer soak than four and a half hours in one job needs the same run repeated and the records read together.
 
 ## CI integration
 

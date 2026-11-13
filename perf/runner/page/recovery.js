@@ -1024,12 +1024,19 @@ export const runEndurance = (h, manifest, testing = {}) => {
     }
   h.recovery_teardown(0)
 
-  const reading = () => ({
-    ...parse(h.resource_reading()),
-    listeners: window.__listeners?.snapshot().total ?? null,
-    elements: document.querySelectorAll('*').length,
-    handles: h.held_handles?.().held ?? null
-  })
+  // Counting the handles reads every slot of the externref table, which is made as large as the run might need, so a count in every cycle makes the
+  // cost of a cycle grow with the cycles that the run is given. Nothing gates on the count, which is only a series that is kept, so it is read about
+  // once for each thousand slots, and in between the last reading is repeated.
+  let handlesSeen = null
+  const reading = (counted = true) => {
+    if (counted) handlesSeen = h.held_handles?.().held ?? null
+    return {
+      ...parse(h.resource_reading()),
+      listeners: window.__listeners?.snapshot().total ?? null,
+      elements: document.querySelectorAll('*').length,
+      handles: handlesSeen
+    }
+  }
   // The slab of externref slots is made as large as the run will need before anything is read, since it doubles as slots are lost
   // (see RETURNS_AN_OBJECT) and a doubling is not growth that the library caused. A cycle makes a handful of failures, and every
   // one of them can lose a slot, so twelve a cycle is more than enough and the run checks that it was.
@@ -1037,11 +1044,17 @@ export const runEndurance = (h, manifest, testing = {}) => {
   h.recovery_forget()
   const baseline = reading()
   const slotsAtStart = h.held_handles().undefinedSlots
+  const handleStride = Math.max(1, Math.ceil(h.held_handles().capacity / 1000))
   let objectCallsFailed = 0
   const series = []
   const unmet = []
   let judged = 0
+  // A soak is given a time and not a count, since the time of a cycle here grows with the length of the run, and no count that is chosen beforehand
+  // fills a time. It ends at the first cycle that starts after the time, and everything below is judged over the cycles that were made.
+  const stopAt = testing.stopAfterMs ? performance.now() + testing.stopAfterMs : Infinity
+  let completed = 0
   for (let cycle = 1; cycle <= total; cycle++) {
+    if (performance.now() >= stopAt) break
     const rows = []
     const probedCalls = []
     for (const group of GROUPS) {
@@ -1075,7 +1088,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
       h.recovery_build(JSON.stringify(manifest), 2, false)
       window.__faults.disarm()
     }
-    const now = reading()
+    const now = reading(cycle % handleStride === 0 || cycle === total)
     series.push({
       cycle,
       measured: cycle > warmup,
@@ -1085,6 +1098,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
       elements: now.elements,
       handles: now.handles
     })
+    completed = cycle
   }
 
   const verdict = parse(
@@ -1120,7 +1134,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
     status: unmet.length === 0 && judged > 0 ? 'pass' : judged === 0 ? 'inconclusive' : 'fail',
     detail:
       unmet.length === 0
-        ? `${judged} recoveries over ${total} cycles each reached the state the contract promises`
+        ? `${judged} recoveries over ${completed} cycles each reached the state the contract promises`
         : `${unmet.length} of ${judged} recoveries did not: ${unmet[0]}`
   })
   const back = (name, field, what) => {
@@ -1130,8 +1144,8 @@ export const runEndurance = (h, manifest, testing = {}) => {
       status: off.length === 0 ? 'pass' : 'fail',
       detail:
         off.length === 0
-          ? `${what} was ${baseline[field]} before the first cycle and after each of the ${total} teardowns`
-          : `${off.length} of ${total} teardowns left ${what} at a count other than ${baseline[field]}, the first being cycle ${off[0].cycle} with ${off[0][field]}`
+          ? `${what} was ${baseline[field]} before the first cycle and after each of the ${completed} teardowns`
+          : `${off.length} of ${completed} teardowns left ${what} at a count other than ${baseline[field]}, the first being cycle ${off[0].cycle} with ${off[0][field]}`
     })
   }
   back('endurance.listeners_return_to_baseline', 'listeners', 'the effective listener count')
@@ -1143,7 +1157,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
     status: slotsLost === objectCallsFailed ? 'pass' : 'fail',
     detail:
       slotsLost === objectCallsFailed
-        ? `${slotsLost} externref slots were lost over ${total} cycles, one for each of the ${objectCallsFailed} failures of a DOM call that returns an object, and none for the others`
+        ? `${slotsLost} externref slots were lost over ${completed} cycles, one for each of the ${objectCallsFailed} failures of a DOM call that returns an object, and none for the others`
         : `${slotsLost} externref slots were lost, and ${objectCallsFailed} failures of a call that returns an object explain only those`
   })
   outcome.metrics.push(
@@ -1186,7 +1200,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
     count(
       'recovery.cycles',
       'count',
-      total,
+      completed,
       'cycles in which every fault point of the manifest was broken and recovered from'
     )
   )
@@ -1198,7 +1212,7 @@ export const runEndurance = (h, manifest, testing = {}) => {
   outcome.samples['resource.capacity.after_teardown.per_cycle'] = series.map(point => point.capacity)
   outcome.samples['resource.js_handles_held.after_teardown.per_cycle'] = series.map(point => point.handles)
   outcome.notes.push(
-    `${total} cycles (${warmup} warm-up), each breaking the fault points of the manifest at one DOM call, a different one from cycle to cycle`
+    `${completed} of ${total} cycles (${warmup} warm-up), each breaking the fault points of the manifest at one DOM call, a different one from cycle to cycle`
   )
   outcome.checkpoints_passed = judged - unmet.length
   for (const line of unmet) outcome.checkpoints_failed.push({ section: 'dom_identity', detail: line })

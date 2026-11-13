@@ -137,7 +137,7 @@ if (records.length === 0)
   )
 for (const r of records)
   console.log(
-    `  ${r.manifest}: ${r.hours_run} hours, ${r.measurement_iterations} cycles${r.capped_by_memory ? ' (capped by memory)' : ''}, ${r.passed ? 'no growth' : 'FAILED'} (${r.host?.cpu ?? 'unknown processor'})`
+    `  ${r.manifest}: ${r.hours_run} hours, ${r.cycles_completed ?? r.measurement_iterations} cycles${r.capped_by_memory ? ' (capped by memory)' : ''}, ${r.passed ? 'no growth' : 'FAILED'} (${r.host?.cpu ?? 'unknown processor'})`
   )
 const longest = Math.max(0, ...records.filter(r => r.passed).map(r => r.hours_run))
 console.log(
