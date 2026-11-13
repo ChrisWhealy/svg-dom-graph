@@ -15,6 +15,10 @@ on:
       hours:
         description: 'Hours of cycles for each manifest (at most 4.5)'
         default: '3'
+      scaling:
+        description: 'Instead of a soak, time runs of growing length, to see how the time of a cycle changes'
+        type: boolean
+        default: false
 
 jobs:
   soak:
@@ -54,7 +58,11 @@ jobs:
         run: |
           cargo build --release -p perf-harness
           wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+      - name: How the time of a run grows
+        if: ${{ inputs.scaling }}
+        run: node perf/runner/endurance-scaling.mjs perf/manifests/${{ matrix.manifest }}.toml
       - name: Soak
+        if: ${{ !inputs.scaling }}
         run: node perf/runner/endurance-soak.mjs perf/manifests/${{ matrix.manifest }}.toml --hours "${{ inputs.hours }}" --out-dir target/endurance-soak
       - name: Keep the record
         if: always()

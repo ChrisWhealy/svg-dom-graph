@@ -188,3 +188,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct failing CDP `sine_cosine` test due to slow CI runner (`4ffd6ec`)
 - Attempt to correct failing CI W3 `perf-endurance` soak test (`908fa17`)
 - Stop `perf-endurance` worklow if elapse time exceeds 1.5 times requested time (`f47f48c`)
+- Prevent `perf-endurance` workflow from timing out (``)
