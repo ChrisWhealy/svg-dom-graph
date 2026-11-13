@@ -16,7 +16,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## Changed
 
-- Updated top-level README to point to demo examples (``)
+- Updated top-level README to point to demo examples (`f5b0558`)
 
 # [Released]
 
