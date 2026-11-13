@@ -232,12 +232,15 @@ fn the_angle_is_never_written_as_a_negative_zero() -> Result<(), String> {
 
 #[test]
 fn the_point_starts_at_0_degrees() -> Result<(), String> {
-    // It goes round at 30 degrees a second, so by the time the page can be asked it is still only a few degrees on.
+    // It goes round at 30 degrees a second, and a loaded machine can take any time to open the page and ask it.
+    // The angle is bounded by the time this test takes to run, so this defines the upper limit of rotation.
+    let began = std::time::Instant::now();
     let tab = open()?;
     let angle = shown_angle(&tab)?;
+    let most = 30.0 * began.elapsed().as_secs_f64() + 1.0;
     check(
-        angle <= 15.0,
-        &format!("the point starts at 0 degrees, and it is at {angle} a moment later"),
+        angle <= most,
+        &format!("the point starts at 0 degrees, and it is at {angle} after {most} at most"),
     )
 }
 
