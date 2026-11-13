@@ -1,0 +1,73 @@
+# Shows that the comparison finds a regression and leaves a clean candidate alone against the committed, approved baselines, on the runner class
+# that made them (node perf/runner/selftest-regression.mjs --against-baseline).
+#
+# A baseline is for one environment, and the environment includes the processor, which GitHub chooses for each job from more than one model. So
+# several jobs are started, and a job whose runner has no approved baseline says so and succeeds having shown nothing (exit status 3). The summary
+# names what each job did. A job fails only if the comparison does not hold: a clean candidate was flagged, or a slowdown was missed.
+#
+# Started by hand, and weekly. Then keep what it showed:
+#
+#   node perf/runner/collect-detection.mjs <run id>      # downloads the records into perf/evidence/detection/
+#   node perf/runner/qualify.mjs                          # says which approved baselines now have proof
+#
+# and commit perf/evidence/detection. See perf/docs/qualification.md.
+name: perf-detection
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 4 * * 1'
+
+jobs:
+  detect:
+    name: Regression detection against the committed baseline (sample ${{ matrix.sample }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3, 4]
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.100.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Which processor this is
+        run: |
+          echo "sample ${{ matrix.sample }}: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Build what the runs use
+        run: |
+          cargo build --release -p perf-harness
+          wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+      - name: Compare clean and slowed candidates with the committed baseline
+        run: |
+          status=0
+          node perf/runner/selftest-regression.mjs --against-baseline --out target/detection/report.json || status=$?
+          # 3 is a job that had no baseline for its runner to try, which is not a failure.
+          [ "$status" -eq 0 ] || [ "$status" -eq 3 ]
+      - name: Keep the record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-detection-${{ github.sha }}-${{ matrix.sample }}
+          path: target/detection/report.json
+          if-no-files-found: ignore
+          retention-days: 90

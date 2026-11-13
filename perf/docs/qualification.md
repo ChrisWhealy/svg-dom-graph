@@ -10,7 +10,7 @@ No timing threshold is set from a guess: a baseline blocks a change only after e
 | Part | Acceptance | Tooling | State |
 |---|---|---|---|
 | Stable CI baselines | At least 10 valid repetitions in each comparable environment | `perf-baseline.yml`, then `promote-from-run.mjs` | Each environment has 3 runs. The workflow is written and has not been run |
-| Performance detection | An injected slowdown is found and a clean candidate is not flagged | `selftest-regression.mjs`, `lib/test-regression.mjs` | Proven in CI on every commit, and calibrated in [Phase 5](phase-5-comparison-and-baselines.md). Not yet repeated on a baseline of 10 runs |
+| Performance detection | An injected slowdown is found and a clean candidate is not flagged, against a committed, approved baseline | `selftest-regression.mjs --against-baseline`, `perf-detection.yml` | `selftest-regression.mjs` without the option proves it on every commit, against a baseline of five runs made a moment before. The option and the workflow are written and have been tried on a laptop. Nothing is kept as evidence yet |
 | Timing stability | The run-to-run spread is measured, and the thresholds come from it | `qualify.mjs` | The report exists. It needs baselines of 10 runs to say anything |
 | Endurance | Hours of cycles with no unexplained growth in live resources | `endurance-soak.mjs`, `perf-endurance.yml` | The script is tested over three minutes. No soak of hours has been run |
 | CI integration | Deterministic failures always block, and timing verdicts only when qualified | `perf-smoke.mjs`, `qualify.mjs --approve` | Done. Nothing blocks on timing yet, because no baseline is approved |
@@ -47,9 +47,40 @@ It stops a baseline from being approved if its runs took twice as long as each o
 `--accept-noise "why"` approves it anyway and writes the reason down.
 It is provisional, and is to be revisited when baselines of 10 runs show how wide an ordinary runner's spread is.
 
+## Detection against a committed baseline
+
+`selftest-regression.mjs` without options makes its own baseline of five clean runs and compares later runs with it.
+The purpose is to show that the comparison works, and on every commit.
+It does not show that it works against the spread of a baseline made over a longer time, which is wider, and is the baseline that blocks a change.
+
+`selftest-regression.mjs --against-baseline` makes the same claim against the committed baseline of the runner that it is on.
+It reads the environment of its first clean run and finds the baseline for it.
+It then compares `--clean` collections of clean runs with the baseline, and none of them may be a regression in any metric.
+It compares `--slow` collections for each size of `--slowdown-us`, and each of those has to be a regression of the move.
+The sizes are 5 and 10 microseconds a move by default.
+A collection is `--repetitions` runs, 5 by default, since fewer give no verdict.
+
+It finishes with exit code 0 if that holds, 1 if it does not, and 3 if nothing could be tried.
+
+Nothing can be tried if there is either no baseline for the environment, the baseline is not approved, or the runner is not the baseline's environment.
+
+`--allow-unapproved` tries an unapproved baseline.
+It writes a record with the commit, the environment, the baseline and its runs, every verdict, the false-alarm rate and the detection rate of each size.
+
+The `perf-detection` workflow runs it in four jobs, since the processor of a runner is chosen at random, and weekly.
+
+A job without a baseline for its processor succeeds having shown nothing.
+`collect-detection.mjs <run id>` keeps the records that showed something in `perf/evidence/detection/`, and `qualify.mjs` says that a baseline has detection proven only when a record holds for exactly its runs.
+Promoting a baseline again therefore needs a new record.
+
+The smallest slowdown that can be injected is about 5 microseconds a move, since this is the limit of the page's timer resolution.
+The move of the W2 smoke workload takes about 8 microseconds, so the test shows that a large slowdown is found and a clean candidate is not flagged.
+It does not show that a 15% slowdown is found.
+That needs a workload whose timed step is long enough for a small injected delay to be a small part of it.
+
 ## Approving a baseline
 
-    node perf/runner/qualify.mjs --approve <baseline directory> --reason "..."
+  `node perf/runner/qualify.mjs --approve <baseline directory> --reason "..."`
 
 This writes `qualification.json` beside `promotion.json`, with the runs, the spread seen and the reason.
 It refuses fewer than 10 runs, and a spread over the limit without `--accept-noise`.
@@ -86,4 +117,5 @@ A baseline with 10 runs that is not approved says so in the job summary and does
 1. Run `perf-baseline` once, promote each environment that reached 10 runs, and commit.
 2. Run `qualify.mjs`, read the spreads, and approve the baselines that are steady enough.
 3. Run `perf-endurance` for one hour, then for three or more, and keep the records.
-4. Run `selftest-regression.mjs` on the runner class against an approved baseline, to show that the slowdown is found and the clean candidate is not flagged on real spread.
+4. Run `perf-detection`, collect what it showed with `collect-detection.mjs <run id>`, and commit `perf/evidence/detection/`.
+   `qualify.mjs` then says which approved baselines have proof.

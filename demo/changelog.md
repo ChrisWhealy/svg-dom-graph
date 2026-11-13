@@ -58,7 +58,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS Demo P4: Evidence gathered by running script (`da62de2`)
 - Run `perf-baseline.yml` in CI to perform endurance soak test (`90bf506`)
 - Gather test evidence for Firefox and Safari browsers (`a7c9d7e`)
-- Update release qualification docs (``)
+- Update release qualification docs (`100c4a6`)
+- Add `perf-detection.yml` so `selftest-regression.mjs` can run against a committed baseline (``)
 
 ### Changed
 
@@ -180,4 +181,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct Failing CI script (`9b009fa`)
 - Correct failing `perf-endurance` CI action (`7e9323d`)
 - Ensure local and CI Rust toolchain versions match (`b3079aa`)
-- Move `wasm32` dependencies into architecture specific section of `Cargo.toml` (``)
+- Move `wasm32` dependencies into architecture specific section of `Cargo.toml` (`a2ce479`)

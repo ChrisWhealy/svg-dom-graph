@@ -76,6 +76,22 @@ if (process.argv.includes('--approve')) {
   process.exit(0)
 }
 
+/** The detection record in perf/evidence/detection/ that shows the comparison working against exactly this baseline, or null. */
+const detectionRecordFor = (dir, promotion) => {
+  const folder = path.join(root, 'perf/evidence/detection')
+  if (!fs.existsSync(folder)) return null
+  for (const name of fs.readdirSync(folder).filter(n => n.endsWith('.json'))) {
+    const record = JSON.parse(fs.readFileSync(path.join(folder, name), 'utf8'))
+    if (
+      record.outcome === 'holds' &&
+      record.baseline?.dir === path.relative(baselinesDir, dir) &&
+      JSON.stringify(record.baseline.runs) === JSON.stringify(promotion.runs)
+    )
+      return name
+  }
+  return null
+}
+
 const dirs = baselineDirs()
 if (dirs.length === 0) console.log('no baselines are promoted yet')
 let ready = 0
@@ -92,6 +108,14 @@ for (const dir of dirs) {
         : 'reports only'
   if (state === 'ready to approve') ready++
   console.log(`\n${path.relative(baselinesDir, dir)}\n  ${promotion.runs.length} runs, ${state}`)
+  if (isQualified(dir)) {
+    const proof = detectionRecordFor(dir, promotion)
+    console.log(
+      proof
+        ? `  detection: proven by ${proof}`
+        : '  detection: no record for these runs (perf-detection.yml, then collect-detection.mjs)'
+    )
+  }
   for (const text of lacking) console.log(`  lacks: ${text}`)
   for (const m of spread.slice(0, 3))
     console.log(

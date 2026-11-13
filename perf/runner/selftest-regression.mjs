@@ -2,6 +2,7 @@
 // candidate which is not changed produces neither.
 //
 //   node perf/runner/selftest-regression.mjs
+//   node perf/runner/selftest-regression.mjs --against-baseline [options]     the same claim against a committed, approved baseline
 //
 // This is the exit condition of Phase 5. It needs the release build of perf-harness and of perf-harness-wasm, and a local Chrome.
 //
@@ -15,11 +16,21 @@
 //   5. A run with anything injected carries it in its result, and cannot be promoted.
 //
 // The browser-free half of the same claim, with every verdict and every refusal, is perf/lib/test-regression.mjs.
+// `--against-baseline` makes the same claim against the committed, approved baseline of this runner, and is in its own file.
+if (process.argv.includes('--against-baseline')) await import('./regression-against-baseline.mjs')
+
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { baselineDirFor, compareCollections, environmentKey, resultFiles, root, regressions } from '../lib/baselines.mjs'
+import {
+  baselineDirFor,
+  compareCollections,
+  environmentKey,
+  resultFiles,
+  root,
+  regressions
+} from '../lib/baselines.mjs'
 
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-selftest-regression-'))
 let failures = 0
@@ -32,15 +43,39 @@ const orchestrate = (manifest, name, ...extra) => {
   const outDir = path.join(work, name)
   const result = spawnSync(
     'node',
-    [path.join(root, 'perf/runner/run.mjs'), path.join(root, `perf/manifests/${manifest}.toml`), '--mode', 'performance', '--layers', 'b', '--no-build', '--out-dir', outDir, ...extra],
+    [
+      path.join(root, 'perf/runner/run.mjs'),
+      path.join(root, `perf/manifests/${manifest}.toml`),
+      '--mode',
+      'performance',
+      '--layers',
+      'b',
+      '--no-build',
+      '--out-dir',
+      outDir,
+      ...extra
+    ],
     { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 }
   )
   return { outDir, status: result.status, output: result.stdout + result.stderr }
 }
 const promote = (from, baselines, ...extra) =>
-  spawnSync('node', [path.join(root, 'perf/runner/promote-baseline.mjs'), '--from', from, '--layer', 'B', '--baselines-dir', baselines, ...extra], {
-    encoding: 'utf8'
-  })
+  spawnSync(
+    'node',
+    [
+      path.join(root, 'perf/runner/promote-baseline.mjs'),
+      '--from',
+      from,
+      '--layer',
+      'B',
+      '--baselines-dir',
+      baselines,
+      ...extra
+    ],
+    {
+      encoding: 'utf8'
+    }
+  )
 
 const W2 = 'w2-connector-rerouting-smoke'
 const W3 = 'w3-scene-lifecycle-smoke'
@@ -56,7 +91,13 @@ check(promoted.status === 0, `they are promoted: ${promoted.stdout.split('\n')[0
 const key = environmentKey(resultFiles(base.outDir)[0])
 const baselineDir = baselineDirFor(W2, 'B', key).replace(path.join(root, 'perf/baselines'), baselines)
 const compare = (outDir, name) =>
-  compareCollections({ baselineDir, candidateDirs: [outDir], layer: 'B', mode: 'performance', out: path.join(work, `${name}.comparison.json`) })
+  compareCollections({
+    baselineDir,
+    candidateDirs: [outDir],
+    layer: 'B',
+    mode: 'performance',
+    out: path.join(work, `${name}.comparison.json`)
+  })
 const move = report => report.comparisons.find(c => c.metric === 'mutation.move_node' && c.statistic === 'p50')
 
 // 2. A candidate that is not changed.
@@ -73,7 +114,10 @@ check(clean.status === 0, 'five more clean runs pass their deterministic gates')
 
 // 3. A candidate that was made slower.
 const slow = orchestrate(W2, 'slow', '--repetitions', '5', '--inject-slowdown-us', '20')
-check(slow.status === 0, 'five runs with a slowdown injected still pass their deterministic gates, since a timing is not one')
+check(
+  slow.status === 0,
+  'five runs with a slowdown injected still pass their deterministic gates, since a timing is not one'
+)
 {
   const report = compare(slow.outDir, 'slow')
   const v = move(report)
@@ -99,9 +143,16 @@ check(
 // 5. What was injected is never a baseline.
 {
   const refused = promote(slow.outDir, path.join(work, 'other'), '--reason', 'x', '--allow-dirty')
-  check(refused.status !== 0 && /changed on purpose/.test(refused.stderr), 'a run with a slowdown injected is refused as a baseline')
+  check(
+    refused.status !== 0 && /changed on purpose/.test(refused.stderr),
+    'a run with a slowdown injected is refused as a baseline'
+  )
 }
 
 fs.rmSync(work, { recursive: true, force: true })
-console.log(failures ? `\n${failures} did not behave: the regression check cannot be trusted` : '\nthe harness catches an injected regression and an injected leak, and a clean candidate produces neither')
+console.log(
+  failures
+    ? `\n${failures} did not behave: the regression check cannot be trusted`
+    : '\nthe harness catches an injected regression and an injected leak, and a clean candidate produces neither'
+)
 process.exit(failures ? 1 : 0)
