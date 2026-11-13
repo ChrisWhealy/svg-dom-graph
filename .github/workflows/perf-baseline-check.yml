@@ -1,0 +1,99 @@
+# Weekly: do the committed baselines still cover the runners? If not, raise an issue that says what to run.
+#
+# A baseline is for one environment (runner class, kernel, processor, Chrome version, protocol), and the runner image moves on every few weeks, or GitHub
+# gives a job another processor. When that happens no baseline matches, and perf-smoke can only say so. Each of four jobs makes three runs of the smallest
+# workload, reads its environment, and looks for an approved baseline (perf/runner/baseline-status.mjs). A last job puts the answers together, opens or
+# updates one issue if an environment has none, and closes it when every environment that was seen is covered again.
+#
+# It runs nothing that costs much, and it does not run perf-baseline: promoting and approving are a person's decision. The issue says how.
+name: perf-baseline-check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+
+jobs:
+  check:
+    name: Which environment is this (sample ${{ matrix.sample }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3, 4]
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-24.04
+      PERF_CHROME_NO_SANDBOX: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.100.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Build what the runs use
+        run: |
+          cargo build --release -p perf-harness
+          wasm-pack build perf-harness-wasm --target web --release --out-dir pkg
+      - name: Read the environment, and look for its baseline
+        run: node perf/runner/baseline-status.mjs --out target/baseline-status/status.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: baseline-status-${{ matrix.sample }}
+          path: target/baseline-status/status.json
+          retention-days: 14
+
+  report:
+    name: Raise or close the issue
+    needs: check
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TITLE: Performance baselines need to be run again
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: baseline-status-*
+          path: statuses
+      - name: Decide, and raise, update or close the issue
+        run: |
+          mkdir -p target
+          node perf/runner/report-baseline-status.mjs statuses --out target/issue.md | tee target/report.txt
+          needed=$(sed -n 's/^needed=//p' target/report.txt)
+          existing=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title -q ".[] | select(.title == \"$TITLE\") | .number" | head -1)
+          gh label create perf-baseline --description "The committed performance baselines do not cover a runner" --color d93f0b 2>/dev/null || true
+          if [ "$needed" = "true" ]; then
+            body="$(cat target/issue.md)
+
+          Raised by the weekly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}."
+            if [ -n "$existing" ]; then
+              gh issue edit "$existing" --body "$body"
+              gh issue comment "$existing" --body "Checked again in ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}: still not covered."
+            else
+              gh issue create --title "$TITLE" --label perf-baseline --body "$body"
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "Every environment that the weekly run saw is covered by an approved baseline again (${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+          fi

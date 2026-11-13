@@ -93,6 +93,21 @@ Without `--commit` it commits nothing, and leaves the files in the working tree 
 
 The next step is `perf-detection`, which shows the comparison working against what was adopted.
 
+## Knowing when to run it again
+
+A baseline is for one environment, and the environment includes the kernel and the full version of Chrome.
+When the runner image moves to another Chrome or kernel, or GitHub gives a job another processor, no baseline matches, and `perf-smoke` can only say so.
+
+The `perf-baseline-check` workflow asks the question every Monday.
+Each of four jobs makes three runs of the smallest workload, reads its environment, and looks for an approved baseline (`baseline-status.mjs`).
+A last job puts the answers together (`report-baseline-status.mjs`).
+
+If an environment has none, it opens one issue, "Performance baselines need to be run again", that says which environments and what to run.
+It updates that issue while the problem lasts, and closes it when every environment that was seen is covered.
+It does not run `perf-baseline` itself, since promoting and approving are a person's decision.
+
+A processor that GitHub does not give in a particular week is not seen that week, so the issue speaks only of the environments that were.
+
 ## Approving a baseline
 
   `node perf/runner/qualify.mjs --approve <baseline directory> --reason "..."`

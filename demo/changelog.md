@@ -60,7 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Gather test evidence for Firefox and Safari browsers (`a7c9d7e`)
 - Update release qualification docs (`100c4a6`)
 - Add `perf-detection.yml` so `selftest-regression.mjs` can run against a committed baseline (`d540f8c`)
-- Automate performance baseline adoption process (`5464715`) 
+- Automate performance baseline adoption process (`5464715`)
+- Add weekly CI job to check whether `perf-baseline` needs to be rerun (``)
 
 ### Changed
 
