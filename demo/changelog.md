@@ -189,4 +189,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Attempt to correct failing CI W3 `perf-endurance` soak test (`908fa17`)
 - Stop `perf-endurance` worklow if elapse time exceeds 1.5 times requested time (`f47f48c`)
 - Prevent `perf-endurance` workflow from timing out (`024f589`)
-- Resize W5 `perf-endurance` workflow (``)
+- Resize W5 `perf-endurance` workflow (`70145de`)
