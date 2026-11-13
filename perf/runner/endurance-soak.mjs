@@ -41,6 +41,8 @@ fs.mkdirSync(outDir, { recursive: true })
 const MAX_CYCLES = 2_000_000
 /** How much longer the long calibration run has to be than the short one for the difference to be believed, which is well over the noise of a start. */
 const CLEAR_SECONDS = 60
+/** The cycles of the first long calibration run: a few seconds for a quick workload, and minutes for a slow one. */
+const FIRST_LONG_CYCLES = 2_000
 /** The most cycles that calibration will try. */
 const MAX_CALIBRATION_CYCLES = 1_000_000
 /** The least time of a cycle that is believed. A calibration that gives less is noise, and is refused and not used. */
@@ -51,7 +53,7 @@ for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_
       `${built} is not built. Run \`cargo build --release -p perf-harness\` and \`wasm-pack build perf-harness-wasm --target web --release --out-dir pkg\` first`
     )
 
-const orchestrate = (manifest, directory, extra = []) => {
+const orchestrate = (manifest, directory, extra = [], timeoutMs = undefined) => {
   const started = Date.now()
   const ran = spawnSync(
     'node',
@@ -69,10 +71,17 @@ const orchestrate = (manifest, directory, extra = []) => {
     {
       cwd: root,
       encoding: 'utf8',
-      maxBuffer: 1 << 30
+      maxBuffer: 1 << 30,
+      timeout: timeoutMs,
+      killSignal: 'SIGTERM'
     }
   )
-  return { status: ran.status, output: ran.stdout + ran.stderr, seconds: (Date.now() - started) / 1000 }
+  return {
+    status: ran.status,
+    timedOut: ran.error?.code === 'ETIMEDOUT',
+    output: ran.stdout + ran.stderr,
+    seconds: (Date.now() - started) / 1000
+  }
 }
 const setting = (text, key) => Number(text.match(new RegExp(`^${key}\\s*=\\s*(\\d+)`, 'm'))?.[1])
 
@@ -94,16 +103,21 @@ const timed = (name, measured) => {
   }
   return { cycles: warmup + measured, seconds: result.seconds }
 }
-// The extra cycles of the long run have to be more than the noise of starting a browser, which on a shared runner is seconds, and has been over
-// a hundred seconds for the start itself. So the long run is made four times longer until it is longer than the short one by `CLEAR_SECONDS`.
+// The extra cycles of the long run have to take more than the noise of starting a browser, which has been over a hundred seconds for the start itself.
+// A count of cycles cannot be chosen beforehand, since a cycle of one workload takes a thousandth of a second and one of another takes a seventh of
+// one, so the long run starts small and is scaled by what it took, until it is longer than the short one by `CLEAR_SECONDS`.
 const short = timed('calibration-short.toml', setting(text, 'measurement_iterations'))
-let long = timed('calibration-long.toml', Math.max(setting(text, 'measurement_iterations') * 20, 20_000))
+let long = timed('calibration-long.toml', FIRST_LONG_CYCLES)
 
-while (long.seconds - short.seconds < CLEAR_SECONDS && long.cycles * 4 <= MAX_CALIBRATION_CYCLES) {
+while (long.seconds - short.seconds < CLEAR_SECONDS && long.cycles * 2 <= MAX_CALIBRATION_CYCLES) {
+  const extra = long.seconds - short.seconds
+  // What it took says how many cycles would take twice what is needed, and a run that was no longer than the start is scaled up by a fixed amount.
+  const scale = extra > 1 ? Math.min(50, Math.max(2, (2 * CLEAR_SECONDS) / extra)) : 50
+  const cycles = Math.min(MAX_CALIBRATION_CYCLES, Math.ceil(long.cycles * scale))
   console.log(
-    `${long.cycles} cycles took ${(long.seconds - short.seconds).toFixed(1)} s more than ${short.cycles}: too little to tell from noise, so it is tried longer`
+    `${long.cycles} cycles took ${extra.toFixed(1)} s more than ${short.cycles}: too little to tell from noise, so ${cycles} are tried`
   )
-  long = timed('calibration-long.toml', long.cycles * 4 - warmup)
+  long = timed('calibration-long.toml', cycles - warmup)
 }
 
 const perCycle = (long.seconds - short.seconds) / (long.cycles - short.cycles)
@@ -125,7 +139,9 @@ console.log(
 )
 
 const started = new Date()
-const soaked = orchestrate(soak, path.join(outDir, 'soak'), ['--no-build', '--repetitions', '1'])
+// `wall_ms` in a manifest is only checked to be above zero and is never enforced, so the limit is enforced here: a soak that runs over its hours by half
+// again was mis-sized, or is stuck, and is stopped and said to be so.
+const soaked = orchestrate(soak, path.join(outDir, 'soak'), ['--no-build', '--repetitions', '1'], wallMs)
 const gates = [...soaked.output.matchAll(/^\s+(?:ok|FAIL)\s+(endurance\.[a-z_]+): (pass|FAIL)[^\n]*/gm)].map(m => ({
   gate: m[1],
   outcome: m[2]
@@ -146,10 +162,14 @@ const record = {
   host: { platform: process.platform, cpu: os.cpus()[0]?.model ?? null, cpus: os.cpus().length },
   exit_status: soaked.status,
   passed: soaked.status === 0 && gates.length > 0 && gates.every(g => g.outcome === 'pass'),
+  timed_out: soaked.timedOut,
   failure:
     soaked.status === 0
       ? null
-      : soaked.output
+      : (soaked.timedOut
+          ? `stopped after ${Math.round(soaked.seconds)} s, which is the limit of 1.5 times the ${hours} hours: the cycles took longer than calibration showed\n`
+          : '') +
+        soaked.output
           .split('\n')
           .filter(l => l.trim())
           .slice(-12)
