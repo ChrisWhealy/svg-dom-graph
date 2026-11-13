@@ -4,7 +4,8 @@
 
 A production-ready data-visualisation library that allows you to build browser-based, interactive scenes entirely using SVG elements.
 
-These scenes range in complexity from simple directed graphs, all the way up to visualising data as it flows through algorithms such as SHA2 or SHA3, a Fast Fourier transform, a Petri Net or the simulation of discrete events inside a job dispatch queue.
+These scenes range in complexity from simple directed graphs, all the way up to visualising data as it flows through algorithms.
+Those algorithms include SHA2 or SHA3, a Fast Fourier transform, a Petri Net, and the simulation of discrete events inside a job dispatch queue.
 Animated data visualisation such as Conway's Game of Life is also possible.
 
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
@@ -18,71 +19,98 @@ The original target algorithms were the SHA1, SHA2 and SHA3 hash algorithms; but
 
 <details>
 <summary>Cryptographic Algorithms</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;SHA1<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;SHA2<br> &nbsp;&nbsp;&nbsp;&nbsp;SHA3<br> &nbsp;&nbsp;&nbsp;&nbsp;ChaCha20
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-sha1">SHA1</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-sha2-256">SHA2</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-sha3-sponge">SHA3</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-chacha20">ChaCha20</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Encoding and Compression</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Huffman Encoding<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Base64 Encoding<br> &nbsp;&nbsp;&nbsp;&nbsp;UTF-8 Encoding
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-huffman">Huffman Encoding</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-base64">Base64 Encoding</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-utf8">UTF-8 Encoding</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Error Detection and Correction</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;CRC-32<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Hamming(7,4)<br> &nbsp;&nbsp;&nbsp;&nbsp;QR Code
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-crc32">CRC-32</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-hamming">Hamming(7,4)</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-qr-code">QR Code</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Sorting</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Bubble Sort<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Shell Sort<br> &nbsp;&nbsp;&nbsp;&nbsp;Quicksort
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-bubble-sort">Bubble Sort</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-shell-sort">Shell Sort</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-quicksort">Quicksort</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Graph Algorithms</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Dijkstra's Shortest Paths<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Weighted Springs<br> &nbsp;&nbsp;&nbsp;&nbsp;Edmonds-Karp Maximum Flow<br> &nbsp;&nbsp;&nbsp;&nbsp;Red-Black Tree<br> &nbsp;&nbsp;&nbsp;&nbsp;Tarjan's Strongly Connected Components
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-dijkstra">Dijkstra's Shortest Paths</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-springs">Weighted Springs</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-edmonds-karp">Edmonds-Karp Maximum Flow</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-red-black-tree">Red-Black Tree</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-tarjan">Tarjan's Strongly Connected Components</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Signal Processing</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sine and Cosine<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Pythagoras<br> &nbsp;&nbsp;&nbsp;&nbsp;Amplitude and Frequency<br> &nbsp;&nbsp;&nbsp;&nbsp;Phase Shift<br> &nbsp;&nbsp;&nbsp;&nbsp;Convolution<br> &nbsp;&nbsp;&nbsp;&nbsp;Fast Fourier Transform
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-sine-cosine">Sine and Cosine</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-pythagoras">Pythagoras</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-amplitude-frequency">Amplitude and Frequency</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-phase-shift">Phase Shift</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-convolution">Convolution</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-fft">Fast Fourier Transform</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Cellular Automata</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Conway's Game of Life</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-game-of-life">Conway's Game of Life</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Backtracking</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;N-Queens Problem</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-n-queens">N-Queens Problem</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Computational Geometry</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Marching Squares</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-marching-squares">Marching Squares</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Concurrency</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Petri Net: Bounded Buffer<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Service Simulator: Queue and Servers
-</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-petri-net">Petri Net: Bounded Buffer</a></li>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-service-simulator">Service Simulator: Queue and Servers</a></li>
+</ul>
 </details>
 
 <details>
 <summary>Scale</summary>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sparse Matrix: Scale and Limits</p>
+<ul>
+    <li><a href="https://whealy.com/Rust/svg-dom-graph/gallery/index.html#panel-sparse-matrix">Sparse Matrix: Scale and Limits</a></li>
+</ul>
 </details>
 
 ## [Changelog](changelog.md)
@@ -91,19 +119,19 @@ A list of the significant commits making up each release.
 
 ## Documentation
 
-| File                                               | Description                                                                                                                                                                                                                                                                |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`docs/library/README.md`](docs/library/README.md) | The crate's own module layout, and `Scene`'s public API grouped by area.                                                                                                                                                                                                   |
-| [`docs/demo/README.md`](docs/demo/README.md)       | What the demo shows, how the demo server works and how `demo-app`/`demo-server` are put together.                                                                                                                                                                          |
-| [`docs/testing/README.md`](docs/testing/README.md) | The test suite: native unit tests, browser integration tests, the CDP tests, and the checks of the harnesses and simulator.                                                                                                                                                |
-| [`docs/security.md`](docs/security.md)             | Resource limits to impose when building a graph from untrusted input.                                                                                                                                                                                                      |
-| [`docs/versioning.md`](docs/versioning.md)         | What a release promises: the public API, version numbers, the minimum Rust version and the dependencies.                                                                                                                                                                  |
-| [`docs/release-qualification.md`](docs/release-qualification.md) | What has to hold before a version is published, and the command that shows it.                                                                                                                                                                  |
-| [`docs/browser-support.md`](docs/browser-support.md) | A proposed support contract: which browsers are the release gate, which are observed, and the oldest versions that have what the gallery uses.                                                                                                                         |
-| [`perf/README.md`](perf/README.md)                 | The performance harness: its workloads, runners, baselines and how to compare a change with them.                                                                                                                                                                          |
-| [`spmv/README.md`](spmv/README.md)                 | The sparse-matrix scale demonstrator and its independent JavaScript oracle.                                                                                                                                                                                                |
-| `dess/`                                            | The discrete-event service simulator behind the Service Simulator demo. Each stage (`s0` to `s5`) and each phase of the gallery panel (`demo-panel/p0` to `p4`) has its own `README.md`, and `node dess/gather-evidence.mjs` runs every check that gathers their evidence. |
-| `design-specs/`                                    | The design specifications, as PDFs, that the larger demos and the simulator were built from.                                                                                                                                                                               |
+| File                                                             | Description                                                                                                                                                                                                                                                                |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/library/README.md`](docs/library/README.md)               | The crate's own module layout, and `Scene`'s public API grouped by area.                                                                                                                                                                                                   |
+| [`docs/demo/README.md`](docs/demo/README.md)                     | What the demo shows, how the demo server works and how `demo-app`/`demo-server` are put together.                                                                                                                                                                          |
+| [`docs/testing/README.md`](docs/testing/README.md)               | The test suite: native unit tests, browser integration tests, the CDP tests, and the checks of the harnesses and simulator.                                                                                                                                                |
+| [`docs/security.md`](docs/security.md)                           | Resource limits to impose when building a graph from untrusted input.                                                                                                                                                                                                      |
+| [`docs/versioning.md`](docs/versioning.md)                       | What a release promises: the public API, version numbers, the minimum Rust version and the dependencies.                                                                                                                                                                   |
+| [`docs/release-qualification.md`](docs/release-qualification.md) | What has to hold before a version is published, and the command that shows it.                                                                                                                                                                                             |
+| [`docs/browser-support.md`](docs/browser-support.md)             | A proposed support contract: which browsers are the release gate, which are observed, and the oldest versions that have what the gallery uses.                                                                                                                             |
+| [`perf/README.md`](perf/README.md)                               | The performance harness: its workloads, runners, baselines and how to compare a change with them.                                                                                                                                                                          |
+| [`spmv/README.md`](spmv/README.md)                               | The sparse-matrix scale demonstrator and its independent JavaScript oracle.                                                                                                                                                                                                |
+| `dess/`                                                          | The discrete-event service simulator behind the Service Simulator demo. Each stage (`s0` to `s5`) and each phase of the gallery panel (`demo-panel/p0` to `p4`) has its own `README.md`, and `node dess/gather-evidence.mjs` runs every check that gathers their evidence. |
+| `design-specs/`                                                  | The design specifications, as PDFs, that the larger demos and the simulator were built from.                                                                                                                                                                               |
 
 ## Live Demo
 

@@ -12,6 +12,12 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
+## [0.2.52] - 2026-11-13
+
+## Changed
+
+- Updated top-level README to point to demo examples (``)
+
 # [Released]
 
 ## [0.2.51] - 2026-11-12
