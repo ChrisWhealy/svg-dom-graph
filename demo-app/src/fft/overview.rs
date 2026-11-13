@@ -87,8 +87,8 @@ impl Overview {
         let mut nodes = Vec::with_capacity(stages + 1);
         for boundary in 0..=stages {
             let mut column = Vec::with_capacity(lanes);
-            for lane in 0..lanes {
-                let name = lane_name(boundary, lane, trace.bit_reversed[lane]);
+            for (lane, &reversed) in trace.bit_reversed.iter().enumerate().take(lanes) {
+                let name = lane_name(boundary, lane, reversed);
                 let id = scene
                     .add_named_data_node(grid.node_origin(boundary, lane), &name, content(widest))
                     .map_err(stringify)?;

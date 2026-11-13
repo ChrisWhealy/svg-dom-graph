@@ -32,7 +32,7 @@ jobs:
       - name: The hours are allowed
         run: node -e "const h = Number('${{ inputs.hours }}'); if (!(h > 0 && h <= 4.5)) { console.error('hours must be above 0 and at most 4.5'); process.exit(1) }"
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.100.0
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2

@@ -35,7 +35,7 @@ jobs:
       PERF_CHROME_NO_SANDBOX: '1'
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.100.0
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2

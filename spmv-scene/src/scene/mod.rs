@@ -206,22 +206,22 @@ fn add_node_values(
         Ok(e)
     };
     let (mut xs, mut ys) = (Vec::new(), Vec::new());
-    for j in 0..spec.cols as usize {
+    for (j, &value) in run.x.iter().enumerate().take(spec.cols as usize) {
         let r = layout.col_node(j);
         xs.push(make(
             "spmv-node-value spmv-node-value-x",
             r.x - 8.0,
             r.y + r.h / 2.0 + 4.0,
-            run.x[j],
+            value,
         )?);
     }
-    for i in 0..spec.rows as usize {
+    for (i, &value) in run.y.iter().enumerate().take(spec.rows as usize) {
         let r = layout.row_node(i);
         ys.push(make(
             "spmv-node-value spmv-node-value-y",
             r.x + r.w + 8.0,
             r.y + r.h / 2.0 + 4.0,
-            run.y[i],
+            value,
         )?);
     }
     content.append_child(&group).map_err(js_err("append"))?;
@@ -382,13 +382,13 @@ fn add_matrix(svg_id: &str, prepared: &Prepared, run: &Run, layout: &Layout) -> 
         Ok(cell)
     };
     let (mut strip_x, mut strip_y) = (Vec::new(), Vec::new());
-    for j in 0..geom.cols {
-        let cell = strip("spmv-vec-x", geom.x_entry(j), run.x[j])?;
+    for (j, &value) in run.x.iter().enumerate().take(geom.cols) {
+        let cell = strip("spmv-vec-x", geom.x_entry(j), value)?;
         put(&group, cell.clone())?;
         strip_x.push(cell);
     }
-    for i in 0..geom.rows {
-        let cell = strip("spmv-vec-y", geom.y_entry(i), run.y[i])?;
+    for (i, &value) in run.y.iter().enumerate().take(geom.rows) {
+        let cell = strip("spmv-vec-y", geom.y_entry(i), value)?;
         put(&group, cell.clone())?;
         strip_y.push(cell);
     }

@@ -179,3 +179,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct Failing nightly run of W6 Service Layer C (`2d8c271`)
 - Correct Failing CI script (`9b009fa`)
 - Correct failing `perf-endurance` CI action (`7e9323d`)
+- Ensure local and CI Rust toolchain versions match (``)

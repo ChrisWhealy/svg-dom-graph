@@ -35,6 +35,14 @@ A change of it is a change of the second number while the major version is 0, an
 It does not move for a feature that is only convenient.
 It is not moved past a version that is a year old without a reason that is written down (proposed).
 
+## The Toolchain
+
+The Rust version on which the repository is built, linted and tested is the one in `rust-toolchain.toml`, so local development and CI use the same version.
+Every workflow installs that version by name, and `.github/scripts/check-rust-version.sh` fails CI if one does not.
+The minimum version is the exception: its job installs `rust-version` and sets `RUSTUP_TOOLCHAIN` to override the file.
+To move to a newer release, change the file and the workflows together, run `./clippy.sh` and the tests, and commit all of it at once.
+A new release of Rust can add lints, and moving on purpose means they are met in a change of their own and not in an unrelated one.
+
 ## Dependencies
 
 `svg-dom` is a public dependency, since its `SvgRoot` and geometry types appear in the signatures.
