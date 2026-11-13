@@ -190,4 +190,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Stop `perf-endurance` worklow if elapse time exceeds 1.5 times requested time (`f47f48c`)
 - Prevent `perf-endurance` workflow from timing out (`024f589`)
 - Resize W5 `perf-endurance` workflow (`70145de`)
-- Another attempt to prevent `perf-endurance` workflow from timing out (``)
+- Another attempt to prevent `perf-endurance` workflow from timing out (`df7b123`)
