@@ -64,8 +64,14 @@ Those are exact: elements and listeners back to their baseline after every teard
 Each soak writes `endurance-record.json`, and the ones to keep go in `perf/evidence/endurance/`.
 Endurance counts as qualified when a soak of 3 hours or more passed every gate.
 
-Two things are not yet known.
-The first long soak should be one hour, to see what the samples of a million cycles cost in memory and disk before the long ones are started.
+The first CI soak showed what limits one.
+The harness keeps about 230 bytes of its wasm memory for each cycle, which is 22.9 MB at 100,000 cycles of the W3 manifest, and wasm32 has 4 GiB.
+A run that asked for 36 million cycles stopped after half an hour with `RuntimeError: unreachable`.
+The cause was the calibration, which had timed a build as well as the cycles and so believed that a cycle took no time.
+So a soak now runs what is already built, refuses a calibration it cannot believe, and caps one run at 2 million cycles.
+The record says `capped_by_memory` when the cap and not the hours decided the length, and a capped run counts only for the hours that it ran.
+A W3 cycle takes about a millisecond on a laptop, so W3 reaches about half an hour on a laptop and a little over an hour on a runner.
+Hours beyond that need cycles that cost more, such as the W5 recovery manifest, or a harness that does not keep memory for each cycle.
 And "multi-hour" in one job is at most four and a half, so a longer soak needs the same run repeated and the records read together.
 
 ## CI integration
