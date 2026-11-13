@@ -39,14 +39,16 @@ fs.mkdirSync(outDir, { recursive: true })
  * `RuntimeError: unreachable` after half an hour. Two million is under a tenth of the memory.
  */
 const MAX_CYCLES = 2_000_000
-/** How much longer the long calibration run has to be than the short one for the difference to be believed, which is well over the noise of a start. */
-const CLEAR_SECONDS = 60
-/** The cycles of the first long calibration run: a few seconds for a quick workload, and minutes for a slow one. */
+/** The share of the hours that the soak is sized for, which leaves room for what calibration cannot see. The soak is stopped at 1.5 times the hours. */
+const SOAK_SHARE = 0.85
+/** Calibration goes on until a run takes this fraction of the soak's time (not counting its start), so that the soak is not far beyond what was measured. */
+const ENOUGH = 1 / 6
+/** The cycles of the first run after the short one: a few seconds for a quick workload, and minutes for a slow one. */
 const FIRST_LONG_CYCLES = 2_000
-/** The most cycles that calibration will try. */
+/** The most cycles that one calibration run will try. */
 const MAX_CALIBRATION_CYCLES = 1_000_000
-/** The least time of a cycle that is believed. A calibration that gives less is noise, and is refused and not used. */
-const LEAST_SECONDS_A_CYCLE = 2e-5
+/** The calibration runs may take at most this share of the hours between them. */
+const CALIBRATION_BUDGET = 0.5
 for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_harness_wasm_bg.wasm'])
   if (!fs.existsSync(path.join(root, built)))
     throw new Error(
@@ -93,42 +95,70 @@ const withCycles = (source, measured, wallMs) =>
     .replace(/^repetitions\s*=.*$/m, 'repetitions = 1')
     .replace(/^wall_ms\s*=.*$/m, `wall_ms = ${wallMs}`)
 // The start of the browser is most of a short run, so the time of a cycle is the difference between two runs of different lengths.
-const timed = (name, measured) => {
+const timed = (name, measured, timeoutMs = undefined) => {
   const file = path.join(outDir, name)
   fs.writeFileSync(file, withCycles(text, measured, 3_600_000))
-  const result = orchestrate(file, path.join(outDir, name.replace('.toml', '')), ['--no-build', '--repetitions', '1'])
+  const result = orchestrate(
+    file,
+    path.join(outDir, name.replace('.toml', '')),
+    ['--no-build', '--repetitions', '1'],
+    timeoutMs
+  )
   if (result.status !== 0) {
     console.error(result.output.split('\n').slice(-30).join('\n'))
-    throw new Error(`${name} does not pass, so it is not soaked`)
+    throw new Error(
+      `${name} ${result.timedOut ? 'did not finish in the time that calibration is given' : 'does not pass'}, so it is not soaked`
+    )
   }
   return { cycles: warmup + measured, seconds: result.seconds }
 }
-// The extra cycles of the long run have to take more than the noise of starting a browser, which has been over a hundred seconds for the start itself.
-// A count of cycles cannot be chosen beforehand, since a cycle of one workload takes a thousandth of a second and one of another takes a seventh of
-// one, so the long run starts small and is scaled by what it took, until it is longer than the short one by `CLEAR_SECONDS`.
-const short = timed('calibration-short.toml', setting(text, 'measurement_iterations'))
-let long = timed('calibration-long.toml', FIRST_LONG_CYCLES)
-
-while (long.seconds - short.seconds < CLEAR_SECONDS && long.cycles * 2 <= MAX_CALIBRATION_CYCLES) {
-  const extra = long.seconds - short.seconds
-  // What it took says how many cycles would take twice what is needed, and a run that was no longer than the start is scaled up by a fixed amount.
-  const scale = extra > 1 ? Math.min(50, Math.max(2, (2 * CLEAR_SECONDS) / extra)) : 50
-  const cycles = Math.min(MAX_CALIBRATION_CYCLES, Math.ceil(long.cycles * scale))
-  console.log(
-    `${long.cycles} cycles took ${extra.toFixed(1)} s more than ${short.cycles}: too little to tell from noise, so ${cycles} are tried`
-  )
-  long = timed('calibration-long.toml', cycles - warmup)
+// The start of a run on a hosted runner varies by a minute or more, and a cycle of one workload takes a thousandth of a second where one of another
+// takes a tenth, so a count of cycles cannot be chosen beforehand, and two runs cannot give the time of a cycle. The runs grow, each sized from what
+// the one before took, until one takes `ENOUGH` of the soak's time beyond the start. The start is taken as the shortest time that any run took.
+//
+// The time of a cycle is not always the same. A recovery cycle of W5 takes more the longer the run is (0.095 s at 800 cycles and 0.24 s at 12,810
+// on a hosted runner), so the soak is sized with a power law fitted to the last two runs, t - start = c * cycles ^ p, with p between 1 and 2.
+const target = hours * 3600 * SOAK_SHARE
+const points = []
+const measure = cycles => {
+  // A run that is stuck, and not slow, would otherwise hold the job until its own limit, so a run is given the whole of the calibration's share.
+  const point = timed(`calibration-${points.length}.toml`, cycles - warmup, hours * 3600 * CALIBRATION_BUDGET * 1000)
+  points.push(point)
+  console.log(`${point.cycles} cycles took ${point.seconds.toFixed(1)} s`)
+  return point
 }
-
-const perCycle = (long.seconds - short.seconds) / (long.cycles - short.cycles)
-console.log(
-  `${perCycle.toFixed(5)} s a cycle (${short.seconds.toFixed(1)} s for ${short.cycles}, ${long.seconds.toFixed(1)} s for ${long.cycles})`
-)
-if (!(perCycle >= LEAST_SECONDS_A_CYCLE))
+const startOf = () => Math.min(...points.map(point => point.seconds))
+measure(setting(text, 'measurement_iterations') + warmup)
+measure(FIRST_LONG_CYCLES)
+let spent = points.reduce((sum, point) => sum + point.seconds, 0)
+for (;;) {
+  const last = points[points.length - 1]
+  const extra = last.seconds - startOf()
+  if (extra >= target * ENOUGH || last.cycles * 2 > MAX_CALIBRATION_CYCLES) break
+  // A run that was no longer than the start says nothing of the time of a cycle, and is made much longer. Otherwise the cycles are scaled by the time
+  // that is wanted over the time that it took, which is more than is needed if the time grows faster than the cycles do, and is not much more.
+  const scale = extra > 1 ? Math.min(50, Math.max(2, (target * ENOUGH) / extra)) : 50
+  const cycles = Math.min(MAX_CALIBRATION_CYCLES, Math.ceil(last.cycles * scale))
+  if (spent > hours * 3600 * CALIBRATION_BUDGET) break
+  spent += measure(cycles).seconds
+}
+const start = startOf()
+const last = points[points.length - 1]
+const before = points.filter(point => point.cycles < last.cycles && point.seconds - start > 5).pop()
+const extra = last.seconds - start
+if (!(extra > 1))
   throw new Error(
-    `the time of a cycle could not be worked out (${perCycle} s): the longer run was not longer than the shorter by more than the noise of starting a browser`
+    `the time of a cycle could not be worked out: the longest run took ${last.seconds.toFixed(1)} s, which is not more than the ${start.toFixed(1)} s that starting a browser can take`
   )
-const wanted = Math.max(setting(text, 'measurement_iterations'), Math.floor((hours * 3600) / perCycle) - warmup)
+const growth = before
+  ? Math.min(2, Math.max(1, Math.log(extra / (before.seconds - start)) / Math.log(last.cycles / before.cycles)))
+  : 1
+const perCycle = extra / last.cycles
+console.log(
+  `a start of ${start.toFixed(1)} s, ${perCycle.toFixed(5)} s a cycle at ${last.cycles} cycles, and a time that grows as cycles to the power ${growth.toFixed(2)}`
+)
+const sized = Math.floor(last.cycles * ((target - start) / extra) ** (1 / growth))
+const wanted = Math.max(setting(text, 'measurement_iterations'), sized - warmup)
 const measured = Math.min(wanted, MAX_CYCLES)
 const capped = measured < wanted
 const wallMs = Math.ceil(hours * 3600 * 1000 * 1.5)
@@ -157,6 +187,7 @@ const record = {
   cycles_wanted: wanted,
   capped_by_memory: capped,
   seconds_a_cycle: Number(perCycle.toFixed(6)),
+  growth_exponent: Number(growth.toFixed(3)),
   layers,
   started_at: started.toISOString(),
   host: { platform: process.platform, cpu: os.cpus()[0]?.model ?? null, cpus: os.cpus().length },
