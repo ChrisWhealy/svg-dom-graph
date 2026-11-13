@@ -18,13 +18,14 @@ No timing threshold is set from a guess: a baseline blocks a change only after e
 ## Stable CI baselines
 
 A baseline is the runs of one commit in one environment, and the environment includes the processor.
-GitHub gives a job one of several processors, and so far two have been seen, an EPYC 7763 and a Xeon 8573C.
+GitHub gives a job one of several processors, and so far an EPYC 7763, 9V45 and 9V74, and a Xeon 8573C, have been seen.
 Runs on different processors are different baselines, and are never pooled.
 
 The `perf-baseline` workflow runs every smoke workload with 12 repetitions in each of four jobs.
 Each job is one machine, so each artifact is one environment, and its summary names the processor.
-Four jobs make it likely that both processors are among them.
-Then, for each artifact whose environment has no baseline of 10 runs:
+Four jobs make it likely that more than one processor is among them.
+`adopt-baselines.mjs` (below) promotes one artifact for each environment.
+By hand, for each artifact whose environment has no baseline of 10 runs:
 
     node perf/runner/promote-from-run.mjs <run id> --artifact perf-baseline-<sha>-<sample> --reason "..."
 
@@ -78,6 +79,20 @@ The move of the W2 smoke workload takes about 8 microseconds, so the test shows 
 It does not show that a 15% slowdown is found.
 That needs a workload whose timed step is long enough for a small injected delay to be a small part of it.
 
+## Promoting and approving in one command
+
+`adopt-baselines.mjs` does the steps of the two sections around this one for the latest successful `perf-baseline` run, or the run that it is given.
+
+It downloads each job's artifact and reads the environment that it was measured in, which includes the processor on which GitHub chose to run the job.
+Jobs that got the same environment form one baseline, so only the first is promoted, asthe others would only overwrite it.
+It promotes with `promote-from-run.mjs`, so every refusal of that command holds.
+
+Runs are considered invalid are: runs containing more than one commit, a tree with changes, and a promotion over a regression without a reason.
+It then lists every baseline with its runs and its spread, and with `--approve` approves those that are ready.
+Without `--commit` it commits nothing, and leaves the files in the working tree for review.
+
+The next step is `perf-detection`, which shows the comparison working against what was adopted.
+
 ## Approving a baseline
 
   `node perf/runner/qualify.mjs --approve <baseline directory> --reason "..."`
@@ -114,8 +129,12 @@ A baseline with 10 runs that is not approved says so in the job summary and does
 
 ## To finish the qualification
 
-1. Run `perf-baseline` once, promote each environment that reached 10 runs, and commit.
-2. Run `qualify.mjs`, read the spreads, and approve the baselines that are steady enough.
+1. Run `perf-baseline` once.
+2. Run `node perf/runner/adopt-baselines.mjs --reason "..." --approve` from a clean checkout.
+   It promotes one artifact for each environment that the jobs got, reports the runs and the spread of every baseline, and approves those that are ready.
+   A baseline whose runs vary by more than the limit is approved only with `--accept-noise "why"`.
+   Add `--dry-run` first to see what it would do, and `--commit` to commit the result.
+   Read the spreads before approving, since approving is the decision.
 3. Run `perf-endurance` for one hour, then for three or more, and keep the records.
 4. Run `perf-detection`, collect what it showed with `collect-detection.mjs <run id>`, and commit `perf/evidence/detection/`.
    `qualify.mjs` then says which approved baselines have proof.
