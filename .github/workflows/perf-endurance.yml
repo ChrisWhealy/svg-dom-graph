@@ -1,10 +1,11 @@
-# The soak: the endurance manifests run for a long time, to show that nothing a cycle builds is left behind.
+# The soak: the endurance manifests run for hours, to show that nothing a cycle builds is left behind.
 #
-# Nothing here predicts how long a run will take, which two attempts to do from short runs got wrong on a hosted runner. The W5 recovery manifest is
-# given hours, and ends at the first cycle after them. The W3 manifest runs its operation stream in one call and cannot be stopped part-way, so it is
-# given a count of cycles, and the record says how long they took. Both are stopped at a ceiling if they do not end. The gates are exact: the
-# elements and listeners return to their baseline after every teardown, the live bytes do not grow after the warm-up, and every recovery
-# reaches the state that its contract promises. A job on a hosted runner can run for six hours at most, so the hours are limited to four and a half.
+# Nothing here predicts how long a run will take, which three attempts got wrong on a hosted runner. The W5 recovery manifest is driven from the page,
+# and ends at the first cycle after the hours. The W3 manifest runs its operation stream in one call, which cannot be watched or stopped part-way, so
+# it is run as segments of 100,000 cycles one after another until the hours have passed. Each segment's time is logged as it ends, and a segment
+# that does not end in half an hour is stopped and named. The gates are exact: the elements and listeners return to their baseline after every
+# teardown, the live bytes do not grow after the warm-up, and every recovery reaches the state that its contract promises. A job on a hosted
+# runner can run for six hours at most, so the hours are limited to four and a half.
 #
 # Started by hand. The `endurance-record.json` in each artifact is the evidence: it is kept in perf/evidence/endurance/ and read by
 # `node perf/runner/qualify.mjs`. Add a `schedule` here to make it a regular run.
@@ -14,11 +15,8 @@ on:
   workflow_dispatch:
     inputs:
       hours:
-        description: 'Hours that the W5 recovery soak runs for (at most 4.5). It ends at the first cycle after that'
+        description: 'Hours that each soak runs for (at most 4.5)'
         default: '3'
-      w3_cycles:
-        description: 'Measured cycles of the W3 soak (at most 2000000). Its time is a result: about 3 ms a cycle on a runner'
-        default: '1000000'
       scaling:
         description: 'Instead of a soak, time runs of growing length, to see how the time of a cycle changes'
         type: boolean
@@ -26,17 +24,13 @@ on:
 
 jobs:
   soak:
-    name: Soak ${{ matrix.manifest }}
+    name: Soak ${{ matrix.manifest }} for ${{ inputs.hours }} hours
     runs-on: ubuntu-24.04
     timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - manifest: w3-scene-lifecycle-endurance
-            soak_args: --cycles ${{ inputs.w3_cycles }}
-          - manifest: w5-recovery-long
-            soak_args: --hours ${{ inputs.hours }}
+        manifest: [w3-scene-lifecycle-endurance, w5-recovery-long]
     env:
       PERF_RUNNER_CLASS: github-ubuntu-24.04
       PERF_CHROME_NO_SANDBOX: '1'
@@ -71,7 +65,7 @@ jobs:
         run: node perf/runner/endurance-scaling.mjs perf/manifests/${{ matrix.manifest }}.toml
       - name: Soak
         if: ${{ !inputs.scaling }}
-        run: node perf/runner/endurance-soak.mjs perf/manifests/${{ matrix.manifest }}.toml ${{ matrix.soak_args }} --out-dir target/endurance-soak
+        run: node perf/runner/endurance-soak.mjs perf/manifests/${{ matrix.manifest }}.toml --hours "${{ inputs.hours }}" --out-dir target/endurance-soak
       - name: Keep the record
         if: always()
         uses: actions/upload-artifact@v7
