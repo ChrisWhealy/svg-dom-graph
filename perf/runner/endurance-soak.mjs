@@ -50,6 +50,13 @@ fs.mkdirSync(outDir, { recursive: true })
 const FASTEST_SECONDS_A_CYCLE = 0.02
 /** The most measured cycles that one run is given. The harness keeps about 230 bytes of wasm memory for each, and wasm32 has 4 GiB. */
 const MAX_CYCLES = 2_000_000
+/**
+ * The most cycles that a time-bound soak is given. A recovery run holds twelve JavaScript objects for each cycle at once, to size wasm-bindgen's table
+ * of externrefs before it reads a baseline, and the table doubles. V8 allows a table 10 million slots, so 540,000 cycles, which is three hours at the
+ * fastest cycle, needed 2^23 slots, doubled it to 2^24, and stopped the module with `RuntimeError: unreachable` before the first cycle. 2^22 slots is
+ * the most that fits, which is 349,000 cycles, and 300,000 has been run. At the 0.1 s or more that a cycle takes on a runner, three hours is a third of that.
+ */
+const MAX_TIME_BOUND_CYCLES = 300_000
 for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_harness_wasm_bg.wasm'])
   if (!fs.existsSync(path.join(root, built)))
     throw new Error(
@@ -120,7 +127,7 @@ if (timeBound) {
   // A time-bound soak is told its time, in the environment that the runner reads (see `stopAfter` in run.mjs).
   process.env.PERF_ENDURANCE_STOP_AFTER_SECONDS = String(Math.round(hours * 3600))
   ceilingSeconds = hours * 1.5 * 3600
-  const cycles = Math.min(MAX_CYCLES, Math.ceil((hours * 3600) / FASTEST_SECONDS_A_CYCLE))
+  const cycles = Math.min(MAX_TIME_BOUND_CYCLES, Math.ceil((hours * 3600) / FASTEST_SECONDS_A_CYCLE))
   console.log(
     `${path.basename(manifestPath)} runs for ${hours} hours, and ends at the first cycle after that (of at most ${cycles})`
   )
@@ -170,6 +177,7 @@ const record = {
   warmup_iterations: warmup,
   measurement_iterations: runs[0]?.cycles ?? null,
   cycles_completed: completedCycles(),
+  ended_by_cycle_limit: timeBound && completedCycles() === runs[0]?.cycles,
   segments: timeBound
     ? null
     : runs.map(r => ({

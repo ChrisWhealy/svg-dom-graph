@@ -144,6 +144,11 @@ Endurance counts as qualified when a soak of 3 hours or more passed every gate.
 `endurance-scaling.mjs`, or `scaling` in the workflow, shows how the time of a run grows on the machine that it runs on.
 The cause of the growth in W5 is in its fault sweeps, and has not been found.
 
+A W5 soak is given at most 300,000 cycles, which a three-hour soak does not reach, since a cycle takes 0.1 s or more on a runner.
+A recovery run holds twelve JavaScript at once objects for each cycle, to size the `externref` table, which doubles.
+V8 allows a table up to 10 million slots; however, 540,000 cycles needed 2^23 slots, so the module stopped with `RuntimeError: unreachable` before the first cycle.
+The record has `ended_by_cycle_limit` if the cause of the termination is due to the slot limit rather than a time limit.
+
 The harness keeps about 230 bytes of its wasm memory for each cycle, which is 22.9 MB at 100,000 cycles of the W3 manifest, and wasm32 has 4 GiB.
 That is why a segment is not made longer.
 A run that asked for 36 million cycles once stopped after half an hour with `RuntimeError: unreachable`.
