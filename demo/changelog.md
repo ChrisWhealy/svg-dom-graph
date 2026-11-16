@@ -63,7 +63,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Automate performance baseline adoption process (`5464715`)
 - Add weekly CI job to check whether `perf-baseline` needs to be rerun (`8e10e20`)
 - Refresh baseline measurements (`5675b7f`)
-- Add initial performance endurance evidence (``)
+- Add initial performance endurance evidence (`0475ca5`)
 
 ### Changed
 
