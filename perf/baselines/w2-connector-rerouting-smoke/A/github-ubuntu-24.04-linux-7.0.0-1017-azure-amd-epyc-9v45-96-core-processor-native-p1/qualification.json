@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "approved_at": "2026-11-13T13:37:32.635Z",
-  "reason": "Refresh baselines",
+  "approved_at": "2026-11-16T19:33:24.805Z",
+  "reason": "Refresh baseline figures",
   "accepted_noise": null,
   "runs_to_block": 10,
   "runs": [
-    "w2-connector-rerouting-smoke-A-performance-r0-20261112T111924",
-    "w2-connector-rerouting-smoke-A-performance-r1-20261112T111924",
-    "w2-connector-rerouting-smoke-A-performance-r10-20261112T112352",
-    "w2-connector-rerouting-smoke-A-performance-r11-20261112T112446",
-    "w2-connector-rerouting-smoke-A-performance-r2-20261112T111925",
-    "w2-connector-rerouting-smoke-A-performance-r3-20261112T112018",
-    "w2-connector-rerouting-smoke-A-performance-r4-20261112T112111",
-    "w2-connector-rerouting-smoke-A-performance-r5-20261112T112112",
-    "w2-connector-rerouting-smoke-A-performance-r6-20261112T112112",
-    "w2-connector-rerouting-smoke-A-performance-r7-20261112T112206",
-    "w2-connector-rerouting-smoke-A-performance-r8-20261112T112206",
-    "w2-connector-rerouting-smoke-A-performance-r9-20261112T112259"
+    "w2-connector-rerouting-smoke-A-performance-r0-20261116T183919",
+    "w2-connector-rerouting-smoke-A-performance-r1-20261116T184012",
+    "w2-connector-rerouting-smoke-A-performance-r10-20261116T184440",
+    "w2-connector-rerouting-smoke-A-performance-r11-20261116T184441",
+    "w2-connector-rerouting-smoke-A-performance-r2-20261116T184105",
+    "w2-connector-rerouting-smoke-A-performance-r3-20261116T184106",
+    "w2-connector-rerouting-smoke-A-performance-r4-20261116T184159",
+    "w2-connector-rerouting-smoke-A-performance-r5-20261116T184252",
+    "w2-connector-rerouting-smoke-A-performance-r6-20261116T184253",
+    "w2-connector-rerouting-smoke-A-performance-r7-20261116T184346",
+    "w2-connector-rerouting-smoke-A-performance-r8-20261116T184439",
+    "w2-connector-rerouting-smoke-A-performance-r9-20261116T184439"
   ],
   "spread": [
     {
@@ -24,9 +24,9 @@
       "layer": "A",
       "unit": "us",
       "runs": 12,
-      "median": 0.014253521126760564,
-      "highest_over_lowest": 1.1240942028985508,
-      "coefficient_of_variation": 0.03965290740618656
+      "median": 0.013540540540540541,
+      "highest_over_lowest": 1.2894211576846308,
+      "coefficient_of_variation": 0.0754034557583573
     }
   ]
 }

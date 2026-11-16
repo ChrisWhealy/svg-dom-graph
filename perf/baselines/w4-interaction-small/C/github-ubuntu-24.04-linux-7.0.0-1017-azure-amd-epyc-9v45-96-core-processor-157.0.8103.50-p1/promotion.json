@@ -4,27 +4,27 @@
   "layer": "C",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-13T13:37:27.170Z",
-    "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
+    "promoted_at": "2026-11-16T19:33:24.130Z",
+    "commit": "321b304b33bf5c5eff5ebfffcde5afa6e5aa0155",
     "workload_hash": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-amd-epyc-9v45-96-core-processor-157.0.8103.50-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
-  "reason": "Refresh baselines",
+  "reason": "Refresh baseline figures",
   "runs": [
-    "w4-interaction-small-C-performance-r0-20261112T113401",
-    "w4-interaction-small-C-performance-r1-20261112T113600",
-    "w4-interaction-small-C-performance-r10-20261112T115021",
-    "w4-interaction-small-C-performance-r11-20261112T115127",
-    "w4-interaction-small-C-performance-r2-20261112T113852",
-    "w4-interaction-small-C-performance-r3-20261112T114051",
-    "w4-interaction-small-C-performance-r4-20261112T114157",
-    "w4-interaction-small-C-performance-r5-20261112T114303",
-    "w4-interaction-small-C-performance-r6-20261112T114503",
-    "w4-interaction-small-C-performance-r7-20261112T114609",
-    "w4-interaction-small-C-performance-r8-20261112T114715",
-    "w4-interaction-small-C-performance-r9-20261112T114822"
+    "w4-interaction-small-C-performance-r0-20261116T185405",
+    "w4-interaction-small-C-performance-r1-20261116T185510",
+    "w4-interaction-small-C-performance-r10-20261116T191122",
+    "w4-interaction-small-C-performance-r11-20261116T191233",
+    "w4-interaction-small-C-performance-r2-20261116T185713",
+    "w4-interaction-small-C-performance-r3-20261116T185818",
+    "w4-interaction-small-C-performance-r4-20261116T190016",
+    "w4-interaction-small-C-performance-r5-20261116T190214",
+    "w4-interaction-small-C-performance-r6-20261116T190504",
+    "w4-interaction-small-C-performance-r7-20261116T190615",
+    "w4-interaction-small-C-performance-r8-20261116T190818",
+    "w4-interaction-small-C-performance-r9-20261116T190924"
   ],
   "comparison_method": {
     "statistic": "ratio of repetition medians",
@@ -34,7 +34,7 @@
   },
   "previous": {
     "commit": "90bf506b4cb6e0e64f04215a58ea26a56c02e954",
-    "promoted_at": "2026-11-13T11:16:32.965Z"
+    "promoted_at": "2026-11-13T13:37:27.170Z"
   },
   "accepted_regression": null
 }

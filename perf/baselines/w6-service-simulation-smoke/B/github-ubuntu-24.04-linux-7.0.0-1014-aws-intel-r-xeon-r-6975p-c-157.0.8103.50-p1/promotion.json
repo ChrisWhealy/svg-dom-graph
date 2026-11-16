@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w6-service-simulation-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-16T19:33:20.024Z",
+    "commit": "321b304b33bf5c5eff5ebfffcde5afa6e5aa0155",
+    "workload_hash": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1014-aws-intel-r-xeon-r-6975p-c-157.0.8103.50-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "cce8d6847dc1919a9c7202334ece6ab36079e225b9a8275f651f28651d17afbb",
+  "reason": "Refresh baseline figures",
+  "runs": [
+    "w6-service-simulation-smoke-B-performance-r0-20261116T190942",
+    "w6-service-simulation-smoke-B-performance-r1-20261116T191042",
+    "w6-service-simulation-smoke-B-performance-r10-20261116T191710",
+    "w6-service-simulation-smoke-B-performance-r11-20261116T191811",
+    "w6-service-simulation-smoke-B-performance-r2-20261116T191050",
+    "w6-service-simulation-smoke-B-performance-r3-20261116T191058",
+    "w6-service-simulation-smoke-B-performance-r4-20261116T191159",
+    "w6-service-simulation-smoke-B-performance-r5-20261116T191352",
+    "w6-service-simulation-smoke-B-performance-r6-20261116T191400",
+    "w6-service-simulation-smoke-B-performance-r7-20261116T191501",
+    "w6-service-simulation-smoke-B-performance-r8-20261116T191509",
+    "w6-service-simulation-smoke-B-performance-r9-20261116T191610"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

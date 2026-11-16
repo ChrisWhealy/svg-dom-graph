@@ -1,41 +1,41 @@
 {
   "schema_version": 1,
-  "approved_at": "2026-11-13T13:37:33.146Z",
-  "reason": "Refresh baselines",
+  "approved_at": "2026-11-16T19:33:25.218Z",
+  "reason": "Refresh baseline figures",
   "accepted_noise": null,
   "runs_to_block": 10,
   "runs": [
-    "w6-service-simulation-smoke-A-performance-r0-20261112T115318",
-    "w6-service-simulation-smoke-A-performance-r1-20261112T115511",
-    "w6-service-simulation-smoke-A-performance-r10-20261112T115952",
-    "w6-service-simulation-smoke-A-performance-r11-20261112T120145",
-    "w6-service-simulation-smoke-A-performance-r2-20261112T115611",
-    "w6-service-simulation-smoke-A-performance-r3-20261112T115804",
-    "w6-service-simulation-smoke-A-performance-r4-20261112T115812",
-    "w6-service-simulation-smoke-A-performance-r5-20261112T115820",
-    "w6-service-simulation-smoke-A-performance-r6-20261112T115828",
-    "w6-service-simulation-smoke-A-performance-r7-20261112T115836",
-    "w6-service-simulation-smoke-A-performance-r8-20261112T115844",
-    "w6-service-simulation-smoke-A-performance-r9-20261112T115852"
+    "w6-service-simulation-smoke-A-performance-r0-20261116T191334",
+    "w6-service-simulation-smoke-A-performance-r1-20261116T191341",
+    "w6-service-simulation-smoke-A-performance-r10-20261116T192102",
+    "w6-service-simulation-smoke-A-performance-r11-20261116T192202",
+    "w6-service-simulation-smoke-A-performance-r2-20261116T191442",
+    "w6-service-simulation-smoke-A-performance-r3-20261116T191450",
+    "w6-service-simulation-smoke-A-performance-r4-20261116T191643",
+    "w6-service-simulation-smoke-A-performance-r5-20261116T191651",
+    "w6-service-simulation-smoke-A-performance-r6-20261116T191844",
+    "w6-service-simulation-smoke-A-performance-r7-20261116T191852",
+    "w6-service-simulation-smoke-A-performance-r8-20261116T191900",
+    "w6-service-simulation-smoke-A-performance-r9-20261116T192054"
   ],
   "spread": [
-    {
-      "name": "simulation.engine.replay_to_cursor",
-      "layer": "A",
-      "unit": "us",
-      "runs": 12,
-      "median": 2003.384,
-      "highest_over_lowest": 1.0801645056799598,
-      "coefficient_of_variation": 0.01967322954887559
-    },
     {
       "name": "simulation.engine.four_slices",
       "layer": "A",
       "unit": "us",
       "runs": 12,
-      "median": 24.828,
-      "highest_over_lowest": 1.05567253432157,
-      "coefficient_of_variation": 0.013838886299605672
+      "median": 23.264999999999997,
+      "highest_over_lowest": 1.1000695228991049,
+      "coefficient_of_variation": 0.02863956424655218
+    },
+    {
+      "name": "simulation.engine.replay_to_cursor",
+      "layer": "A",
+      "unit": "us",
+      "runs": 12,
+      "median": 1872.557,
+      "highest_over_lowest": 1.0796001909206734,
+      "coefficient_of_variation": 0.025566960130175842
     }
   ]
 }

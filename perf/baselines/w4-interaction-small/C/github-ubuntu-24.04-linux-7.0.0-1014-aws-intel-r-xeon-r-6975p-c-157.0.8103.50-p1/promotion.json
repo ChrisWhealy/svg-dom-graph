@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w4-interaction-small",
+  "layer": "C",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-16T19:33:19.866Z",
+    "commit": "321b304b33bf5c5eff5ebfffcde5afa6e5aa0155",
+    "workload_hash": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1014-aws-intel-r-xeon-r-6975p-c-157.0.8103.50-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
+  "reason": "Refresh baseline figures",
+  "runs": [
+    "w4-interaction-small-C-performance-r0-20261116T185422",
+    "w4-interaction-small-C-performance-r1-20261116T185529",
+    "w4-interaction-small-C-performance-r10-20261116T190736",
+    "w4-interaction-small-C-performance-r11-20261116T190935",
+    "w4-interaction-small-C-performance-r2-20261116T185636",
+    "w4-interaction-small-C-performance-r3-20261116T185747",
+    "w4-interaction-small-C-performance-r4-20261116T185950",
+    "w4-interaction-small-C-performance-r5-20261116T190154",
+    "w4-interaction-small-C-performance-r6-20261116T190300",
+    "w4-interaction-small-C-performance-r7-20261116T190412",
+    "w4-interaction-small-C-performance-r8-20261116T190518",
+    "w4-interaction-small-C-performance-r9-20261116T190629"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

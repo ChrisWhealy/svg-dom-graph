@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "approved_at": "2026-11-16T19:33:24.958Z",
+  "reason": "Refresh baseline figures",
+  "accepted_noise": null,
+  "runs_to_block": 10,
+  "runs": [
+    "w3-scene-lifecycle-smoke-B-performance-r0-20261116T184603",
+    "w3-scene-lifecycle-smoke-B-performance-r1-20261116T184656",
+    "w3-scene-lifecycle-smoke-B-performance-r10-20261116T185123",
+    "w3-scene-lifecycle-smoke-B-performance-r11-20261116T185217",
+    "w3-scene-lifecycle-smoke-B-performance-r2-20261116T184749",
+    "w3-scene-lifecycle-smoke-B-performance-r3-20261116T184749",
+    "w3-scene-lifecycle-smoke-B-performance-r4-20261116T184842",
+    "w3-scene-lifecycle-smoke-B-performance-r5-20261116T184843",
+    "w3-scene-lifecycle-smoke-B-performance-r6-20261116T184936",
+    "w3-scene-lifecycle-smoke-B-performance-r7-20261116T184937",
+    "w3-scene-lifecycle-smoke-B-performance-r8-20261116T184937",
+    "w3-scene-lifecycle-smoke-B-performance-r9-20261116T185030"
+  ],
+  "spread": [
+    {
+      "name": "teardown.total",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 30.000000027939677,
+      "highest_over_lowest": 1.749999994179234,
+      "coefficient_of_variation": 0.13738216622160862
+    },
+    {
+      "name": "teardown.remove_host",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 24.999999906867743,
+      "highest_over_lowest": 1.6666666744276881,
+      "coefficient_of_variation": 0.1458671832919684
+    },
+    {
+      "name": "construction.nodes",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 790.0000000372529,
+      "highest_over_lowest": 1.4999999999061167,
+      "coefficient_of_variation": 0.10997173024968664
+    },
+    {
+      "name": "construction.total",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 1234.9999998696148,
+      "highest_over_lowest": 1.4285714287411302,
+      "coefficient_of_variation": 0.10732386280658708
+    },
+    {
+      "name": "construction.edges",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 359.99999998603016,
+      "highest_over_lowest": 1.3770491803779266,
+      "coefficient_of_variation": 0.0921761643275652
+    },
+    {
+      "name": "construction.create_scene",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 44.999999925494194,
+      "highest_over_lowest": 1.2857142890404378,
+      "coefficient_of_variation": 0.07789024296109437
+    },
+    {
+      "name": "teardown.drop_scene",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 5.000000004656613,
+      "highest_over_lowest": 1.0000000465661298,
+      "coefficient_of_variation": 1.516516650135786e-8
+    }
+  ]
+}
