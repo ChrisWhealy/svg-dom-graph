@@ -64,7 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add weekly CI job to check whether `perf-baseline` needs to be rerun (`8e10e20`)
 - Refresh baseline measurements (`5675b7f`)
 - Add initial performance endurance evidence (`0475ca5`)
-- Refresh baseline figures (``)
+- Refresh baseline figures (`5f6f002`)
 
 ### Changed
 
