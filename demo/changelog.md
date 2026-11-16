@@ -192,4 +192,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Resize W5 `perf-endurance` workflow (`70145de`)
 - Another attempt to prevent `perf-endurance` workflow from timing out (`df7b123`)
 - Attempt to prevent `w3-scene-lifecycle-endurance` workflow from hanging (`22b112c`)
-- Log whether `w5-recovery-long` fails due to time limit or slot limit in `externref` table (``)
+- Log whether `w5-recovery-long` fails due to time limit or slot limit in `externref` table (`0558f7c`)
