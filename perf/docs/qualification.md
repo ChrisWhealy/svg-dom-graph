@@ -96,7 +96,12 @@ The next step is `perf-detection`, which shows the comparison working against wh
 ## Knowing when to run it again
 
 A baseline is for one environment, and the environment includes the kernel and the full version of Chrome.
-When the runner image moves to another Chrome or kernel, or GitHub gives a job another processor, no baseline matches, and `perf-smoke` can only say so.
+When the runner image moves to another kernel, or GitHub gives a job another processor, no baseline matches, and `perf-smoke` can only say so.
+Chrome is pinned, so that it is not one of the things that moves.
+The runner image ships a Chrome of its own, which moved on every few weeks and made every baseline stop matching.
+`.github/actions/pinned-chrome` installs one version from Chrome for Testing, and `perf-smoke`, `perf-baseline`, `perf-detection` and `perf-baseline-check` use it.
+To move to another version, change `chrome-version` in that one file, run `perf-baseline`, and adopt the result.
+The baselines of the old version no longer match, which is meant, and `perf-baseline-check` says so.
 
 The `perf-baseline-check` workflow asks the question every Monday.
 Each of four jobs makes three runs of the smallest workload, reads its environment, and looks for an approved baseline (`baseline-status.mjs`).

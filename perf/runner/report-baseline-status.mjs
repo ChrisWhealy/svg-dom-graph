@@ -46,7 +46,7 @@ if (missing.size > 0) {
     '2. In a clean checkout, run `node perf/runner/adopt-baselines.mjs --reason "..." --dry-run`, then again with `--approve`, and review the spreads.',
     '3. Commit and push `perf/baselines`, start `perf-detection`, and run `node perf/runner/collect-detection.mjs <run id>`.',
     '',
-    'The runner image has probably moved to another Chrome or kernel, or GitHub gave a job another processor. The environments that are covered are listed in the weekly run.'
+    'Chrome is pinned, so the runner image has probably moved to another kernel, or GitHub gave a job another processor. If the pinned Chrome was changed on purpose, this is expected. The environments that are covered are listed in the weekly run.'
   )
 }
 

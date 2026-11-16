@@ -3,7 +3,7 @@
 //   node perf/runner/baseline-status.mjs [--out FILE]
 //
 // A baseline is for one environment: the runner class, the operating system and kernel, the processor, the full version of Chrome and the
-// measurement protocol. When the runner image moves to another Chrome or kernel, or GitHub gives a job another processor, no baseline matches, and
+// measurement protocol. When the runner image moves to another kernel, or GitHub gives a job another processor, or the pinned Chrome is changed, no baseline matches, and
 // perf-smoke can only say so. This asks the question on purpose and cheaply: it makes three runs of the smallest workload, reads the environment
 // that they were measured in, and looks for an approved baseline of it. The runs are not compared with anything and are not kept.
 //

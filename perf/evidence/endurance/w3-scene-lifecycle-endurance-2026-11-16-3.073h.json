@@ -1,0 +1,268 @@
+{
+  "schema_version": 3,
+  "manifest": "perf/manifests/w3-scene-lifecycle-endurance.toml",
+  "hours_requested": 3,
+  "hours_run": 3.073,
+  "seconds_run": 11062,
+  "warmup_iterations": 20,
+  "segment_cycles": 100000,
+  "cycles_completed": 3400000,
+  "segments": [
+    {
+      "run": "segment-001",
+      "cycles": 100000,
+      "seconds": 369,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-002",
+      "cycles": 100000,
+      "seconds": 299,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-003",
+      "cycles": 100000,
+      "seconds": 361,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-004",
+      "cycles": 100000,
+      "seconds": 364,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-005",
+      "cycles": 100000,
+      "seconds": 306,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-006",
+      "cycles": 100000,
+      "seconds": 307,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-007",
+      "cycles": 100000,
+      "seconds": 362,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-008",
+      "cycles": 100000,
+      "seconds": 309,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-009",
+      "cycles": 100000,
+      "seconds": 364,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-010",
+      "cycles": 100000,
+      "seconds": 316,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-011",
+      "cycles": 100000,
+      "seconds": 316,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-012",
+      "cycles": 100000,
+      "seconds": 313,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-013",
+      "cycles": 100000,
+      "seconds": 316,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-014",
+      "cycles": 100000,
+      "seconds": 310,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-015",
+      "cycles": 100000,
+      "seconds": 314,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-016",
+      "cycles": 100000,
+      "seconds": 310,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-017",
+      "cycles": 100000,
+      "seconds": 309,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-018",
+      "cycles": 100000,
+      "seconds": 303,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-019",
+      "cycles": 100000,
+      "seconds": 307,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-020",
+      "cycles": 100000,
+      "seconds": 307,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-021",
+      "cycles": 100000,
+      "seconds": 309,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-022",
+      "cycles": 100000,
+      "seconds": 363,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-023",
+      "cycles": 100000,
+      "seconds": 311,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-024",
+      "cycles": 100000,
+      "seconds": 357,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-025",
+      "cycles": 100000,
+      "seconds": 308,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-026",
+      "cycles": 100000,
+      "seconds": 358,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-027",
+      "cycles": 100000,
+      "seconds": 309,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-028",
+      "cycles": 100000,
+      "seconds": 314,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-029",
+      "cycles": 100000,
+      "seconds": 310,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-030",
+      "cycles": 100000,
+      "seconds": 366,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-031",
+      "cycles": 100000,
+      "seconds": 366,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-032",
+      "cycles": 100000,
+      "seconds": 310,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-033",
+      "cycles": 100000,
+      "seconds": 307,
+      "passed": true,
+      "timed_out": false
+    },
+    {
+      "run": "segment-034",
+      "cycles": 100000,
+      "seconds": 312,
+      "passed": true,
+      "timed_out": false
+    }
+  ],
+  "layers": "b",
+  "started_at": "2026-11-16T14:59:51.025Z",
+  "host": {
+    "platform": "linux",
+    "cpu": "Intel(R) Xeon(R) 6975P-C",
+    "cpus": 4
+  },
+  "passed": true,
+  "timed_out": false,
+  "failure": null,
+  "gates": [
+    {
+      "gate": "endurance.live_bytes_do_not_grow",
+      "outcome": "pass"
+    }
+  ],
+  "run_id": 43891312886,
+  "commit": "f8a18176c61ef4ace15baaf789027930190f1116"
+}

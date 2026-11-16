@@ -1,6 +1,6 @@
 # Weekly: do the committed baselines still cover the runners? If not, raise an issue that says what to run.
 #
-# A baseline is for one environment (runner class, kernel, processor, Chrome version, protocol), and the runner image moves on every few weeks, or GitHub
+# A baseline is for one environment (runner class, kernel, processor, Chrome version, protocol), and the runner image moves to another kernel every few weeks, or GitHub
 # gives a job another processor. When that happens no baseline matches, and perf-smoke can only say so. Each of four jobs makes three runs of the smallest
 # workload, reads its environment, and looks for an approved baseline (perf/runner/baseline-status.mjs). A last job puts the answers together, opens or
 # updates one issue if an environment has none, and closes it when every environment that was seen is covered again.
@@ -41,10 +41,8 @@ jobs:
       - name: Install the schemas' dependencies
         run: npm ci
         working-directory: perf/schemas
-      - name: Chrome version (the runner image ships one)
-        run: |
-          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
-          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Chrome, pinned (a baseline is for one version of it)
+        uses: ./.github/actions/pinned-chrome
       - name: Build what the runs use
         run: |
           cargo build --release -p perf-harness

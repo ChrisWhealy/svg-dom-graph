@@ -49,10 +49,8 @@ jobs:
       - name: Install the schemas' dependencies
         run: npm ci
         working-directory: perf/schemas
-      - name: Chrome version (the runner image ships one)
-        run: |
-          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
-          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+      - name: Chrome, pinned (a baseline is for one version of it)
+        uses: ./.github/actions/pinned-chrome
       - name: Which processor this is
         run: |
           echo "sample ${{ matrix.sample }}: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)" | tee -a "$GITHUB_STEP_SUMMARY"

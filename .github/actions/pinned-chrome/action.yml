@@ -1,0 +1,24 @@
+# The Chrome that the performance baselines are measured in.
+#
+# A baseline is for one environment, and the environment includes the full version of Chrome. The runner image ships a Chrome of its own that moves on
+# every few weeks, and each move made every baseline stop matching, so that perf-smoke and perf-detection had nothing to compare with. This installs one
+# version, from Chrome for Testing, and sets CHROME to it, so that the environment changes when this file does and not when the image does.
+#
+# To move to another version, change `chrome-version` here and nowhere else, then run perf-baseline and adopt the result (perf/docs/qualification.md).
+# The baselines of the old version no longer match, which is what is meant, and perf-baseline-check says so.
+name: Pinned Chrome
+description: Installs the one version of Chrome that the performance baselines are measured in, and sets CHROME to it
+runs:
+  using: composite
+  steps:
+    - id: chrome
+      uses: browser-actions/setup-chrome@v2
+      with:
+        chrome-version: 157.0.8103.50
+    - shell: bash
+      env:
+        CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      run: |
+        echo "CHROME=$CHROME_PATH" >> "$GITHUB_ENV"
+        "$CHROME_PATH" --version
+        "$CHROME_PATH" --version | grep -q '157\.0\.8103\.50' || { echo "::error::Chrome is not the pinned version"; exit 1; }
