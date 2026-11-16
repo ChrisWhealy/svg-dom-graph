@@ -119,23 +119,27 @@ The approval is committed, so it is reviewed like the baseline is.
 
 ## Endurance
 
-`perf-endurance.yml` soaks the W3 and W5 endurance manifests for the number of specified hours, with an upper limit of four and a half, since a hosted job stops at six.
-Nothing in it predicts how long a run will take.
-The start of a run takes between one and two minutes, and a W5 cycle costs more the longer the run is.
-It took 0.095 s at 800 cycles and 0.24 s at 12,810.
-A single long call cannot be watched and cannot be stopped part-way, so a soak is made of smaller, individual runs to provide a more granular diagnosis in the ecvent of failure.
+`perf-endurance.yml` soaks the W3 and W5 endurance manifests for the hours that it is given, at most four and a half, since a hosted job stops at six.
+Nothing in it predicts how long a run will take, and nothing in it is one long call.
+Four attempts at that were wrong on a hosted runner.
+- Two sized the run from the time of short ones.
+  But the start of a run there takes between one and two minutes, so the difference between two short runs is mostly noise.
+- One gave W3 a million cycles in one call, which was still running after 5.4 hours, with nothing to look at.
+- One gave W5 three hours and had it stop itself, and it was still running at four and a half.
 
-- W5 is driven from the page one cycle at a time, so it is one run, and it ends at the first cycle that starts after the hours.
-  The record has `cycles_completed`, and every gate judges the cycles that were made.
-- W3 runs its operation stream in wasm in one call, whose hash is compared with the whole of the intended stream.
-  So it is run as segments of 100,000 cycles, one after another, each with the gates of an endurance run.
-  A new segment is started only while the hours have not passed.
-  The time of every segment is logged as it ends, so a slowdown shows, and the record has the list.
+A single long call cannot be watched or stopped part-way, so a soak is made of runs that can be.
+It is segments, one after another, each with the gates of an endurance run, and a new one is started only while the hours have not passed.
+A W3 segment is 100,000 cycles, which takes about five minutes, and a W5 segment is 3,000, which takes about the same.
+The time of every segment is logged as it ends, so a slowdown shows, and the record has the list.
+A W3 soak of three hours was 34 segments of between 283 and 368 s, which made 3.4 million cycles.
+So a segment's time does not grow from one to the next.
+A W5 cycle costs more the longer a run is, 0.095 s at 800 cycles and 0.24 s at 12,810, for a reason that has not been found.
+Every segment starts a new page, so that cost does not accumulate.
 
-Every run has a ceiling, so that one that is stuck does not hold a job until the job's own limit.
-The ceiling is 1.5 times the hours for W5, and 30 minutes for a W3 segment, which is named when it is stopped.
-A run that hit its ceiling has `timed_out` and no gates, so it is a failure and not evidence.
-The first segment that fails ends the W3 soak.
+Every segment has a ceiling of 30 minutes, so that one that is stuck does not hold a job until the job's own limit.
+It is named when it is stopped.
+A segment that hit its ceiling has `timed_out` and no gates, so it is a failure and not evidence.
+The first segment that fails ends the soak.
 
 `endurance-soak.mjs` runs what is already built, with the gates that every endurance run has.
 Those are exact: elements and listeners back to their baseline after every teardown, live bytes not growing after the warm-up, and every recovery reaching the state its contract promises.
@@ -143,11 +147,6 @@ Each soak writes `endurance-record.json`, and the ones to keep go in `perf/evide
 Endurance counts as qualified when a soak of 3 hours or more passed every gate.
 `endurance-scaling.mjs`, or `scaling` in the workflow, shows how the time of a run grows on the machine that it runs on.
 The cause of the growth in W5 is in its fault sweeps, and has not been found.
-
-A W5 soak is given at most 300,000 cycles, which a three-hour soak does not reach, since a cycle takes 0.1 s or more on a runner.
-A recovery run holds twelve JavaScript at once objects for each cycle, to size the `externref` table, which doubles.
-V8 allows a table up to 10 million slots; however, 540,000 cycles needed 2^23 slots, so the module stopped with `RuntimeError: unreachable` before the first cycle.
-The record has `ended_by_cycle_limit` if the cause of the termination is due to the slot limit rather than a time limit.
 
 The harness keeps about 230 bytes of its wasm memory for each cycle, which is 22.9 MB at 100,000 cycles of the W3 manifest, and wasm32 has 4 GiB.
 That is why a segment is not made longer.

@@ -1,14 +1,15 @@
 # The soak: the endurance manifests run for hours, to show that nothing a cycle builds is left behind.
 #
-# Nothing here predicts how long a run will take, which three attempts got wrong on a hosted runner. The W5 recovery manifest is driven from the page,
-# and ends at the first cycle after the hours. The W3 manifest runs its operation stream in one call, which cannot be watched or stopped part-way, so
-# it is run as segments of 100,000 cycles one after another until the hours have passed. Each segment's time is logged as it ends, and a segment
-# that does not end in half an hour is stopped and named. The gates are exact: the elements and listeners return to their baseline after every
-# teardown, the live bytes do not grow after the warm-up, and every recovery reaches the state that its contract promises. A job on a hosted
-# runner can run for six hours at most, so the hours are limited to four and a half.
+# Nothing here predicts how long a run will take, and nothing is one long call, since both were wrong on a hosted runner.
+# A soak is segments, one after another until the hours have passed: 100,000 cycles of W3 and 3,000 of W5, each about
+# five minutes, each a run of its own with the gates of an endurance run. The time of each segment is logged as it ends,
+# and a segment that does not end in half an hour is stopped and named. The gates are exact: the elements and listeners
+# return to their baseline after every teardown, the live bytes do not grow after the warm-up, and every recovery
+# reaches the state that its contract promises. A job on a hosted runner can run for six hours at most, so the hours are
+# limited to four and a half.
 #
-# Started by hand. The `endurance-record.json` in each artifact is the evidence: it is kept in perf/evidence/endurance/ and read by
-# `node perf/runner/qualify.mjs`. Add a `schedule` here to make it a regular run.
+# Started by hand. The `endurance-record.json` in each artifact is the evidence: it is kept in perf/evidence/endurance/
+# and read by `node perf/runner/qualify.mjs`. Add a `schedule` here to make it a regular run.
 name: perf-endurance
 
 on:

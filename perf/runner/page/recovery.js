@@ -1049,12 +1049,8 @@ export const runEndurance = (h, manifest, testing = {}) => {
   const series = []
   const unmet = []
   let judged = 0
-  // A soak is given a time and not a count, since the time of a cycle here grows with the length of the run, and no count that is chosen beforehand
-  // fills a time. It ends at the first cycle that starts after the time, and everything below is judged over the cycles that were made.
-  const stopAt = testing.stopAfterMs ? performance.now() + testing.stopAfterMs : Infinity
   let completed = 0
   for (let cycle = 1; cycle <= total; cycle++) {
-    if (performance.now() >= stopAt) break
     const rows = []
     const probedCalls = []
     for (const group of GROUPS) {

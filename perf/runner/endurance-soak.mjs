@@ -2,20 +2,19 @@
 //
 //   node perf/runner/endurance-soak.mjs <manifest.toml> --hours H [--layers b] [--segment-cycles N] [--segment-minutes M] [--out-dir DIR]
 //
-// Nothing here predicts how long a run will take. Two attempts to do so, from the time of short runs, were wrong on a hosted runner: the start of a
-// run there takes between a minute and two, so the difference between two short runs is mostly noise, and a recovery cycle costs more the longer
-// the run is. A third gave W3 a million cycles in one call, which was still running after 5.4 hours without a word, and there was nothing to look at.
-// A single long call cannot be watched, and cannot be stopped part-way, so a soak is made of calls that can be.
+// Nothing here predicts how long a run will take, and nothing is one long call. Three attempts to size a run from the time of short ones were wrong on a
+// hosted runner: the start of a run there takes between a minute and two, so the difference between two short runs is mostly noise. A single call of
+// a million cycles was still running after 5.4 hours without a word, and a recovery run that was to stop itself at three hours was still running at
+// four and a half. A single long call cannot be watched, so a soak is made of runs that can be.
 //
-//  - A recovery workload (W5) is driven from the page one cycle at a time, so it is one run that is given the hours, and ends at the first cycle that
-//    starts after them. `cycles_completed` is how many fitted, and every gate judges those.
-//  - Any other workload (W3) runs its operation stream in wasm in a single call, whose hash is compared with the whole of the intended stream. So a
-//    soak is segments of `--segment-cycles` (100,000) cycles, one after another, each a run of its own with the gates of an endurance run, and the
-//    next is started only while the hours have not passed. The time of every segment is written as it ends, so a slowdown shows, and a segment
-//    that has not ended after `--segment-minutes` (30) is stopped and named. The first segment that fails ends the soak.
+// A soak is segments, one after another, each a run of its own with the gates of an endurance run, and the next is started only while the hours
+// have not passed. A segment is `--segment-cycles` cycles: 100,000 for W3, whose cycle takes about 3 ms on a runner, and 3,000 for a recovery workload
+// (W5), whose cycle takes 0.1 s or more, so that either is about five minutes. The time of every segment is written as it ends, so a slowdown shows. A segment
+// that has not ended after `--segment-minutes` (30) is stopped and named, and the first segment that fails ends the soak. Because every segment
+// starts a new page, the cost of a cycle that rises with the length of a run (W5's does, for a reason that has not been found) does not accumulate.
 //
-// Every run has a ceiling, so that one that is stuck does not hold a job until the job's own limit: 1.5 times the hours for a recovery soak,
-// and the segment's minutes for a segment. The record says `timed_out`, and a run that timed out has no gates, so it is a failure and not evidence.
+// The record says `timed_out` if a segment was stopped, and a run that timed out has no gates, so it is a failure and not evidence. A W3 soak of three
+// hours in 34 segments of 283 to 368 s each made 3.4 million cycles, which shows that a segment's time does not grow from one to the next.
 //
 // It runs what is already built (`cargo build --release -p perf-harness`, and wasm-pack for perf-harness-wasm, as perf-endurance.yml does), and
 // writes copies of the manifest into the output directory. The manifest in the repository is not changed. The harness keeps about 230 bytes of wasm
@@ -39,24 +38,12 @@ const manifestPath = path.resolve(process.argv[2] ?? '')
 const hours = Number(argument('--hours'))
 const layers = argument('--layers', 'b')
 const outDir = path.resolve(argument('--out-dir', path.join(root, 'target/endurance-soak')))
-const segmentCycles = Number(argument('--segment-cycles', 100_000))
-const segmentSeconds = Number(argument('--segment-minutes', 30)) * 60
+const segmentMinutes = Number(argument('--segment-minutes', 30))
 const usage =
   'usage: node perf/runner/endurance-soak.mjs <manifest.toml> --hours H [--layers b] [--segment-cycles N] [--segment-minutes M] [--out-dir DIR]'
 if (!fs.existsSync(manifestPath) || !(hours > 0)) throw new Error(usage)
 fs.mkdirSync(outDir, { recursive: true })
 
-/** A time-bound soak is given more cycles than the time can hold: no recovery cycle has been seen to take less than this, so the time decides. */
-const FASTEST_SECONDS_A_CYCLE = 0.02
-/** The most measured cycles that one run is given. The harness keeps about 230 bytes of wasm memory for each, and wasm32 has 4 GiB. */
-const MAX_CYCLES = 2_000_000
-/**
- * The most cycles that a time-bound soak is given. A recovery run holds twelve JavaScript objects for each cycle at once, to size wasm-bindgen's table
- * of externrefs before it reads a baseline, and the table doubles. V8 allows a table 10 million slots, so 540,000 cycles, which is three hours at the
- * fastest cycle, needed 2^23 slots, doubled it to 2^24, and stopped the module with `RuntimeError: unreachable` before the first cycle. 2^22 slots is
- * the most that fits, which is 349,000 cycles, and 300,000 has been run. At the 0.1 s or more that a cycle takes on a runner, three hours is a third of that.
- */
-const MAX_TIME_BOUND_CYCLES = 300_000
 for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_harness_wasm_bg.wasm'])
   if (!fs.existsSync(path.join(root, built)))
     throw new Error(
@@ -64,9 +51,11 @@ for (const built of ['target/release/perf-harness', 'perf-harness-wasm/pkg/perf_
     )
 
 const text = fs.readFileSync(manifestPath, 'utf8')
-const setting = key => Number(text.match(new RegExp(`^${key}\\s*=\\s*(\\d+)`, 'm'))?.[1])
-const warmup = setting('warmup_iterations')
-const timeBound = /^workload\s*=\s*"recovery"/m.test(text)
+const warmup = Number(text.match(/^warmup_iterations\s*=\s*(\d+)/m)?.[1])
+/** A recovery workload holds twelve JavaScript objects for each cycle at once, and a cycle of it takes 0.1 s or more, so its segment is short. */
+const recovery = /^workload\s*=\s*"recovery"/m.test(text)
+const segmentCycles = Number(argument('--segment-cycles', recovery ? 3_000 : 100_000))
+const segmentSeconds = segmentMinutes * 60
 
 /** One run of the runner on a copy of the manifest with `cycles` measured cycles, stopped at `ceilingSeconds`. */
 const run = (name, cycles, ceilingSeconds) => {
@@ -110,7 +99,6 @@ const run = (name, cycles, ceilingSeconds) => {
   return {
     name,
     cycles,
-    status: ran.status,
     timedOut: ran.error?.code === 'ETIMEDOUT',
     output,
     gates,
@@ -119,93 +107,63 @@ const run = (name, cycles, ceilingSeconds) => {
   }
 }
 
+console.log(
+  `${path.basename(manifestPath)} runs segments of ${segmentCycles} cycles for ${hours} hours, each stopped if it takes more than ${segmentMinutes} minutes`
+)
 const started = new Date()
 const began = Date.now()
 const runs = []
-let ceilingSeconds
-if (timeBound) {
-  // A time-bound soak is told its time, in the environment that the runner reads (see `stopAfter` in run.mjs).
-  process.env.PERF_ENDURANCE_STOP_AFTER_SECONDS = String(Math.round(hours * 3600))
-  ceilingSeconds = hours * 1.5 * 3600
-  const cycles = Math.min(MAX_TIME_BOUND_CYCLES, Math.ceil((hours * 3600) / FASTEST_SECONDS_A_CYCLE))
+
+while ((Date.now() - began) / 1000 < hours * 3600) {
+  const segment = run(`segment-${String(runs.length + 1).padStart(3, '0')}`, segmentCycles, segmentSeconds)
+  runs.push(segment)
   console.log(
-    `${path.basename(manifestPath)} runs for ${hours} hours, and ends at the first cycle after that (of at most ${cycles})`
+    `segment ${runs.length}: ${segment.cycles} cycles in ${segment.seconds.toFixed(0)} s (${((Date.now() - began) / 3600000).toFixed(2)} of ${hours} hours), ${segment.passed ? 'every gate passed' : segment.timedOut ? 'TIMED OUT' : 'FAILED'}`
   )
-  runs.push(run('soak', cycles, ceilingSeconds))
-} else {
-  ceilingSeconds = segmentSeconds
-  console.log(
-    `${path.basename(manifestPath)} runs segments of ${segmentCycles} cycles for ${hours} hours, each stopped if it takes more than ${segmentSeconds / 60} minutes`
-  )
-  while ((Date.now() - began) / 1000 < hours * 3600) {
-    const segment = run(
-      `segment-${String(runs.length + 1).padStart(3, '0')}`,
-      Math.min(MAX_CYCLES, segmentCycles),
-      segmentSeconds
-    )
-    runs.push(segment)
-    console.log(
-      `segment ${runs.length}: ${segment.cycles} cycles in ${segment.seconds.toFixed(0)} s (${((Date.now() - began) / 3600000).toFixed(2)} of ${hours} hours), ${segment.passed ? 'every gate passed' : segment.timedOut ? 'TIMED OUT' : 'FAILED'}`
-    )
-    if (!segment.passed) break
-  }
+  if (!segment.passed) break
+  // Only the last segment's output is worth keeping once it passed, and the others would fill the artifact for hours.
+  if (runs.length > 1) runs[runs.length - 2].output = ''
 }
+
 const seconds = (Date.now() - began) / 1000
 const failed = runs.find(r => !r.passed)
+const last = runs[runs.length - 1]
 
-/** The cycles that a time-bound soak made, which are fewer than it was given. Null if it left no result. */
-const completedCycles = () => {
-  if (!timeBound) return runs.filter(r => r.passed).reduce((sum, r) => sum + r.cycles, 0)
-  try {
-    const dir = path.join(outDir, 'soak')
-    const file = fs
-      .readdirSync(dir)
-      .find(name => name.endsWith('.json') && !name.startsWith('workload') && !name.startsWith('allocator'))
-    const result = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
-    return result.metrics.find(metric => metric.name === 'recovery.cycles')?.value ?? null
-  } catch {
-    return null
-  }
-}
 const record = {
   schema_version: 3,
   manifest: path.relative(root, manifestPath),
-  time_bound: timeBound,
   hours_requested: hours,
   hours_run: Number((seconds / 3600).toFixed(3)),
   seconds_run: Math.round(seconds),
   warmup_iterations: warmup,
-  measurement_iterations: runs[0]?.cycles ?? null,
-  cycles_completed: completedCycles(),
-  ended_by_cycle_limit: timeBound && completedCycles() === runs[0]?.cycles,
-  segments: timeBound
-    ? null
-    : runs.map(r => ({
-        run: r.name,
-        cycles: r.cycles,
-        seconds: Math.round(r.seconds),
-        passed: r.passed,
-        timed_out: r.timedOut
-      })),
+  segment_cycles: segmentCycles,
+  cycles_completed: runs.filter(r => r.passed).reduce((sum, r) => sum + r.cycles, 0),
+  segments: runs.map(r => ({
+    run: r.name,
+    cycles: r.cycles,
+    seconds: Math.round(r.seconds),
+    passed: r.passed,
+    timed_out: r.timedOut
+  })),
   layers,
   started_at: started.toISOString(),
   host: { platform: process.platform, cpu: os.cpus()[0]?.model ?? null, cpus: os.cpus().length },
-  passed: runs.length > 0 && !failed && (timeBound || seconds >= hours * 3600),
+  passed: runs.length > 0 && !failed && seconds >= hours * 3600,
   timed_out: runs.some(r => r.timedOut),
   failure: failed
-    ? `${failed.name}${failed.timedOut ? ` was stopped after ${Math.round(failed.seconds)} s, which is its ceiling of ${Math.round(ceilingSeconds)} s: it did not end` : ' did not pass'}\n` +
+    ? `${failed.name}${failed.timedOut ? ` was stopped after ${Math.round(failed.seconds)} s, which is its ceiling of ${segmentSeconds} s: it did not end` : ' did not pass'}\n` +
       failed.output
         .split('\n')
         .filter(l => l.trim())
         .slice(-12)
         .join('\n')
     : null,
-  gates: (failed ?? runs[runs.length - 1])?.gates ?? []
+  gates: (failed ?? last)?.gates ?? []
 }
 fs.writeFileSync(path.join(outDir, 'endurance-record.json'), JSON.stringify(record, null, 2) + '\n')
-fs.writeFileSync(path.join(outDir, 'soak.log'), runs.map(r => `=== ${r.name}\n${r.output}`).join('\n'))
-console.log((failed ?? runs[runs.length - 1]).output.split('\n').slice(-25).join('\n'))
+fs.writeFileSync(path.join(outDir, 'soak.log'), (failed ?? last)?.output ?? '')
+console.log(((failed ?? last)?.output ?? '').split('\n').slice(-25).join('\n'))
 console.log(
-  `\n${record.passed ? 'no growth: every endurance gate passed' : 'the run stopped before it reported its gates, or a gate FAILED'} after ${record.hours_run} hours and ${record.cycles_completed ?? 'an unknown number of'} cycles; see ${path.relative(root, path.join(outDir, 'endurance-record.json'))}`
+  `\n${record.passed ? 'no growth: every endurance gate passed' : 'the run stopped before it reported its gates, or a gate FAILED'} after ${record.hours_run} hours and ${record.cycles_completed} cycles; see ${path.relative(root, path.join(outDir, 'endurance-record.json'))}`
 )
 process.exit(record.passed ? 0 : 1)

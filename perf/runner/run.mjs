@@ -161,11 +161,6 @@ const injection = injected ? { slowdown_us: options.slowdownUs ?? 0, leak: optio
 if (injected && options.layers.some(layer => layer !== 'b'))
   throw new Error('an injected candidate runs in Layer B only: use --layers b')
 
-// A soak of a recovery workload is given a time, and ends at it with the cycles that fit (see runEndurance), since no count fills a time there.
-const stopAfter = process.env.PERF_ENDURANCE_STOP_AFTER_SECONDS
-  ? { stopAfterMs: Number(process.env.PERF_ENDURANCE_STOP_AFTER_SECONDS) * 1000 }
-  : {}
-
 const modes = options.mode === 'all' ? manifest.execution.modes : [options.mode]
 const repetitionsFor = mode => (mode === 'correctness' ? 1 : (options.repetitions ?? manifest.execution.repetitions))
 
@@ -455,9 +450,7 @@ for (const mode of modes) {
         const page = await openHarnessPage({ faults: true })
         try {
           const outcome = JSON.parse(
-            await page.evaluate(
-              `window.perfHarness.recovery_endurance(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(JSON.stringify(stopAfter))})`
-            )
+            await page.evaluate(`window.perfHarness.recovery_endurance(${JSON.stringify(canonicalManifest)})`)
           )
           if (allocatorVerified === false) withholdAllocatorFigures(outcome)
           keep('B', 'endurance', repetition, outcome, page.crossOriginIsolated)
@@ -567,6 +560,7 @@ const gate = (ok, text) => {
 }
 
 console.log(`\nresults in ${path.relative(root, outDir)}\n`)
+
 for (const { layer, mode, repetition, runId, outcome } of runs) {
   const timing = outcome.metrics
     .filter(m => m.status === 'measured' && m.summary)
