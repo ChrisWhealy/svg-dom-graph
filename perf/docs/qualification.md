@@ -85,6 +85,10 @@ That needs a workload whose timed step is long enough for a small injected delay
 
 It downloads each job's artifact and reads the environment that it was measured in, which includes the processor on which GitHub chose to run the job.
 Jobs that got the same environment form one baseline, so only the first is promoted, asthe others would only overwrite it.
+A workload and layer whose baseline in that environment already has 10 runs is kept as it is, irrespective of approval status.
+Promoting it again would void its approval and the proof that the comparison catches a slowdown.
+So `perf-baseline` can be run again to fill gaps, and it changes only what was missing.
+`--replace` promotes everything, for when a baseline is to be redone on purpose.
 It promotes with `promote-from-run.mjs`, so every refusal of that command holds.
 
 Runs are considered invalid are: runs containing more than one commit, a tree with changes, and a promotion over a regression without a reason.

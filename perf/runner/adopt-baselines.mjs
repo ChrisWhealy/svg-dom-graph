@@ -1,14 +1,16 @@
 // Turns the results of a `perf-baseline` run into committed, approved baselines, in one command.
 //
 //   node perf/runner/adopt-baselines.mjs [<run id>] --reason TEXT [--approve] [--accept-noise TEXT] [--accept-regression TEXT]
-//                                         [--commit] [--dry-run] [--allow-dirty]
+//                                         [--commit] [--dry-run] [--allow-dirty] [--replace]
 //
 // With no run id it takes the latest successful run of perf-baseline.yml. For that run it
 //
 //   1. downloads each job's artifact (`perf-baseline-<sha>-<sample>`) with the GitHub CLI, and reads the environment that it was measured in,
 //      which includes the processor that GitHub gave the job. Two jobs of one environment are one baseline, so only the first is promoted:
 //      the second would overwrite it, and the two are never pooled;
-//   2. promotes each environment's results with promote-from-run.mjs, which makes every refusal that it ever made (a run that is not valid,
+//   2. promotes the results of each environment that a baseline does not cover yet, with promote-from-run.mjs. A workload and layer whose baseline
+//      in that environment already has 10 runs, approved or not, is kept as it is, since promoting it again would void its approval and the proof
+//      that the comparison catches a slowdown. `--replace` promotes everything, for when a baseline is to be redone on purpose; which makes every refusal that it ever made (a run that is not valid,
 //      runs of more than one commit, a tree with changes, fewer than three runs, a promotion over a regression without --accept-regression);
 //   3. says, for every baseline now in perf/baselines, how many runs it has, how steady they are, and whether it is ready to approve;
 //   4. with --approve, approves the baselines that are ready, as `qualify.mjs --approve` does. One whose runs vary by more than the limit is
@@ -22,7 +24,15 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { RUNS_TO_BLOCK, baselinesDir, environmentKey, readPromotion, resultFiles, root } from '../lib/baselines.mjs'
+import {
+  RUNS_TO_BLOCK,
+  baselineDirFor,
+  baselinesDir,
+  environmentKey,
+  readPromotion,
+  resultFiles,
+  root
+} from '../lib/baselines.mjs'
 import { NOISE_LIMIT, isQualified, shortfalls, spreadOf } from '../lib/qualification.mjs'
 
 const argument = name => {
@@ -104,23 +114,76 @@ for (const name of names) {
 }
 if (byEnvironment.size === 0) throw new Error('none of the artifacts has results')
 
-// 2. Promote one artifact for each environment.
+/** The folder that holds the workloads' folders, which `gh` may have put one level down (as promote-from-run.mjs finds it). */
+const workloadRoot = dir => {
+  const nested = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .find(entry => entry.isDirectory() && entry.name.startsWith('perf-smoke-'))
+  return nested ? path.join(dir, nested.name) : dir
+}
+
+/** For each workload and layer that an unpacked artifact has performance runs of, whether its baseline in this environment already has the runs to block. */
+const coverage = dir => {
+  const base = workloadRoot(dir)
+  const found = []
+  for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const docs = resultFiles(path.join(base, entry.name)).map(file => ({
+      file,
+      doc: JSON.parse(fs.readFileSync(file, 'utf8'))
+    }))
+    for (const layer of ['A', 'B', 'C']) {
+      const sample = docs.find(
+        ({ doc }) =>
+          doc.mode === 'performance' && (doc.metrics.some(m => m.layer === layer) || doc.run_id.includes(`-${layer}-`))
+      )
+      if (!sample) continue
+      const baseline = baselineDirFor(entry.name, layer, environmentKey(sample.file))
+      const runs = readPromotion(baseline)?.runs.length ?? 0
+      found.push({ workload: entry.name, layer, runs, approved: isQualified(baseline), covered: runs >= RUNS_TO_BLOCK })
+    }
+  }
+  return found
+}
+
+// 2. Promote, for each environment, what no baseline covers yet.
 step(dryRun ? 'what would be promoted (a dry run writes nothing)' : 'promoting')
 let refused = 0
 for (const [key, list] of byEnvironment) {
   const chosen = list[0]
   if (list.length > 1)
     console.log(`${key}: ${list.map(l => l.name).join(', ')} are one environment, so only ${chosen.name} is promoted`)
-  const args = [path.join(root, 'perf/runner/promote-from-run.mjs'), '--from-dir', chosen.dir, '--reason', reason]
-  if (regression) args.push('--accept-regression', regression)
-  if (flag('--allow-dirty')) args.push('--allow-dirty')
-  if (dryRun) args.push('--dry-run')
-  const promoted = run('node', args, { env: process.env })
-  process.stdout.write(promoted.stdout)
-  if (promoted.status !== 0) {
-    refused++
-    process.stderr.write(promoted.stderr)
+  const pairs = coverage(chosen.dir)
+  const kept = flag('--replace') ? [] : pairs.filter(pair => pair.covered)
+  for (const pair of kept)
+    console.log(
+      `${pair.workload} layer ${pair.layer}: kept, its baseline here has ${pair.runs} runs${pair.approved ? ' and is approved' : ' and is not approved yet'}`
+    )
+  // One promotion for each workload and layer, since a list of workloads and a list of layers would be every combination of them.
+  for (const pair of pairs.filter(pair => !kept.includes(pair))) {
+    const args = [
+      path.join(root, 'perf/runner/promote-from-run.mjs'),
+      '--from-dir',
+      chosen.dir,
+      '--reason',
+      reason,
+      '--workloads',
+      pair.workload,
+      '--layers',
+      pair.layer
+    ]
+    if (regression) args.push('--accept-regression', regression)
+    if (flag('--allow-dirty')) args.push('--allow-dirty')
+    if (dryRun) args.push('--dry-run')
+    const promoted = run('node', args, { env: process.env })
+    process.stdout.write(promoted.stdout)
+    if (promoted.status !== 0) {
+      refused++
+      process.stderr.write(promoted.stderr)
+    }
   }
+  if (kept.length === pairs.length)
+    console.log(`${key}: every workload and layer is covered already, so nothing is promoted`)
 }
 fs.rmSync(scratch, { recursive: true, force: true })
 if (refused > 0) {
