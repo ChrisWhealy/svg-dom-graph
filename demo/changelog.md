@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- Stale Chrome 156 baselines since Chrome is pinned to 157 (``)
+
 ### Added
 
 - Game of Life demo: a second row of spaceship buttons under the board
