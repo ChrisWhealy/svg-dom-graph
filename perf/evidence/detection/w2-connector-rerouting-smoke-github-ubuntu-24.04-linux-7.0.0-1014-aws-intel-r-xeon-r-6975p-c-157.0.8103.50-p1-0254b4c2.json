@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-11-16T19:38:49.717Z",
+  "commit": "0254b4c2a53e591f02adb6c5b519116e83363f52",
+  "tree_clean": true,
+  "manifest": "w2-connector-rerouting-smoke",
+  "repetitions": 5,
+  "baseline": {
+    "dir": "w2-connector-rerouting-smoke/B/github-ubuntu-24.04-linux-7.0.0-1014-aws-intel-r-xeon-r-6975p-c-157.0.8103.50-p1",
+    "runs": [
+      "w2-connector-rerouting-smoke-B-performance-r0-20261116T184039",
+      "w2-connector-rerouting-smoke-B-performance-r1-20261116T184040",
+      "w2-connector-rerouting-smoke-B-performance-r10-20261116T184600",
+      "w2-connector-rerouting-smoke-B-performance-r11-20261116T184601",
+      "w2-connector-rerouting-smoke-B-performance-r2-20261116T184133",
+      "w2-connector-rerouting-smoke-B-performance-r3-20261116T184226",
+      "w2-connector-rerouting-smoke-B-performance-r4-20261116T184227",
+      "w2-connector-rerouting-smoke-B-performance-r5-20261116T184227",
+      "w2-connector-rerouting-smoke-B-performance-r6-20261116T184320",
+      "w2-connector-rerouting-smoke-B-performance-r7-20261116T184413",
+      "w2-connector-rerouting-smoke-B-performance-r8-20261116T184414",
+      "w2-connector-rerouting-smoke-B-performance-r9-20261116T184507"
+    ],
+    "approved": true,
+    "move_node_median_us": 12.5
+  },
+  "environment": "github-ubuntu-24.04-linux-7.0.0-1014-aws-intel-r-xeon-r-6975p-c-157.0.8103.50-p1",
+  "clean": {
+    "collections": [
+      {
+        "name": "clean-0",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 0.945,
+        "interval": [
+          0.909,
+          1.029
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T193853",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T193853",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T193854",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T193854",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T193855"
+        ]
+      },
+      {
+        "name": "clean-1",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 1,
+        "interval": [
+          0.96,
+          1.074
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T193949",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T193949",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T193950",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T193950",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T193951"
+        ]
+      },
+      {
+        "name": "clean-2",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 0.985,
+        "interval": [
+          0.954,
+          1.029
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T194137",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T194138",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T194139",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T194232",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T194232"
+        ]
+      },
+      {
+        "name": "clean-3",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 0.985,
+        "interval": [
+          0.954,
+          1.058
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T194234",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T194234",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T194327",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T194328",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T194328"
+        ]
+      },
+      {
+        "name": "clean-4",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 0.985,
+        "interval": [
+          0.945,
+          1.071
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T194330",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T194423",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T194423",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T194516",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T194609"
+        ]
+      },
+      {
+        "name": "clean-5",
+        "gates_passed": true,
+        "comparable": true,
+        "verdict": "no_material_change",
+        "ratio": 1,
+        "interval": [
+          0.967,
+          1.067
+        ],
+        "regressions": [],
+        "runs": [
+          "w2-connector-rerouting-smoke-B-performance-r0-20261116T194703",
+          "w2-connector-rerouting-smoke-B-performance-r1-20261116T194704",
+          "w2-connector-rerouting-smoke-B-performance-r2-20261116T194757",
+          "w2-connector-rerouting-smoke-B-performance-r3-20261116T194850",
+          "w2-connector-rerouting-smoke-B-performance-r4-20261116T194850"
+        ]
+      }
+    ],
+    "false_alarms": 0,
+    "false_alarm_rate": 0
+  },
+  "slowdowns": [
+    {
+      "slowdown_us": 5,
+      "implied_ratio": 1.4,
+      "collections": [
+        {
+          "name": "slow-5-0",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.273,
+          "interval": [
+            1.236,
+            1.351
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T194852",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T194852",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T194853",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T194946",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T194947"
+          ]
+        },
+        {
+          "name": "slow-5-1",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.3,
+          "interval": [
+            1.233,
+            1.39
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T195041",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T195134",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T195227",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T195320",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T195320"
+          ]
+        },
+        {
+          "name": "slow-5-2",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.44,
+          "interval": [
+            1.4,
+            1.567
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T195507",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T195508",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T195508",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T195509",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T195602"
+          ]
+        }
+      ],
+      "detected": 3,
+      "rate": 1
+    },
+    {
+      "slowdown_us": 10,
+      "implied_ratio": 1.8,
+      "collections": [
+        {
+          "name": "slow-10-0",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.56,
+          "interval": [
+            1.55,
+            1.693
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T195656",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T195656",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T195657",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T195657",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T195658"
+          ]
+        },
+        {
+          "name": "slow-10-1",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.6,
+          "interval": [
+            1.55,
+            1.773
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T195659",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T195752",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T195846",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T195846",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T195847"
+          ]
+        },
+        {
+          "name": "slow-10-2",
+          "gates_passed": true,
+          "comparable": true,
+          "verdict": "regression",
+          "ratio": 1.6,
+          "interval": [
+            1.576,
+            1.737
+          ],
+          "regressions": [
+            "mutation.move_node p50"
+          ],
+          "runs": [
+            "w2-connector-rerouting-smoke-B-performance-r0-20261116T195848",
+            "w2-connector-rerouting-smoke-B-performance-r1-20261116T195941",
+            "w2-connector-rerouting-smoke-B-performance-r2-20261116T195942",
+            "w2-connector-rerouting-smoke-B-performance-r3-20261116T195942",
+            "w2-connector-rerouting-smoke-B-performance-r4-20261116T195943"
+          ]
+        }
+      ],
+      "detected": 3,
+      "rate": 1
+    }
+  ],
+  "outcome": "holds",
+  "summary": "6 clean collections of 5 runs: 0 flagged as a regression. A slowdown of 5 µs a move (about 1.4×) was found in 3 of 3. A slowdown of 10 µs a move (about 1.8×) was found in 3 of 3. Against w2-connector-rerouting-smoke/B/github-ubuntu-24.04-linux-7.0.0-1014-aws-intel-r-xeon-r-6975p-c-157.0.8103.50-p1, 12 runs, approved.",
+  "finished_at": "2026-11-16T19:59:43.734Z"
+}

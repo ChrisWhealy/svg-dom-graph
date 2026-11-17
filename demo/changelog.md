@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Refresh baseline measurements (`5675b7f`)
 - Add initial performance endurance evidence (`0475ca5`)
 - Refresh baseline figures (`5f6f002`)
+- Upload evidence gathered from `perf-evidence` (``)
 
 ### Changed
 
