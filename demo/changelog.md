@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-- Stale Chrome 156 baselines since Chrome is pinned to 157 (``)
+- Stale Chrome 156 baselines since Chrome is pinned to 157 (`234d78d`)
 
 ### Added
 
