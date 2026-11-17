@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "run_id": "w2-connector-rerouting-smoke-A-performance-r8-20261117T105246",
+  "started_at": "2026-11-17T10:52:46.204Z",
+  "repetition": 8,
+  "sequence_position": 18,
+  "environment": {
+    "kind": "native",
+    "os": "Linux 7.0.0-1017-azure",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "memory_bytes": 16759312384,
+    "runner_class": "github-ubuntu-24.04",
+    "timer_resolution_us": 0.027,
+    "protocol_version": "1",
+    "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+    "wasm_pack": "wasm-pack 0.15.0",
+    "crate_version": "0.2.52",
+    "git_sha": "a1b6ebc5fd775708f06149b8729533909422b427",
+    "git_dirty": false,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w2-connector-rerouting-smoke",
+    "sha256": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 20,
+        "maximum_degree": 8
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 100,
+        "measurement_iterations": 2000,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 250
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 60000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "batch_size": 68,
+      "dropped": 0,
+      "kind": "batch_throughput",
+      "layer": "A",
+      "mechanism": "std::time::Instant, over the library's boundary_point for each connector at the moved node",
+      "name": "rust.connector_endpoints",
+      "outliers_flagged": 3,
+      "samples": 2000,
+      "status": "measured",
+      "summary": {
+        "max": 0.19089705882352942,
+        "min": 0.013014705882352942,
+        "p50": 0.01985294117647059,
+        "p95": 0.0319264705882353,
+        "p99": 0.03205882352941176
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 0.01225,
+        "mean": 0.024203124999999884,
+        "stddev": 0.008051027290579606,
+        "tukey_high": 0.05008088235294118,
+        "tukey_low": 0.001080882352941178
+      }
+    }
+  ],
+  "checkpoints_passed": 2,
+  "checkpoints_failed": [],
+  "raw_samples": "target/perf-smoke/w2-connector-rerouting-smoke/w2-connector-rerouting-smoke-A-performance-r8-20261117T105246.samples.ndjson"
+}

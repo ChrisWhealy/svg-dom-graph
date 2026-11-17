@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "approved_at": "2026-11-17T11:45:50.081Z",
+  "reason": "Refresh baselines",
+  "accepted_noise": null,
+  "runs_to_block": 10,
+  "runs": [
+    "w4-interaction-small-C-performance-r0-20261117T110205",
+    "w4-interaction-small-C-performance-r1-20261117T110313",
+    "w4-interaction-small-C-performance-r10-20261117T112352",
+    "w4-interaction-small-C-performance-r11-20261117T112504",
+    "w4-interaction-small-C-performance-r2-20261117T110420",
+    "w4-interaction-small-C-performance-r3-20261117T110713",
+    "w4-interaction-small-C-performance-r4-20261117T111006",
+    "w4-interaction-small-C-performance-r5-20261117T111114",
+    "w4-interaction-small-C-performance-r6-20261117T111406",
+    "w4-interaction-small-C-performance-r7-20261117T111659",
+    "w4-interaction-small-C-performance-r8-20261117T111952",
+    "w4-interaction-small-C-performance-r9-20261117T112152"
+  ],
+  "spread": [
+    {
+      "name": "cold_start.page_ready",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 92.40499999979511,
+      "highest_over_lowest": 1.4573762807190762,
+      "coefficient_of_variation": 0.10288198715588551
+    },
+    {
+      "name": "interaction.drag.scale_50.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 1.516,
+      "highest_over_lowest": 1.328692962103635,
+      "coefficient_of_variation": 0.09375813709604577
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_200.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 2.727,
+      "highest_over_lowest": 1.2883781439722464,
+      "coefficient_of_variation": 0.06689743114695236
+    },
+    {
+      "name": "interaction.drag.scale_100.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 1.695,
+      "highest_over_lowest": 1.2524590163934426,
+      "coefficient_of_variation": 0.07467141369684187
+    },
+    {
+      "name": "interaction.pan.scale_50.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 1.427,
+      "highest_over_lowest": 1.2511380880121397,
+      "coefficient_of_variation": 0.08807297008559847
+    },
+    {
+      "name": "interaction.pan.scale_200.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 1.834,
+      "highest_over_lowest": 1.2420036210018104,
+      "coefficient_of_variation": 0.07986191873851926
+    },
+    {
+      "name": "interaction.pan.scale_100.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 2.118,
+      "highest_over_lowest": 1.2331027142096862,
+      "coefficient_of_variation": 0.07466776813059113
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_100.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 2.933,
+      "highest_over_lowest": 1.226986624704957,
+      "coefficient_of_variation": 0.05857386789952205
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_50.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 2.338,
+      "highest_over_lowest": 1.2015655577299413,
+      "coefficient_of_variation": 0.06481865194412194
+    },
+    {
+      "name": "interaction.drag.scale_200.latency",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 1.661,
+      "highest_over_lowest": 1.1997319034852547,
+      "coefficient_of_variation": 0.05982118881667454
+    },
+    {
+      "name": "interaction.drag.scale_50.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.640000000130385,
+      "highest_over_lowest": 1.0204798127616257,
+      "coefficient_of_variation": 0.006542712478097446
+    },
+    {
+      "name": "interaction.drag.scale_200.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.669999999925494,
+      "highest_over_lowest": 1.0204798127343782,
+      "coefficient_of_variation": 0.005760907403464979
+    },
+    {
+      "name": "interaction.pan.scale_50.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.690000000176951,
+      "highest_over_lowest": 1.0186697783141354,
+      "coefficient_of_variation": 0.006519634094745411
+    },
+    {
+      "name": "interaction.pan.scale_200.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.699999999953434,
+      "highest_over_lowest": 1.0186263096524586,
+      "coefficient_of_variation": 0.0066261481340344425
+    },
+    {
+      "name": "cdp.wheel_zoom.scale_50.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.791239000012865,
+      "highest_over_lowest": 1.0174920044611204,
+      "coefficient_of_variation": 0.005743925957094049
+    },
+    {
+      "name": "interaction.pan.scale_100.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.694999999832362,
+      "highest_over_lowest": 1.0174723354580686,
+      "coefficient_of_variation": 0.005556739282109275
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_200.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.069999999832362,
+      "highest_over_lowest": 1.0160868690892126,
+      "coefficient_of_variation": 0.004708938656170016
+    },
+    {
+      "name": "interaction.drag.scale_100.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 8.665000000037253,
+      "highest_over_lowest": 1.0151515151659056,
+      "coefficient_of_variation": 0.005064824277987188
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_100.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.110000000102445,
+      "highest_over_lowest": 1.0146763168660284,
+      "coefficient_of_variation": 0.004988744760338903
+    },
+    {
+      "name": "cdp.wheel_zoom.scale_200.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.730329999991227,
+      "highest_over_lowest": 1.0141538416506497,
+      "coefficient_of_variation": 0.0041348891458429385
+    },
+    {
+      "name": "interaction.wheel_zoom.scale_50.input_delay",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.09499999997206,
+      "highest_over_lowest": 1.013518966897756,
+      "coefficient_of_variation": 0.004918090191228993
+    },
+    {
+      "name": "cdp.wheel_zoom.scale_100.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 25.730358000000706,
+      "highest_over_lowest": 1.0125736920655508,
+      "coefficient_of_variation": 0.00339495052149294
+    },
+    {
+      "name": "cdp.drag.scale_50.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.214587999973446,
+      "highest_over_lowest": 1.0050863687394531,
+      "coefficient_of_variation": 0.001469615396368133
+    },
+    {
+      "name": "cdp.pan.scale_50.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.21299699996598,
+      "highest_over_lowest": 1.0039852780879188,
+      "coefficient_of_variation": 0.0012444413641492385
+    },
+    {
+      "name": "cdp.drag.scale_200.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.207582000177354,
+      "highest_over_lowest": 1.0034340818504115,
+      "coefficient_of_variation": 0.0011536451871406617
+    },
+    {
+      "name": "cdp.pan.scale_200.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.21005300001707,
+      "highest_over_lowest": 1.0028605757310536,
+      "coefficient_of_variation": 0.00109622199399347
+    },
+    {
+      "name": "cdp.drag.scale_100.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.211840000003576,
+      "highest_over_lowest": 1.0028287029836713,
+      "coefficient_of_variation": 0.0007572056716663189
+    },
+    {
+      "name": "cdp.pan.scale_100.round_trip",
+      "layer": "C",
+      "unit": "ms",
+      "runs": 12,
+      "median": 9.206939999945462,
+      "highest_over_lowest": 1.0024197737879739,
+      "coefficient_of_variation": 0.0006848913438202977
+    }
+  ]
+}

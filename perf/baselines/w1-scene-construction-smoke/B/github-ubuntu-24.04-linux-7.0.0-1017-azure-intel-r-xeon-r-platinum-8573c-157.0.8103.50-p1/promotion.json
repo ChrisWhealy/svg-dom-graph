@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w1-scene-construction-smoke",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-17T11:45:47.760Z",
+    "commit": "a1b6ebc5fd775708f06149b8729533909422b427",
+    "workload_hash": "914d601622905233ee6fa11ce4cd516918e242d2c9b3f925a4e93819f40656d1",
+    "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-157.0.8103.50-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "c0ea23a2b71935d73c299b33b69ada5d0b2de87f7d9173641a2c3a136d0b0470",
+  "reason": "Refresh baselines",
+  "runs": [
+    "w1-scene-construction-smoke-B-performance-r0-20261117T104254",
+    "w1-scene-construction-smoke-B-performance-r1-20261117T104255",
+    "w1-scene-construction-smoke-B-performance-r10-20261117T104723",
+    "w1-scene-construction-smoke-B-performance-r11-20261117T104724",
+    "w1-scene-construction-smoke-B-performance-r2-20261117T104255",
+    "w1-scene-construction-smoke-B-performance-r3-20261117T104348",
+    "w1-scene-construction-smoke-B-performance-r4-20261117T104442",
+    "w1-scene-construction-smoke-B-performance-r5-20261117T104535",
+    "w1-scene-construction-smoke-B-performance-r6-20261117T104535",
+    "w1-scene-construction-smoke-B-performance-r7-20261117T104536",
+    "w1-scene-construction-smoke-B-performance-r8-20261117T104537",
+    "w1-scene-construction-smoke-B-performance-r9-20261117T104630"
+  ],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

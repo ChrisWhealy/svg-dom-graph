@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "approved_at": "2026-11-17T11:45:50.136Z",
+  "reason": "Refresh baselines",
+  "accepted_noise": null,
+  "runs_to_block": 10,
+  "runs": [
+    "w6-service-simulation-smoke-A-performance-r0-20261117T112841",
+    "w6-service-simulation-smoke-A-performance-r1-20261117T112850",
+    "w6-service-simulation-smoke-A-performance-r10-20261117T113520",
+    "w6-service-simulation-smoke-A-performance-r11-20261117T113621",
+    "w6-service-simulation-smoke-A-performance-r2-20261117T112950",
+    "w6-service-simulation-smoke-A-performance-r3-20261117T113051",
+    "w6-service-simulation-smoke-A-performance-r4-20261117T113100",
+    "w6-service-simulation-smoke-A-performance-r5-20261117T113201",
+    "w6-service-simulation-smoke-A-performance-r6-20261117T113209",
+    "w6-service-simulation-smoke-A-performance-r7-20261117T113218",
+    "w6-service-simulation-smoke-A-performance-r8-20261117T113319",
+    "w6-service-simulation-smoke-A-performance-r9-20261117T113512"
+  ],
+  "spread": [
+    {
+      "name": "simulation.engine.four_slices",
+      "layer": "A",
+      "unit": "us",
+      "runs": 12,
+      "median": 34.101,
+      "highest_over_lowest": 1.118810046028853,
+      "coefficient_of_variation": 0.040340589513340214
+    },
+    {
+      "name": "simulation.engine.replay_to_cursor",
+      "layer": "A",
+      "unit": "us",
+      "runs": 12,
+      "median": 2745.609,
+      "highest_over_lowest": 1.1120680131267473,
+      "coefficient_of_variation": 0.0332931578414852
+    }
+  ]
+}

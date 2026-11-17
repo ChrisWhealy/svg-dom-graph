@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "approved_at": "2026-11-17T11:45:49.822Z",
+  "reason": "Refresh baselines",
+  "accepted_noise": null,
+  "runs_to_block": 10,
+  "runs": [
+    "w2-connector-rerouting-smoke-B-performance-r0-20261117T105024",
+    "w2-connector-rerouting-smoke-B-performance-r1-20261117T105117",
+    "w2-connector-rerouting-smoke-B-performance-r10-20261117T105455",
+    "w2-connector-rerouting-smoke-B-performance-r11-20261117T105548",
+    "w2-connector-rerouting-smoke-B-performance-r2-20261117T105118",
+    "w2-connector-rerouting-smoke-B-performance-r3-20261117T105119",
+    "w2-connector-rerouting-smoke-B-performance-r4-20261117T105120",
+    "w2-connector-rerouting-smoke-B-performance-r5-20261117T105213",
+    "w2-connector-rerouting-smoke-B-performance-r6-20261117T105214",
+    "w2-connector-rerouting-smoke-B-performance-r7-20261117T105215",
+    "w2-connector-rerouting-smoke-B-performance-r8-20261117T105308",
+    "w2-connector-rerouting-smoke-B-performance-r9-20261117T105402"
+  ],
+  "spread": [
+    {
+      "name": "mutation.move_node",
+      "layer": "B",
+      "unit": "us",
+      "runs": 12,
+      "median": 19.37500000349246,
+      "highest_over_lowest": 1.1836734697497853,
+      "coefficient_of_variation": 0.046697202988242134
+    }
+  ]
+}

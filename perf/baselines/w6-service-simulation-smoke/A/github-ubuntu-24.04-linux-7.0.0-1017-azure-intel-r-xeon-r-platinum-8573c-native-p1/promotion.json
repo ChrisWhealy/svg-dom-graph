@@ -4,18 +4,27 @@
   "layer": "A",
   "mode": "performance",
   "promotion": {
-    "promoted_at": "2026-11-10T16:29:48.798Z",
-    "commit": "7ba9852b420f677fe44ee36fd1a3e8984d956f42",
+    "promoted_at": "2026-11-17T11:45:48.449Z",
+    "commit": "a1b6ebc5fd775708f06149b8729533909422b427",
     "workload_hash": "e8bbf4c70304082eb130b42bb2fbe9356d6c1792b5389dae3d0b3ddd636196d4",
     "environment_key": "github-ubuntu-24.04-linux-7.0.0-1017-azure-intel-r-xeon-r-platinum-8573c-native-p1",
     "method_version": "1"
   },
   "operation_stream_sha256": "cce8d6847dc1919a9c7202334ece6ab36079e225b9a8275f651f28651d17afbb",
-  "reason": "Third baseline on github-ubuntu-24.04",
+  "reason": "Refresh baselines",
   "runs": [
-    "w6-service-simulation-smoke-A-performance-r0-20261110T160226",
-    "w6-service-simulation-smoke-A-performance-r1-20261110T160327",
-    "w6-service-simulation-smoke-A-performance-r2-20261110T160336"
+    "w6-service-simulation-smoke-A-performance-r0-20261117T112841",
+    "w6-service-simulation-smoke-A-performance-r1-20261117T112850",
+    "w6-service-simulation-smoke-A-performance-r10-20261117T113520",
+    "w6-service-simulation-smoke-A-performance-r11-20261117T113621",
+    "w6-service-simulation-smoke-A-performance-r2-20261117T112950",
+    "w6-service-simulation-smoke-A-performance-r3-20261117T113051",
+    "w6-service-simulation-smoke-A-performance-r4-20261117T113100",
+    "w6-service-simulation-smoke-A-performance-r5-20261117T113201",
+    "w6-service-simulation-smoke-A-performance-r6-20261117T113209",
+    "w6-service-simulation-smoke-A-performance-r7-20261117T113218",
+    "w6-service-simulation-smoke-A-performance-r8-20261117T113319",
+    "w6-service-simulation-smoke-A-performance-r9-20261117T113512"
   ],
   "comparison_method": {
     "statistic": "ratio of repetition medians",
@@ -24,8 +33,8 @@
     "confidence": 0.95
   },
   "previous": {
-    "commit": "685cac3a7e2e8d2ed602a9314681c51ad7e681b8",
-    "promoted_at": "2026-11-10T15:34:14.649Z"
+    "commit": "7ba9852b420f677fe44ee36fd1a3e8984d956f42",
+    "promoted_at": "2026-11-10T16:29:48.798Z"
   },
   "accepted_regression": null
 }
